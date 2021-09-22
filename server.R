@@ -11,8 +11,26 @@ library(shiny)
 # Server Content #
 #----------------#
 function(input, output, session) {
+
   
-# Summary sentence of meta-analysis #  
+### Load default Data ###
+  
+  defaultD <- reactive({
+    if (input$ContBin=='continuous') {
+      defaultD <- read.csv("./AntiVEGF_Continuous.csv")
+    } else {
+      defaultD <- read.csv("./AntiVEGF_Binary.csv")
+    }
+  })
+  
+  output$data <- renderTable({        # Create a table which displays the raw data just uploaded by the user
+    #if(is.null(data())){return()}
+    #data()
+    defaultD()
+  })
+  
+  
+### Summary sentence of meta-analysis ###  
 output$SynthesisSummary <- renderText({
   if (input$FreqBaye=='frequentist') {
   if (input$ContBin=='binary') {

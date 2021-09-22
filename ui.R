@@ -24,7 +24,9 @@ tabPanel("Home"),
 #----------#
                    
 tabPanel("Data",
-         radioButtons("ContBin", "Continuous or Binary", c("Continuous" = "continuous", "Binary" = "binary"))),
+         radioButtons("ContBin", "Example Dataset", c("Continuous Data" = "continuous", "Binary Data" = "binary")),
+         uiOutput("data")),
+# Make it autodetect continuous or binary for user input data #
                    
 # Evidence Synthesis Tab #
 #------------------------#
