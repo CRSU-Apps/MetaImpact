@@ -4,16 +4,20 @@
 # load libraries #
 #----------------#
 library(shiny)
+library(sjlabelled)
+library(netmeta)
 
 # load user-written functions #
 #-----------------------------#
+
+source("MAFunctions.R",local = TRUE) 
 
 # Server Content #
 #----------------#
 function(input, output, session) {
 
   
-### Load default Data ###
+### Load and present default Data ###
   
   defaultD <- reactive({
     if (input$ContBin=='continuous') {
@@ -21,6 +25,9 @@ function(input, output, session) {
     } else {
       defaultD <- read.csv("./AntiVEGF_Binary.csv")
     }
+    defaultD$T <- as_factor(defaultD$T)
+    defaultRef <- "laser"
+    return(defaultD)
   })
   
   output$data <- renderTable({        # Create a table which displays the raw data just uploaded by the user
@@ -53,6 +60,27 @@ output$SynthesisSummary <- renderText({
     }
   }
 })
-  
+
+
+### Run frequentist NMA ###
+
+WideData <- reactive({
+  Long2Wide(data=defaultD(),CONBI=input$ContBin)
+})
+outcome <- reactive({
+  if (input$ContBin=='continuous') {
+    input$OutcomeCont
+  } else {
+    input$OutcomeBina
+  }
+})
+Freq <- reactive({
+  FreqMA(data=WideData(), outcome=outcome(), CONBI=input$ContBin, model=input$FixRand, ref=defaultRef)
+})
+
+
+output$test <- renderPrint({
+  Freq()$MAObject
+})  
   
 }

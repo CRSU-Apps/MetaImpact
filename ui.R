@@ -45,6 +45,7 @@ tabPanel("Evidence Synthesis",
          # Outputs #
          fluidRow(align = 'center',
            htmlOutput("SynthesisSummary"),
+           uiOutput("test"),
            column(4), #Network plot
                   column(6,offset=2) #Forest plot
                   )),
