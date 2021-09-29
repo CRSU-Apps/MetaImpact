@@ -25,8 +25,12 @@ function(input, output, session) {
       defaultD <- read.csv("./AntiVEGF_Binary.csv")
     }
     defaultD$T <- as_factor(defaultD$T)
-    defaultRef <- "laser"
     return(defaultD)
+  })
+  defaultRef <- "laser"
+  
+  observe({        # populating reference treatment options
+    updateSelectInput(session = session, inputId = "Reference", choices = levels(defaultD()$T), selected = defaultRef)
   })
   
   output$data <- renderTable({        # Create a table which displays the raw data just uploaded by the user
@@ -40,22 +44,22 @@ function(input, output, session) {
 output$SynthesisSummary <- renderText({
   if (input$FreqBaye=='frequentist') {
   if (input$ContBin=='binary') {
-    paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeBina), "s using ", strong("frequentist"), " methodology. 
-    To change the model options, please see the synthesis options above.")
+    paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeBina), "s using ", strong("frequentist"), " methodology, 
+    with reference treatment ", strong(input$Reference), ". To change the model options, please see the synthesis options above.")
   }
   else if (input$ContBin=='continuous') {
-    paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeCont), "s using ", strong("frequentist"), " methodology. 
-    To change the model options, please see the synthesis options above.")
+    paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeCont), "s using ", strong("frequentist"), " methodology, 
+    with reference treatment ", strong(input$Reference), ". To change the model options, please see the synthesis options above.")
   }
   }
   else if (input$FreqBaye=='Bayesian') {
     if (input$ContBin=='binary') {
-      paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeBina), "s using ", strong("Bayesian"), " methodology with vague prior ", strong(input$prior), ". 
-    To change the model options, please see the synthesis options above.")
+      paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeBina), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
+      reference treatment ", strong(input$Reference), ". To change the model options, please see the synthesis options above.")
     }
     else if (input$ContBin=='continuous') {
-      paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeCont), "s using ", strong("Bayesian"), " methodology with vague prior ", strong(input$prior), ". 
-    To change the model options, please see the synthesis options above.")
+      paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeCont), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
+      reference treatment ", strong(input$Reference), ". To change the model options, please see the synthesis options above.")
     }
   }
 })
@@ -74,7 +78,7 @@ outcome <- reactive({                # different outcome variables if continuous
   }
 })
 Freq <- reactive({                   # Run frequentist NMA 
-  FreqMA(data=WideData(), outcome=outcome(), CONBI=input$ContBin, model=input$FixRand, ref=defaultRef)
+  FreqMA(data=WideData(), outcome=outcome(), CONBI=input$ContBin, model=input$FixRand, ref=input$Reference)
 })
 output$NetworkPlot <- renderPlot({   # Network plot
   netgraph(Freq()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
@@ -82,7 +86,7 @@ output$NetworkPlot <- renderPlot({   # Network plot
   title("Network plot of all studies")
 })
 output$ForestPlot <- renderPlot({    # Forest plot
-  FreqForest(NMA=Freq()$MAObject, model=input$FixRand, ref=defaultRef)
+  FreqForest(NMA=Freq()$MAObject, model=input$FixRand, ref=input$Reference)
   title("Forest plot of outcomes")
 })
 
