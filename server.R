@@ -4,7 +4,6 @@
 # load libraries #
 #----------------#
 library(shiny)
-library(sjlabelled)
 library(netmeta)
 
 # load user-written functions #
