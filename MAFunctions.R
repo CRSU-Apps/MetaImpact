@@ -30,7 +30,7 @@ FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outc
   if (CONBI=='continuous') { #convert to contrast form
     mean <- data[,grep(pattern="^Mean", colnames(data))]
     sd <- data[,grep(pattern="^SD", colnames(data))]
-    d1 <- pairwise(treat=treat,n=n,mean=mean,sd=sd, data=data, studlab=Study, sm='MD')
+    d1 <- pairwise(treat=treat,n=n,mean=mean,sd=sd, data=data, studlab=Study, sm=outcome)
   } else {
     event <- data[,grep(pattern="^R", colnames(data))]
     d1 <- pairwise(treat=treat,event=event,n=n, data=data, studlab=Study, sm=outcome)
@@ -40,9 +40,12 @@ FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outc
                   comb.random=(model=='random'), comb.fixed=(model=='fixed'), reference.group=ref,
                   all.treatments=NULL, seq=NULL, tau.preset=NULL,
                   tol.multiarm=0.05, tol.multiarm.se=0.2, warn=TRUE)
-  return(list(MAObject=net1, MAdata=d1))
+  list(MAObject=net1, MAData=d1)
 }
 
+FreqForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or random; reference treatment
+  metafor::forest(NMA,reference.group=ref, pooled=model)
+}
 
 
 # Bayesian #

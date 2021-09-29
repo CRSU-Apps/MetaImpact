@@ -63,23 +63,29 @@ output$SynthesisSummary <- renderText({
 
 ### Run frequentist NMA ###
 
-WideData <- reactive({
+WideData <- reactive({               # convert long format to wide if need be
   Long2Wide(data=defaultD(),CONBI=input$ContBin)
 })
-outcome <- reactive({
+outcome <- reactive({                # different outcome variables if continuous or binary
   if (input$ContBin=='continuous') {
     input$OutcomeCont
   } else {
     input$OutcomeBina
   }
 })
-Freq <- reactive({
+Freq <- reactive({                   # Run frequentist NMA 
   FreqMA(data=WideData(), outcome=outcome(), CONBI=input$ContBin, model=input$FixRand, ref=defaultRef)
 })
+output$NetworkPlot <- renderPlot({   # Network plot
+  netgraph(Freq()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
+           col.number.of.studies = "forestgreen", col.multiarm = "white", bg.number.of.studies = "black", offset=0.03)
+  title("Network plot of all studies")
+})
+output$ForestPlot <- renderPlot({    # Forest plot
+  FreqForest(NMA=Freq()$MAObject, model=input$FixRand, ref=defaultRef)
+  title("Forest plot of outcomes")
+})
 
-
-output$test <- renderPrint({
-  Freq()$MAObject
-})  
+## Double zero arms are not included in analysis - need to add warning
   
 }

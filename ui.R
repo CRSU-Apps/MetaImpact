@@ -44,10 +44,9 @@ tabPanel("Evidence Synthesis",
                                    radioButtons("prior", "Choice of vague prior:", c("Option 1" = "1", "Option 2" = "2"))))))),
          # Outputs #
          fluidRow(align = 'center',
-           htmlOutput("SynthesisSummary"),
-           uiOutput("test"),
-           column(4), #Network plot
-                  column(6,offset=2) #Forest plot
+           htmlOutput("SynthesisSummary")),
+         fluidRow(column(4, plotOutput("NetworkPlot")), #Network plot
+                  column(6,offset=2, plotOutput("ForestPlot")) #Forest plot
                   )),
 
 # Sample Size Calculator Tab #
