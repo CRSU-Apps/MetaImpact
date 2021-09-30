@@ -18,6 +18,11 @@ Long2Wide <- function(data, CONBI) { #inputs: data frame; whether continuous or 
   }
 }
 
+### Convert wide to long ###
+Wide2Long <- function(data, CONBI) { #inputs: data frame; continuous or binary
+  
+}
+
 
 # Frequentist #
 #-------------#
@@ -43,6 +48,8 @@ FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outc
   list(MAObject=net1, MAData=d1)
 }
 
+### Forest Plot ###
+
 FreqForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or random; reference treatment
   metafor::forest(NMA,reference.group=ref, pooled=model)
 }
@@ -50,3 +57,44 @@ FreqForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or random; 
 
 # Bayesian #
 #----------#
+
+### Bayesian MA ###
+
+BayesMA <- function(data, CONBI, outcome, model, ref) { #inputs: data; continuous or binary; outcome type; fixed or random; reference treatment
+if (CONBI=='continuous') {                                         # set up data frame
+  armData <- data.frame(study=data$Study,
+                       treatment=data$T,
+                       mean=data$Mean,
+                       std.dev=data$SD,
+                       sampleSize=data$N)
+} else {
+  armData <- data.frame(study=data$Study,
+                        treatment=data$T,
+                        responders=data$R,
+                        sampleSize=data$N)
+}
+mtcNetwork <- mtc.network(data.ab=armData,description="Network")   # Gemtc network object
+if (outcome == "MD") {                                             # set up likelihood and links
+  like <- "normal"
+  link <- "identity"
+} else  {
+  like <- "binom"
+  link <- ifelse (outcome == "OR", "logit", "log")
+}
+mtcModel <- mtc.model(network=mtcNetwork,                          # Formulate model
+                      type = "consistency",
+                      linearModel=model,
+                      likelihood=like,
+                      link = link,
+                      dic=TRUE)
+mtcResults <- mtc.run(mtcModel)                                    # Run model
+mtcRelEffects <- relative.effect(mtcResults,t1=ref)                # Obtain relative effects
+sumresults <- summary(mtcRelEffects)                               # Summary of relative effects
+sumoverall <- summary(mtcResults)                                  # Overall summary of analysis
+DIC <- as.data.frame(sumoverall$DIC)                               # DIC
+DIC
+}
+
+
+
+

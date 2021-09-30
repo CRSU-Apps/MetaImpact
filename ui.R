@@ -47,8 +47,11 @@ tabPanel("Evidence Synthesis",
          fluidRow(align = 'center',
            htmlOutput("SynthesisSummary")),
          fluidRow(column(4, plotOutput("NetworkPlot")), #Network plot
-                  column(6,offset=2, plotOutput("ForestPlot")) #Forest plot
-                  )),
+                  column(6,offset=2, plotOutput("ForestPlot"))), #Forest plot
+         fluidRow(uiOutput("BayesTest"))
+                  ),
+          # investigate whether we can make the network and forest plot bigger
+          # Add extra info such as tau, DIC etc.
 
 # Sample Size Calculator Tab #
 #----------------------------#

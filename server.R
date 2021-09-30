@@ -5,6 +5,8 @@
 #----------------#
 library(shiny)
 library(netmeta)
+library(sjlabelled)
+library(gemtc)
 
 # load user-written functions #
 #-----------------------------#
@@ -18,22 +20,30 @@ function(input, output, session) {
   
 ### Load and present default Data ###
   
-  defaultD <- reactive({
+  defaultD <- reactive({                 # Read in default data
     if (input$ContBin=='continuous') {
       defaultD <- read.csv("./AntiVEGF_Continuous.csv")
     } else {
       defaultD <- read.csv("./AntiVEGF_Binary.csv")
     }
-    defaultD$T <- as_factor(defaultD$T)
+    defaultD$T <- as_factor(defaultD$T)  # Factor variable to remove need for separate file of labels
     return(defaultD)
   })
-  defaultRef <- "laser"
+  defaultRef <- "laser"                  # Default reference treatment
   
-  observe({        # populating reference treatment options
+  observe({                              # populating reference treatment options
     updateSelectInput(session = session, inputId = "Reference", choices = levels(defaultD()$T), selected = defaultRef)
   })
   
-  output$data <- renderTable({        # Create a table which displays the raw data just uploaded by the user
+  outcome <- reactive({                  # different outcome variables if continuous or binary
+    if (input$ContBin=='continuous') {
+      input$OutcomeCont
+    } else {
+      input$OutcomeBina
+    }
+  })
+  
+  output$data <- renderTable({           # Create a table which displays the raw data just uploaded by the user
     #if(is.null(data())){return()}
     #data()
     defaultD()
@@ -41,6 +51,7 @@ function(input, output, session) {
   
   
 ### Summary sentence of meta-analysis ###  
+  
 output$SynthesisSummary <- renderText({
   if (input$FreqBaye=='frequentist') {
   if (input$ContBin=='binary') {
@@ -70,13 +81,7 @@ output$SynthesisSummary <- renderText({
 WideData <- reactive({               # convert long format to wide if need be
   Long2Wide(data=defaultD(),CONBI=input$ContBin)
 })
-outcome <- reactive({                # different outcome variables if continuous or binary
-  if (input$ContBin=='continuous') {
-    input$OutcomeCont
-  } else {
-    input$OutcomeBina
-  }
-})
+
 Freq <- reactive({                   # Run frequentist NMA 
   FreqMA(data=WideData(), outcome=outcome(), CONBI=input$ContBin, model=input$FixRand, ref=input$Reference)
 })
@@ -91,5 +96,15 @@ output$ForestPlot <- renderPlot({    # Forest plot
 })
 
 ## Double zero arms are not included in analysis - need to add warning
+
+### Run Bayesian NMA ###
+
+Bayes <- reactive({                  # Run Bayesian MA
+  BayesMA(data=defaultD(), CONBI=input$ContBin, outcome=outcome(), model=input$FixRand, ref=input$Reference)
+})
+
+output$BayesTest <- renderPrint({
+  Bayes()
+})
   
 }
