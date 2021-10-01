@@ -85,12 +85,12 @@ WideData <- reactive({               # convert long format to wide if need be
 Freq <- reactive({                   # Run frequentist NMA 
   FreqMA(data=WideData(), outcome=outcome(), CONBI=input$ContBin, model=input$FixRand, ref=input$Reference)
 })
-output$NetworkPlot <- renderPlot({   # Network plot
+output$NetworkPlotF <- renderPlot({   # Network plot
   netgraph(Freq()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
            col.number.of.studies = "forestgreen", col.multiarm = "white", bg.number.of.studies = "black", offset=0.03)
   title("Network plot of all studies")
 })
-output$ForestPlot <- renderPlot({    # Forest plot
+output$ForestPlotF <- renderPlot({    # Forest plot
   FreqForest(NMA=Freq()$MAObject, model=input$FixRand, ref=input$Reference)
   title("Forest plot of outcomes")
 })
@@ -103,8 +103,25 @@ Bayes <- reactive({                  # Run Bayesian MA
   BayesMA(data=defaultD(), CONBI=input$ContBin, outcome=outcome(), model=input$FixRand, ref=input$Reference)
 })
 
-output$BayesTest <- renderPrint({
-  Bayes()
+output$NetworkPlotB <- renderPlot({  # Network plot
+  plot(Bayes()$Network)
+  title("Network plot of all studies")
 })
+
+output$ForestPlotB <- renderPlot({   # Forest plot
+  forest(Bayes()$RelEffects, digits=3)
+  title("Forest plot of outcomes")
+})
+
+output$TauB <- renderText({          # Between-study standard deviation
+  TauDesc(ResultsSum=Bayes()$ResultsSum, outcome=outcome(), model=input$FixRand)
+})
+
+output$DICB <- renderTable({         # DIC
+  Bayes()$DIC
+}, digits=3, rownames=TRUE, colnames=FALSE)
+
+
+
   
 }

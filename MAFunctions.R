@@ -92,7 +92,31 @@ mtcRelEffects <- relative.effect(mtcResults,t1=ref)                # Obtain rela
 sumresults <- summary(mtcRelEffects)                               # Summary of relative effects
 sumoverall <- summary(mtcResults)                                  # Overall summary of analysis
 DIC <- as.data.frame(sumoverall$DIC)                               # DIC
-DIC
+list(Network=mtcNetwork, RelEffects=mtcRelEffects, ResultsSum=sumresults, DIC=DIC)
+}
+
+TauDesc <- function(ResultsSum,outcome,model) {                    # Between-study standard deviation
+  if (model=="random") {
+    ntx <- nrow(ResultsSum$summaries$statistics)
+    sd_mean<- round(ResultsSum$summaries$statistics[ntx,1], digits = 2)
+    sd_lowCI<-round(ResultsSum$summaries$quantiles[ntx,1], digits = 2)
+    sd_highCI<-round(ResultsSum$summaries$quantiles[ntx,5], digits=2)
+  }
+  if (model=="random") {
+    if (outcome=="OR") {
+      paste("Between-study standard deviation (log-odds scale):", sd_mean, ". 95% credible interval:",sd_lowCI,", ", sd_highCI, ".")}
+    else if (outcome=="RR") {
+      paste ("Between-study standard deviation (log probability scale):", sd_mean, ". 95% credible interval:",sd_lowCI,", ", sd_highCI, ".")}
+    else {
+      paste ("Between-study standard deviation:", sd_mean, ". 95% credible interval:",sd_lowCI,", ", sd_highCI, ".")}}
+  else{
+    if (outcome=="OR") {
+      paste("Between-study standard deviation (log-odds scale) set at 0")}
+    else if (outcome=="RR") {
+      paste("Between-study standard deviation (log probability scale) set at 0")}
+    else {
+      paste("Between-study standard deviation set at 0")}
+  }
 }
 
 
