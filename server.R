@@ -52,27 +52,13 @@ function(input, output, session) {
   
 ### Summary sentence of meta-analysis ###  
   
-output$SynthesisSummary <- renderText({
-  if (input$FreqBaye=='frequentist') {
-  if (input$ContBin=='binary') {
-    paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeBina), "s using ", strong("frequentist"), " methodology, 
-    with reference treatment ", strong(input$Reference), ". To change the model options, please see the synthesis options above.")
-  }
-  else if (input$ContBin=='continuous') {
-    paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeCont), "s using ", strong("frequentist"), " methodology, 
-    with reference treatment ", strong(input$Reference), ". To change the model options, please see the synthesis options above.")
-  }
-  }
-  else if (input$FreqBaye=='Bayesian') {
-    if (input$ContBin=='binary') {
-      paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeBina), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
-      reference treatment ", strong(input$Reference), ". To change the model options, please see the synthesis options above.")
-    }
-    else if (input$ContBin=='continuous') {
-      paste("Below are the results from a ", strong(input$FixRand), "-effects meta-analysis of ", strong(input$OutcomeCont), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
-      reference treatment ", strong(input$Reference), ". To change the model options, please see the synthesis options above.")
-    }
-  }
+output$SynthesisSummaryFreq <- renderText({
+    paste("Expand for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
+    with reference treatment ", strong(input$Reference), ".")
+})
+output$SynthesisSummaryBayes <- renderText({
+    paste("Expand for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
+    reference treatment ", strong(input$Reference), ".") 
 })
 
 

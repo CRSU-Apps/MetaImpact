@@ -12,7 +12,7 @@ library(shinyBS)
 
 # UI Content #
 #------------#
-shinyUI(navbarPage(title="MetaImpact",
+shinyUI(fluidPage(navbarPage(title="MetaImpact",
                    theme = shinytheme("readable"),
                    
 # Home Tab #
@@ -32,26 +32,34 @@ tabPanel("Data",
 #------------------------#
                    
 tabPanel("Evidence Synthesis",
-         # Inputs #
-         fluidRow(bsCollapse(bsCollapsePanel(title="Synthesis Options", style='primary',
-                  column(3, conditionalPanel(condition = "input.ContBin=='continuous'",
-                                   radioButtons("OutcomeCont", "Outcome for continuous data:", c("Mean Difference (MD)" = "MD","Standardised Mean Difference (SMD)" = "SMD"))),
-                            conditionalPanel(condition = "input.ContBin=='binary'",
-                                   radioButtons("OutcomeBina", "Outcome for binary data:", c("Odds Ratio (OR)" = "OR","Risk Ratio (RR)" = "RR", "Risk Difference (RD)" = "RD")))),
-                  column(3, radioButtons("FixRand", "Model selection:", c("Fixed-effects model (FE)" = "fixed", "Random-effects model (RE)" = "random"))),
-                  column(3, radioButtons("FreqBaye", "Methodology choice:", c("Frequestist" = "frequentist", "Bayesian" = "Bayesian"))),
-                  column(3, selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL),
-                         conditionalPanel(condition = "input.FreqBaye=='Bayesian'",
-                                   radioButtons("prior", "Choice of vague prior:", c("Option 1" = "1", "Option 2" = "2"))))))),
-         # Outputs #
+         # Run analysis buttons #
          fluidRow(align = 'center',
-           htmlOutput("SynthesisSummary")),
-         fluidRow(column(4, plotOutput("NetworkPlotF")), #Network plot
-                  column(6,offset=2, plotOutput("ForestPlotF"))), #Forest plot
-         fluidRow(column(4, plotOutput("NetworkPlotB"))),
-                  column(6,offset=2, plotOutput("ForestPlotB"), htmlOutput("TauB"), tableOutput("DICB"))
+           column(4, actionButton("FreqRun", "Run frequentist meta-analysis", class="btn-primary btn-lg"),
+                     div(style = "height:20px"),
+                     actionButton("BayesRun", "Run Bayesian meta-analysis", class="btn-primary btn-lg")),
+           # Inputs #
+           column(8, bsCollapsePanel(title="Synthesis Options", style='info',
+                    column(6, conditionalPanel(condition = "input.ContBin=='continuous'",
+                                    radioButtons("OutcomeCont", "Outcome for continuous data:", c("Mean Difference (MD)" = "MD","Standardised Mean Difference (SMD)" = "SMD"))),
+                              conditionalPanel(condition = "input.ContBin=='binary'",
+                                     radioButtons("OutcomeBina", "Outcome for binary data:", c("Odds Ratio (OR)" = "OR","Risk Ratio (RR)" = "RR", "Risk Difference (RD)" = "RD"))),
+                              radioButtons("FixRand", "Model selection:", c("Fixed-effects model (FE)" = "fixed", "Random-effects model (RE)" = "random"))),
+                    column(6, selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL),
+                              radioButtons("prior", "Choice of vague prior (Bayesian only):", c("Option 1" = "1", "Option 2" = "2")))))),
+         # Outputs #
+         # Frequentist #
+         fluidRow(p(htmlOutput("SynthesisSummaryFreq")),
+                  p("To change the model options, please see the synthesis options above."),
+                  bsCollapsePanel(title="Frequentist Analysis", style='success',
+                    column(4, plotOutput("NetworkPlotF")), #Network plot
+                    column(6,offset=2, plotOutput("ForestPlotF")))), #Forest plot
+         # Bayesian #
+         fluidRow(p(htmlOutput("SynthesisSummaryBayes")),
+                  p("To change the model options, please see the synthesis options above."),
+                  bsCollapsePanel(title="Bayesian Analysis", style='success',
+                  column(4, plotOutput("NetworkPlotB")),
+                  column(6,offset=2, plotOutput("ForestPlotB"), htmlOutput("TauB"), tableOutput("DICB"))))
                   ),
-          # Need to rethink arrangement of elements
           # See of network plots can be ordered the same as each other
           # All outputs will need further formatting (including sizing)
           # Consider 'run' buttons and having results automatically appear but able to collapse if wanted
@@ -64,4 +72,4 @@ tabPanel("Sample Size Calculator"),
 # Education Tab #
 #---------------#
 
-tabPanel("Education")))
+tabPanel("Education"))))
