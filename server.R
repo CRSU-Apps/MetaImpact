@@ -51,13 +51,14 @@ function(input, output, session) {
   
   
 ### Summary sentence of meta-analysis ###  
+  # Need to change to be reactive to the results #
   
 output$SynthesisSummaryFreq <- renderText({
-    paste("Expand for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
+    paste("Results for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
     with reference treatment ", strong(input$Reference), ".")
 })
 output$SynthesisSummaryBayes <- renderText({
-    paste("Expand for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
+    paste("Results for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
     reference treatment ", strong(input$Reference), ".") 
 })
 
@@ -68,7 +69,11 @@ WideData <- reactive({               # convert long format to wide if need be
   Long2Wide(data=defaultD(),CONBI=input$ContBin)
 })
 
-Freq <- reactive({                   # Run frequentist NMA 
+observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
+  updateCollapse(session=session, id="FreqID", open="Frequentist Analysis")
+}) 
+
+Freq <- eventReactive( input$FreqRun, {                   # Run frequentist NMA 
   FreqMA(data=WideData(), outcome=outcome(), CONBI=input$ContBin, model=input$FixRand, ref=input$Reference)
 })
 output$NetworkPlotF <- renderPlot({   # Network plot
@@ -85,9 +90,14 @@ output$ForestPlotF <- renderPlot({    # Forest plot
 
 ### Run Bayesian NMA ###
 
-Bayes <- reactive({                  # Run Bayesian MA
+observeEvent( input$BayesRun, {                           # reopen panel when a user re-runs analysis
+  updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
+})                                                        
+
+Bayes <- eventReactive( input$BayesRun, {                 # Run Bayesian MA
   BayesMA(data=defaultD(), CONBI=input$ContBin, outcome=outcome(), model=input$FixRand, ref=input$Reference)
 })
+
 
 output$NetworkPlotB <- renderPlot({  # Network plot
   plot(Bayes()$Network)

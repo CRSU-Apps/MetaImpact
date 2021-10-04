@@ -48,21 +48,23 @@ tabPanel("Evidence Synthesis",
                               radioButtons("prior", "Choice of vague prior (Bayesian only):", c("Option 1" = "1", "Option 2" = "2")))))),
          # Outputs #
          # Frequentist #
-         fluidRow(p(htmlOutput("SynthesisSummaryFreq")),
-                  p("To change the model options, please see the synthesis options above."),
-                  bsCollapsePanel(title="Frequentist Analysis", style='success',
+         conditionalPanel(condition = "input.FreqRun!=0",
+          fluidRow(p(htmlOutput("SynthesisSummaryFreq")),
+                  p("To change the model options, please adjust synthesis options above and re-run analysis."),
+                  bsCollapse(id="FreqID", open="Frequentist Analysis", bsCollapsePanel(title="Frequentist Analysis", style='success',
                     column(4, plotOutput("NetworkPlotF")), #Network plot
-                    column(6,offset=2, plotOutput("ForestPlotF")))), #Forest plot
+                    column(6,offset=2, plotOutput("ForestPlotF")))))), #Forest plot
          # Bayesian #
-         fluidRow(p(htmlOutput("SynthesisSummaryBayes")),
-                  p("To change the model options, please see the synthesis options above."),
-                  bsCollapsePanel(title="Bayesian Analysis", style='success',
+         conditionalPanel(condition = "input.BayesRun!=0",
+          fluidRow(p(htmlOutput("SynthesisSummaryBayes")),
+                  p("To change the model options, please adjust synthesis options above and re-run analysis."),
+                  bsCollapse(id="BayesID", open="Bayesian Analysis", bsCollapsePanel(title="Bayesian Analysis", style='success',
                   column(4, plotOutput("NetworkPlotB")),
-                  column(6,offset=2, plotOutput("ForestPlotB"), htmlOutput("TauB"), tableOutput("DICB"))))
-                  ),
+                  column(6,offset=2, plotOutput("ForestPlotB"), htmlOutput("TauB"), tableOutput("DICB")))))
+                  )),
           # See of network plots can be ordered the same as each other
           # All outputs will need further formatting (including sizing)
-          # Consider 'run' buttons and having results automatically appear but able to collapse if wanted
+          # Regarding 'Run' buttons -> some formatting doesn't wait for button to be pressed again -> to be fixed.
 
 # Sample Size Calculator Tab #
 #----------------------------#
