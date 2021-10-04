@@ -18,35 +18,58 @@ source("MAFunctions.R",local = TRUE)
 function(input, output, session) {
 
   
-### Load and present default Data ###
+### Load and present Data ###
   
-  defaultD <- reactive({                 # Read in default data
-    if (input$ContBin=='continuous') {
-      defaultD <- read.csv("./AntiVEGF_Continuous.csv")
+  data <- reactive({                     # Read in user or default data
+    file <- input$data             
+    if (is.null(file)) {
+      if (input$ContBin=='continuous') {
+        data <- read.csv("./AntiVEGF_Continuous.csv")
+      } else {
+        data <- read.csv("./AntiVEGF_Binary.csv")
+      }
     } else {
-      defaultD <- read.csv("./AntiVEGF_Binary.csv")
+    data <- read.table(file = file$datapath, sep =",", header=TRUE, stringsAsFactors = FALSE, quote="\"")
     }
-    defaultD$T <- as_factor(defaultD$T)  # Factor variable to remove need for separate file of labels
-    return(defaultD)
+    data$T <- as_factor(data$T)
+    return(data)
   })
-  defaultRef <- "laser"                  # Default reference treatment
+  
+  reference <- reactive({               # Select default reference treatment
+    file <- input$data
+    if (is.null(file)) {
+      return("laser")
+    } else {
+      return(paste(data()$T[1]))
+    }
+  })
   
   observe({                              # populating reference treatment options
-    updateSelectInput(session = session, inputId = "Reference", choices = levels(defaultD()$T), selected = defaultRef)
+    updateSelectInput(session = session, inputId = "Reference", choices = levels(data()$T), selected = reference())
   })
   
+  output$data <- renderTable({           # Create a table which displays the raw data just uploaded by the user
+    data()
+  })
+  
+  ContBin <- reactive({           # automatically detect if continuous or binary
+    if (max(grepl("^Mean", names(data())))==TRUE) {
+      return('continuous')
+    } else if (max(grepl("^R", names(data())))==TRUE) {
+      return ('binary')
+    }
+  })
+  output$ContBin <- renderText({
+    ContBin()
+  })
+  outputOptions(output, "ContBin", suspendWhenHidden=FALSE)
+  
   outcome <- reactive({                  # different outcome variables if continuous or binary
-    if (input$ContBin=='continuous') {
+    if (ContBin()=='continuous') {
       input$OutcomeCont
     } else {
       input$OutcomeBina
     }
-  })
-  
-  output$data <- renderTable({           # Create a table which displays the raw data just uploaded by the user
-    #if(is.null(data())){return()}
-    #data()
-    defaultD()
   })
   
   
@@ -66,7 +89,7 @@ output$SynthesisSummaryBayes <- renderText({
 ### Run frequentist NMA ###
 
 WideData <- reactive({               # convert long format to wide if need be
-  Long2Wide(data=defaultD(),CONBI=input$ContBin)
+  Long2Wide(data=data(),CONBI=ContBin())
 })
 
 observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
@@ -74,7 +97,7 @@ observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
 }) 
 
 Freq <- eventReactive( input$FreqRun, {                   # Run frequentist NMA 
-  FreqMA(data=WideData(), outcome=outcome(), CONBI=input$ContBin, model=input$FixRand, ref=input$Reference)
+  FreqMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
 })
 output$NetworkPlotF <- renderPlot({   # Network plot
   netgraph(Freq()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
@@ -95,7 +118,7 @@ observeEvent( input$BayesRun, {                           # reopen panel when a 
 })                                                        
 
 Bayes <- eventReactive( input$BayesRun, {                 # Run Bayesian MA
-  BayesMA(data=defaultD(), CONBI=input$ContBin, outcome=outcome(), model=input$FixRand, ref=input$Reference)
+  BayesMA(data=data(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference)
 })
 
 

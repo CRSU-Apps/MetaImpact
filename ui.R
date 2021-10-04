@@ -24,9 +24,9 @@ tabPanel("Home"),
 #----------#
                    
 tabPanel("Data",
+         fileInput(inputId="data", label="", buttonLabel="Select", placeholder="No file selected"), #insert own data
          radioButtons("ContBin", "Example Dataset", c("Continuous Data" = "continuous", "Binary Data" = "binary")),
          uiOutput("data")),
-# Make it autodetect continuous or binary for user input data #
                    
 # Evidence Synthesis Tab #
 #------------------------#
@@ -39,9 +39,9 @@ tabPanel("Evidence Synthesis",
                      actionButton("BayesRun", "Run Bayesian meta-analysis", class="btn-primary btn-lg")),
            # Inputs #
            column(8, bsCollapsePanel(title="Synthesis Options", style='info',
-                    column(6, conditionalPanel(condition = "input.ContBin=='continuous'",
+                    column(6, conditionalPanel(condition = "output.ContBin=='continuous'",
                                     radioButtons("OutcomeCont", "Outcome for continuous data:", c("Mean Difference (MD)" = "MD","Standardised Mean Difference (SMD)" = "SMD"))),
-                              conditionalPanel(condition = "input.ContBin=='binary'",
+                              conditionalPanel(condition = "output.ContBin=='binary'",
                                      radioButtons("OutcomeBina", "Outcome for binary data:", c("Odds Ratio (OR)" = "OR","Risk Ratio (RR)" = "RR", "Risk Difference (RD)" = "RD"))),
                               radioButtons("FixRand", "Model selection:", c("Fixed-effects model (FE)" = "fixed", "Random-effects model (RE)" = "random"))),
                     column(6, selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL),
