@@ -18,15 +18,37 @@ shinyUI(fluidPage(navbarPage(title="MetaImpact",
 # Home Tab #
 #----------#
 
-tabPanel("Home"),
+tabPanel("Home",
+         
+         h4("About"),
+         p("This app is part of a Pre-Doctoral Fellowship looking into how to design a future study such that it's inclusion would make 
+           an impact on the current evidence-base."),
+         p("The app contains four other tabs:"),
+         p(strong("Data"), " - upload your data or use an example dataset"),
+         p(strong("Evidence Synthesis"), " - meta-analyse data such that an evidence base is created"),
+         p(strong("Sample Size Calculator"), " - calculate the sample size of a new study such that it has an impact on the evidence base"),
+         p(strong("Education"), " - interactive displays to help understand the maths and assumptions behind app and study design"),
+         br(),
+         
+         h4("Authors"),
+         p("Pre-Doctoral Fellow: Clareece Nevill; Supervisors: Alex Sutton & Nicola Cooper; Collaborators: Suzanne Freeman, Terry Quinn & Lucinda Bullingham")),
                    
 # Data Tab #
 #----------#
                    
 tabPanel("Data",
-         fileInput(inputId="data", label="", buttonLabel="Select", placeholder="No file selected"), #insert own data
-         radioButtons("ContBin", "Example Dataset", c("Continuous Data" = "continuous", "Binary Data" = "binary")),
-         uiOutput("data")),
+         column(5, h4("Choose Data"),                    # Insert own data or choose example data
+                p("Please upload your data as a .csv file. Other formatting rules will apply {yet to be decided, will depend on what I program to auto-detect}."),
+                fileInput(inputId="data", label="", buttonLabel="Select", placeholder="No file selected"),
+                br(),
+                p("If you wish to explore the app, you are welcome to choose one of the example datasets below."),
+                p("Both example datasets are based on a network meta-analysis reviewing the affect anti-vasuclar endothelial growth factor has on diabetic macular oedema. 
+                  Visual acuity (VA) outcomes were reported and chosen for these examples. The paper by Virgili et al can be found ", a(href="https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD007419.pub6/full", "here.")),
+                radioButtons("ChooseExample", "Example Datasets Available", c("Continuous outcome: Change in VA in terms of LogMAR (negative change in LogMAR = improved vision)" = "continuousEx", 
+                                                                              "Binary outcome: Number of people that improved their VA by gaining 3+ lines during a vision test" = "binaryEx"), width='100%')),
+         column(7, h4("View Data"),
+                uiOutput("data"))),                      # View data
+        
                    
 # Evidence Synthesis Tab #
 #------------------------#
@@ -62,7 +84,7 @@ tabPanel("Evidence Synthesis",
                   column(4, plotOutput("NetworkPlotB")),
                   column(6,offset=2, plotOutput("ForestPlotB"), htmlOutput("TauB"), tableOutput("DICB")))))
                   )),
-          # See of network plots can be ordered the same as each other
+          # See if network plots can be ordered the same as each other
           # All outputs will need further formatting (including sizing)
           # Regarding 'Run' buttons -> some formatting doesn't wait for button to be pressed again -> to be fixed.
 

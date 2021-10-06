@@ -23,7 +23,7 @@ function(input, output, session) {
   data <- reactive({                     # Read in user or default data
     file <- input$data             
     if (is.null(file)) {
-      if (input$ContBin=='continuous') {
+      if (input$ChooseExample=='continuousEx') {
         data <- read.csv("./AntiVEGF_Continuous.csv")
       } else {
         data <- read.csv("./AntiVEGF_Binary.csv")
@@ -74,7 +74,7 @@ function(input, output, session) {
   
   
 ### Summary sentence of meta-analysis ###  
-  # Need to change to be reactive to the results #
+  # Need to change to be reactive to the results rather than inputs#
   
 output$SynthesisSummaryFreq <- renderText({
     paste("Results for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
