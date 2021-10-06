@@ -60,7 +60,7 @@ FreqForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or random; 
 
 ### Bayesian MA ###
 
-BayesMA <- function(data, CONBI, outcome, model, ref) { #inputs: data; continuous or binary; outcome type; fixed or random; reference treatment
+BayesMA <- function(data, CONBI, outcome, model, ref, prior) { #inputs: data; continuous or binary; outcome type; fixed or random; reference treatment; prior
 if (CONBI=='continuous') {                                         # set up data frame
   armData <- data.frame(study=data$Study,
                        treatment=data$T,
@@ -81,12 +81,20 @@ if (outcome == "MD") {                                             # set up like
   like <- "binom"
   link <- ifelse (outcome == "OR", "logit", "log")
 }
+if (prior=='uniform') {
+  Prior <- mtc.hy.prior("std.dev", "dunif", 0, 2)
+} else if (prior=='gamma') {
+  Prior <- mtc.hy.prior("prec", "dgamma", 0.1, 0.1)
+} else {
+  Prior <- mtc.hy.prior("std.dev", "dhnorm", 0, 1)
+}
 mtcModel <- mtc.model(network=mtcNetwork,                          # Formulate model
                       type = "consistency",
                       linearModel=model,
                       likelihood=like,
                       link = link,
-                      dic=TRUE)
+                      dic=TRUE,
+                      hy.prior=eval(Prior))
 mtcResults <- mtc.run(mtcModel)                                    # Run model
 mtcRelEffects <- relative.effect(mtcResults,t1=ref)                # Obtain relative effects
 sumresults <- summary(mtcRelEffects)                               # Summary of relative effects

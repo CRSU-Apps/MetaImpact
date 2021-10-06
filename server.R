@@ -118,7 +118,7 @@ observeEvent( input$BayesRun, {                           # reopen panel when a 
 })                                                        
 
 Bayes <- eventReactive( input$BayesRun, {                 # Run Bayesian MA
-  BayesMA(data=data(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference)
+  BayesMA(data=data(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
 })
 
 

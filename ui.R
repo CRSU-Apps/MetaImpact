@@ -67,7 +67,7 @@ tabPanel("Evidence Synthesis",
                                      radioButtons("OutcomeBina", "Outcome for binary data:", c("Odds Ratio (OR)" = "OR","Risk Ratio (RR)" = "RR", "Risk Difference (RD)" = "RD"))),
                               radioButtons("FixRand", "Model selection:", c("Fixed-effects model (FE)" = "fixed", "Random-effects model (RE)" = "random"))),
                     column(6, selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL),
-                              radioButtons("prior", "Choice of vague prior (Bayesian only):", c("Option 1" = "1", "Option 2" = "2")))))),
+                              radioButtons("prior", "Choice of vague between-study prior (Bayesian only):", c("Standard deviation ~ Uniform(0,2)" = "uniform", "Precision ~ Gamma(0.1,0.1)" = "gamma", "Standard deviation ~ Half-Normal(0,1)" = "half-normal")))))),
          # Outputs #
          # Frequentist #
          conditionalPanel(condition = "input.FreqRun!=0",
