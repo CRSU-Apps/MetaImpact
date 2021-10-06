@@ -6,7 +6,7 @@
 #-----------#
 
 ### Convert long to wide ###
-Long2Wide <- function(data, CONBI) { #inputs: data frame; whether continuous or binary
+Long2Wide <- function(data) { #inputs: data frame
   TempData <- as.data.frame(data)
   if (ncol(TempData)==6 | ncol(TempData)==5){ #long format
     TempData<-TempData[order(TempData$StudyID, TempData$T), ]
@@ -19,8 +19,16 @@ Long2Wide <- function(data, CONBI) { #inputs: data frame; whether continuous or 
 }
 
 ### Convert wide to long ###
-Wide2Long <- function(data, CONBI) { #inputs: data frame; continuous or binary
-  
+Wide2Long <- function(data) { #inputs: data frame
+  TempData <- as.data.frame(data)
+  if (ncol(TempData)==6 | ncol(TempData)==5) {
+    data_long <- TempData
+  } else {                # wide format
+    TempData <- TempData[order(TempData$StudyID), ]
+    data_long <- reshape(TempData, idvar = c("Study", "StudyID"), direction = "long", varying = 3:ncol(TempData))
+    data_long <- data_long[!is.na(data_long$T), ]
+    data_long <- data_long[order(data_long$StudyID, data_long$T), ]
+  }
 }
 
 

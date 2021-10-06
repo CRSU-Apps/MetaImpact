@@ -48,6 +48,7 @@ tabPanel("Data",
                                                                               "Binary outcome: Number of people that improved their VA by gaining 3+ lines during a vision test" = "binaryEx"), width='100%')),
          column(7, h4("View Data"),
                 uiOutput("data"))),                      # View data
+  # Make it such that a user can still use example data event after uploading their own
         
                    
 # Evidence Synthesis Tab #
@@ -85,7 +86,7 @@ tabPanel("Evidence Synthesis",
                   column(6,offset=2, plotOutput("ForestPlotB"), htmlOutput("TauB"), tableOutput("DICB")))))
                   )),
           # See if network plots can be ordered the same as each other
-          # All outputs will need further formatting (including sizing)
+          # All outputs will need further formatting (including sizing) plus addition of tau for frequentist, and # of studies.
           # Regarding 'Run' buttons -> some formatting doesn't wait for button to be pressed again -> to be fixed.
 
 # Sample Size Calculator Tab #

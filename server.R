@@ -7,6 +7,7 @@ library(shiny)
 library(netmeta)
 library(sjlabelled)
 library(gemtc)
+library(tidyverse)
 
 # load user-written functions #
 #-----------------------------#
@@ -31,8 +32,10 @@ function(input, output, session) {
     } else {
     data <- read.table(file = file$datapath, sep =",", header=TRUE, stringsAsFactors = FALSE, quote="\"")
     }
-    data$T <- as_factor(data$T)
-    return(data)
+    cols <- grep("^T", names(data), value=TRUE)
+    data[cols] <- lapply(data[cols], factor)  # factor variables for treatment columns
+    levels <- levels(as_vector(data[cols]))
+    return(list(data=data, levels=levels))
   })
   
   reference <- reactive({               # Select default reference treatment
@@ -40,22 +43,22 @@ function(input, output, session) {
     if (is.null(file)) {
       return("laser")
     } else {
-      return(paste(data()$T[1]))
+      return(data()$levels[1])
     }
   })
   
   observe({                              # populating reference treatment options
-    updateSelectInput(session = session, inputId = "Reference", choices = levels(data()$T), selected = reference())
+    updateSelectInput(session = session, inputId = "Reference", choices = data()$levels, selected = reference())
   })
   
   output$data <- renderTable({           # Create a table which displays the raw data just uploaded by the user
-    data()
+    data()$data
   })
   
   ContBin <- reactive({           # automatically detect if continuous or binary
-    if (max(grepl("^Mean", names(data())))==TRUE) {
+    if (max(grepl("^Mean", names(data()$data)))==TRUE) {
       return('continuous')
-    } else if (max(grepl("^R", names(data())))==TRUE) {
+    } else if (max(grepl("^R", names(data()$data)))==TRUE) {
       return ('binary')
     }
   })
@@ -89,7 +92,7 @@ output$SynthesisSummaryBayes <- renderText({
 ### Run frequentist NMA ###
 
 WideData <- reactive({               # convert long format to wide if need be
-  Long2Wide(data=data(),CONBI=ContBin())
+  Long2Wide(data=data()$data)
 })
 
 observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
@@ -113,12 +116,16 @@ output$ForestPlotF <- renderPlot({    # Forest plot
 
 ### Run Bayesian NMA ###
 
+LongData <- reactive({               # convert wide format to long if need be
+  Wide2Long(data=data()$data)
+})
+
 observeEvent( input$BayesRun, {                           # reopen panel when a user re-runs analysis
   updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
 })                                                        
 
 Bayes <- eventReactive( input$BayesRun, {                 # Run Bayesian MA
-  BayesMA(data=data(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
+  BayesMA(data=LongData(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
 })
 
 
