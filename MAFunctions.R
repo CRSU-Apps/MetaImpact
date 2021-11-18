@@ -37,7 +37,7 @@ Wide2Long <- function(data) { #inputs: data frame
 
 ### Frequentist MA ###
 
-FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outcome type; continuous or binary; fixed or random; reference group
+FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group
   treat <- data[,grep(pattern="^T", colnames(data))]
   n <- data[,grep(pattern="^N", colnames(data))]
   if (CONBI=='continuous') { #convert to contrast form
@@ -50,7 +50,7 @@ FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outc
   }
   net1 <- netmeta(TE, seTE, treat1, treat2, studlab, data=d1,
                   sm=outcome, level=0.95, level.comb=0.95,
-                  comb.random=(model=='random'), comb.fixed=(model=='fixed'), reference.group=ref,
+                  comb.random=(model=='random' | model=='both'), comb.fixed=(model=='fixed' | model=='both'), reference.group=ref,
                   all.treatments=NULL, seq=NULL, tau.preset=NULL,
                   tol.multiarm=0.05, tol.multiarm.se=0.2, warn=TRUE)
   list(MAObject=net1, MAData=d1)
