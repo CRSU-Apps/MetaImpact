@@ -98,48 +98,49 @@ metapow <- function(NMA, n, nit, p) {  # NMA - an NMA object from inbuilt functi
 }
 
 
-test<- metapow(NMA=MA, n=200, nit=50, p=0.05)
+#test<- metapow(NMA=MA, n=200, nit=50, p=0.05)
 
 
 # function for plotting the power curve
 metapowplot <- function(SampleSizes, NMA, nit, p, ModelOpt) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; nit - number of iterations; p - p-value cut off; ModelOpt - either show fixed or random results, or both
-  PowerData <- data.frame(SampleSize = SampleSizes, Estimate.Fixed = NA, Estimate.Random = NA, CI_lower.Fixed = NA, CI_lower.Random = NA, CI_upper.Fixed = NA, CI_upper.Random = NA)
+  PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
   for (i in 1:length(SampleSizes)) {
     results <- metapow(NMA=NMA, n=SampleSizes[i], nit=nit, p=p)
-    PowerData$Estimate.Fixed[i] <- results$power$Fixed*100
-    PowerData$Estimate.Random[i] <- results$power$Random*100
-    PowerData$CI_lower.Fixed[i] <- results$CI_lower$Fixed*100
-    PowerData$CI_lower.Random[i] <- results$CI_lower$Random*100
-    PowerData$CI_upper.Fixed[i] <- results$CI_upper$Fixed*100
-    PowerData$CI_upper.Random[i] <- results$CI_upper$Random*100
+    PowerData$Estimate[i] <- results$power$Fixed*100
+    PowerData$Estimate[i+length(SampleSizes)] <- results$power$Random*100
+    PowerData$CI_lower[i] <- results$CI_lower$Fixed*100
+    PowerData$CI_lower[i+length(SampleSizes)] <- results$CI_lower$Random*100
+    PowerData$CI_upper[i] <- results$CI_upper$Fixed*100
+    PowerData$CI_upper[i+length(SampleSizes)] <- results$CI_upper$Random*100
     print(paste("Simulation",i,"of", length(SampleSizes), "complete"))   # try and get it to save this data if model option is changed
   }
-  PowerData <- gather(PowerData, key = Measure, value = Value, 
-               c("Estimate.Fixed","Estimate.Random","CI_lower.Fixed","CI_lower.Random","CI_upper.Fixed","CI_upper.Random")) #rearrange to three columns
   if (ModelOpt == 'fixed') { # only fixed
-    g <- ggplot(PowerData[PowerData$Measure=='Estimate.Fixed' | PowerData$Measure=='CI_lower.Fixed' | PowerData$Measure=='CI_upper.Fixed',], 
-                aes(x=SampleSize, y=Value, group=Measure, colour=Measure)) +
-      scale_color_manual(values=c('gray','gray','black'), breaks=c("Estimate.Fixed","CI_lower.Fixed"), labels=c("Power estimate","95% confidence interval"))
+    g <- ggplot(PowerData[PowerData$Model=='Fixed-effects',], aes(x=SampleSize, y=Estimate)) +
+      geom_ribbon(aes(ymin=CI_lower, ymax=CI_upper),alpha=0.3, colour='gray70', linetype='blank') +
+      labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves (fixed-effects model)", subtitle = "with 95% confidence intervals") 
   }
   if (ModelOpt == 'random') { # only random
-    g <- ggplot(PowerData[PowerData$Measure=='Estimate.Random' | PowerData$Measure=='CI_lower.Random' | PowerData$Measure=='CI_upper.Random',], 
-                aes(x=SampleSize, y=Value, group=Measure, colour=Measure)) +
-      scale_color_manual(values=c('gray','gray','black'), breaks=c("Estimate.Random","CI_lower.Random"), labels=c("Power estimate","95% confidence interval"))
+    g <- ggplot(PowerData[PowerData$Model=='Random-effects'], aes(x=SampleSize, y=Estimate)) +
+      geom_ribbon(aes(ymin=CI_lower, ymax=CI_upper),alpha=0.3, colour='gray70', linetype='blank') +
+      labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves (random-effects model)", subtitle = "with 95% confidence intervals") 
   }
   if (ModelOpt == 'both') { #present both models
-    g <- ggplot(PowerData, aes(x=SampleSize, y=Value, group=Measure, colour=Measure)) +
-      scale_color_manual(values=c('gray','skyblue','gray','skyblue','black','navy'), breaks=c("Estimate.Fixed","CI_lower.Fixed","Estimate.Random","CI_lower.Random"), labels=c("Fixed-effects power estimate","95% confidence interval","Random-effects power estimate", "95% confidence interval"))
+    g <- ggplot(PowerData, aes(x=SampleSize, y=Estimate, group=Model, colour=Model, fill=Model)) +
+      geom_ribbon(aes(ymin=CI_lower, ymax=CI_upper),alpha=0.3, linetype='blank') +
+      scale_color_manual(values=c('black','navy')) +
+      scale_fill_manual(values=c('gray','skyblue')) +
+      labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves", subtitle = "with 95% confidence intervals")
   }
-  g +
-    geom_line() + geom_point(shape=21) +
+  g <- g +
+    geom_line(size=1) + geom_point(shape=21) +
     theme_classic() +
     scale_x_continuous(limits=c(0,max(SampleSizes)+5), expand=c(0,0)) +
     scale_y_continuous(limits=c(0,NA), expand=c(0,0)) +
-    labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves", subtitle = "with 95% confidence intervals") +
     theme(legend.position="bottom", legend.title=element_blank(), legend.background = element_rect(linetype="solid",colour ="black"), 
           panel.grid.major.y = element_line(colour="gray80", linetype='dashed', size=0.5), plot.margin = unit(c(10,15,10,10), "points"), 
-          plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5)) +
-    guides(color=guide_legend(ncol=2))
-}
+          plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
+  return(list(plot=g, data=PowerData))
+}   # need to add an option to simply replot if the power calculations have already been computed
 
-metapowplot(SampleSizes=c(200,400,600,800,1000), NMA=MA, nit=25, p=0.05, ModelOpt='both')
+test<-metapowplot(SampleSizes=c(100,200,300,400,500,600,700,800,900,1000), NMA=MA, nit=25, p=0.05, ModelOpt='fixed')
+
