@@ -102,7 +102,8 @@ metapow <- function(NMA, n, nit, p) {  # NMA - an NMA object from inbuilt functi
 
 
 # function for plotting the power curve
-metapowplot <- function(SampleSizes, NMA, nit, p, ModelOpt) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; nit - number of iterations; p - p-value cut off; ModelOpt - either show fixed or random results, or both
+metapowplot <- function(SampleSizes, NMA, nit, p, ModelOpt, regraph=FALSE) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; nit - number of iterations; p - p-value cut off; ModelOpt - either show fixed or random results, or both; regraph - change plot settings without re-running analysis
+  if (regraph==FALSE) {   # obtain power data if its the first run
   PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
   for (i in 1:length(SampleSizes)) {
     results <- metapow(NMA=NMA, n=SampleSizes[i], nit=nit, p=p)
@@ -114,6 +115,9 @@ metapowplot <- function(SampleSizes, NMA, nit, p, ModelOpt) { # SampleSizes - a 
     PowerData$CI_upper[i+length(SampleSizes)] <- results$CI_upper$Random*100
     print(paste("Simulation",i,"of", length(SampleSizes), "complete"))   # try and get it to save this data if model option is changed
   }
+  write.table(PowerData, file='PowerData.txt', sep = "\t", row.names=FALSE)
+  }
+  PowerData <- read.table('PowerData.txt', sep = "\t", header = TRUE) # read in power data
   if (ModelOpt == 'fixed') { # only fixed
     g <- ggplot(PowerData[PowerData$Model=='Fixed-effects',], aes(x=SampleSize, y=Estimate)) +
       geom_ribbon(aes(ymin=CI_lower, ymax=CI_upper),alpha=0.3, colour='gray70', linetype='blank') +
@@ -142,5 +146,5 @@ metapowplot <- function(SampleSizes, NMA, nit, p, ModelOpt) { # SampleSizes - a 
   return(list(plot=g, data=PowerData))
 }   # need to add an option to simply replot if the power calculations have already been computed
 
-test<-metapowplot(SampleSizes=c(100,200,300,400,500,600,700,800,900,1000), NMA=MA, nit=25, p=0.05, ModelOpt='fixed')
-
+test<-metapowplot(SampleSizes=c(100,200,300,400,500,600,700,800,900,1000), NMA=MA, nit=25, p=0.05, ModelOpt='both', regraph=TRUE)
+test$plot
