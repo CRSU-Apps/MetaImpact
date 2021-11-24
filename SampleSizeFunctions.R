@@ -18,7 +18,7 @@ data <- data.frame(Study=c("Herne","Hoaglund","Kaiser","Lexomboon","McKerrow","T
 
 # conduct base MA from function created 
 source("MAFunctions.R",local = TRUE) 
-MA <- FreqMA(data=data, outcome="RR",CONBI="binary",model="both",ref="Control") # will make it the default that it calculates the fixed and random effects, but switch in UI will be which to present (rather than calculate)
+MA <- FreqMA(data=data, outcome="RD",CONBI="binary",model="both",ref="Control") # will make it the default that it calculates the fixed and random effects, but switch in UI will be which to present (rather than calculate)
 summary(MA$MAObject) # matches Stata example
 
 # Calculate the average mean and SD in the control group #
@@ -34,7 +34,11 @@ metasim <- function(es, tausq, var, model, n, prob.c, measure) {  # es - mean es
     std_err <- sqrt(var)
   }
   # draw new effect measure for new trial from predictive distribution
-  new.effect <- exp(rnorm(n=1, mean=es, sd=std_err))
+  if (measure=='OR' | measure=='RR') {  # for OR/RR, the MA is conducted in log terms
+    new.effect <- exp(rnorm(n=1, mean=es, sd=std_err))
+  } else {
+    new.effect <- rnorm(n=1, mean=es, sd=std_err)
+  }
   # calculate number of events in the control group
   new.events.c <- rbinom(n=1, size=n/2, prob=prob.c)
   # calculate number of events in the treatment group
@@ -42,28 +46,34 @@ metasim <- function(es, tausq, var, model, n, prob.c, measure) {  # es - mean es
     new.prob.t <- (new.effect*prob.c/(1-prob.c))/(1+(new.effect*prob.c/(1-prob.c)))
   } else if (measure=='RR') {
     new.prob.t <- new.effect*prob.c
+  } else if (measure=='RD') {
+    new.prob.t <- new.effect+prob.c  # risk difference = prob.t - prob.c
+    if (new.prob.t < 0) { new.prob.t <- 0}  # the new RD estimate may be so negative that it creates a negative probability of event in treatment group, which needs to be capped
   }
   new.events.t <- rbinom(n=1, size=n/2, prob=new.prob.t)
-  list(new.events.t=new.events.t, new.events.c=new.events.c)
+  list(new.events.t=new.events.t, new.events.c=new.events.c, new.effect=new.effect)
 }
 
-#unittest <- data.frame(Run=rep(NA,1000), new.events.t=rep(NA,1000), new.events.c=rep(NA,1000))
+#unittest <- data.frame(Run=rep(NA,1000), new.events.t=rep(NA,1000), new.events.c=rep(NA,1000), new.effect=rep(NA,1000))
 #for (i in 1:1000) {
-#  test <- metasim(es=MA$MAObject$TE.direct.fixed[2,1], tausq=MA$MAObject$tau2, var=MA$MAObject$seTE.nma.fixed[1], model='fixed', n=300, prob.c=prob.c, measure='RR')
+#  test <- metasim(es=MA$MAObject$TE.direct.fixed[2,1], tausq=MA$MAObject$tau2, var=MA$MAObject$seTE.nma.fixed[1], model='random', n=300, prob.c=prob.c, measure='RD')
 #  unittest$Run[i] <- i
 #  unittest$new.events.t[i] <- test$new.events.t
 #  unittest$new.events.c[i] <- test$new.events.c
-#  if (unittest$new.events.t[i]==0) {unittest$new.events.t[i]=unittest$new.events.t[i]+0.5}
+#  unittest$new.effect[i] <- test$new.effect
+  #if (unittest$new.events.t[i]==0) {unittest$new.events.t[i]=unittest$new.events.t[i]+0.5}
 #}
 
-#test <- metasim(es=MA$MAObject$TE.direct.fixed[2,1], tausq=MA$MAObject$tau2, var=MA$MAObject$seTE.nma.fixed[1], model='fixed', n=300, prob.c=prob.c, measure='RR')
+#new <- metasim(es=MA$MAObject$TE.direct.fixed[2,1], tausq=MA$MAObject$tau2, var=MA$MAObject$seTE.nma.fixed[1], model='fixed', n=300, prob.c=prob.c, measure='RD')
 #test
 
 # function to conduct bulk of power function below
 rerunMA <- function(new, model, NMA, n, measure) {   # new - newly simulated trial using metasim; model - fixed or random; NMA - an NMA object from inbuilt function freqMA; n - total sample size; measure - type of outcome (or/rr/rd)
-  # Add a continuity correction to simulated data set if any values are 0	
-  if (new$new.events.t==0) {new$new.events.t=new$new.events.t+0.5} # double check whether I need to add 0.5 to denominator as well?
-  if (new$new.events.c==0) {new$new.events.c=new$new.events.c+0.5}
+  # Add a continuity correction to simulated data set if any values are 0	for outcome measures that are based on ratios
+  if (measure=='OR' | measure=='RR') {
+    if (new$new.events.t==0) {new$new.events.t=new$new.events.t+0.5} # double check whether I need to add 0.5 to denominator as well?
+    if (new$new.events.c==0) {new$new.events.c=new$new.events.c+0.5}
+  }
   # put together dataframe for new trial
   if (measure=='OR') {
     newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
@@ -73,6 +83,10 @@ rerunMA <- function(new, model, NMA, n, measure) {   # new - newly simulated tri
     newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
                            TE=log(new$new.events.t/new$new.events.c),
                            seTE=sqrt(1/new$new.events.t + 1/new$new.events.c - 4/n))
+  } else if (measure=='RD') {
+    newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
+                           TE=((new$new.events.t/(n/2)) - (new$new.events.c/(n/2))),
+                           seTE=sqrt(((new$new.events.t*((n/2)-new$new.events.t))/((n/2)^3)) + ((new$new.events.c*((n/2)-new$new.events.c))/((n/2)^3))))
   }
   newdata <- rbind(NMA$MAData[,1:5],newtrial) # using pairwise data from FreqMA function
   # re-run meta-analysis
@@ -106,7 +120,7 @@ metapow <- function(NMA, n, nit, p, measure) {  # NMA - an NMA object from inbui
   # random-effects
     for (i in 1:nit) {
       # obtain new data, add to existing data, and re-run MA
-      new <- metasim(es=NMA$MAObject$TE.direct.random[2,1], tausq=NMA$MAObject$tau2, var=NMA$MAObject$seTE.nma.random[1], model='random', n=n, prob.c=prob.c, measure=measure)
+      new <- metasim(es=NMA$MAObject$TE.direct.random[2,1], tausq=NMA$MAObject$tau2, var=MA$MAObject$seTE.nma.random[1], model='random', n=n, prob.c=prob.c, measure=measure)
       newMA <- rerunMA(new=new, model='random', NMA=NMA, n=n, measure=measure)
       # Ascertain whether new MA had a significant result
       sims$Random[i] <- newMA$pval.nma.random[1]<p
@@ -120,7 +134,7 @@ metapow <- function(NMA, n, nit, p, measure) {  # NMA - an NMA object from inbui
 }
 
 
-#test<- metapow(NMA=MA, n=200, nit=50, p=0.05)
+#test<- metapow(NMA=MA, n=200, nit=50, p=0.05, measure='RD')
 
 
 # function for plotting the power curve
@@ -168,5 +182,5 @@ metapowplot <- function(SampleSizes, NMA, nit, p, measure, ModelOpt, regraph=FAL
   return(list(plot=g, data=PowerData))
 }   # need to add an option to simply replot if the power calculations have already been computed
 
-test<-metapowplot(SampleSizes=c(100,200,300,400,500,600,700,800,900,1000), NMA=MA, nit=25, p=0.05, measure='RR', ModelOpt='both', regraph=FALSE)
+test<-metapowplot(SampleSizes=c(100,200,300,400,500,600,700,800,900,1000), NMA=MA, nit=25, p=0.05, measure='RD', ModelOpt='both', regraph=FALSE)
 test$plot
