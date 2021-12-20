@@ -6,12 +6,11 @@
 # Frequentist #
 #-------------#
 # Follow same set-up as Stata where its made up of three functions
-library(netmeta)
+library(metafor)
 library(ggplot2)
 library(tidyr)
 
-# Test data from Stata documents to check functioning correctly#
-# Need to double check RR/RD answers against Stata
+# Stata results (n=500, nit=100, fixed) OR=53.00 (95% CI: 42.76, 63.06); RR=30.00 (95% CI: 21.24, 39.98) - my command gave 62%...; RD=6.00 (95% CI: 2.23, 12.60) - my command gave 81%.....
 data <- data.frame(Study=c("Herne","Hoaglund","Kaiser","Lexomboon","McKerrow","Taylor"),
                    Year=c(1980, 1950, 1996, 1971, 1961, 1977),
                    R.1=c(7,39,97,8,5,12), N.1=c(7+39,39+115,97+49,8+166,5+10,12+117), T.1=rep("Treatment",6),
@@ -32,11 +31,17 @@ data <- data.frame(Study=c("Fleetham_1998","Hoekema_2006","Lam_2007"),
 
 # conduct base MA from function created 
 source("MAFunctions.R",local = TRUE) 
-MA <- FreqMA(data=data, outcome="MD",CONBI="continuous",model="both",ref="Control") # will make it the default that it calculates the fixed and random effects, but switch in UI will be which to present (rather than calculate)
-summary(MA$MAObject) # matches Stata example
+#MA <- FreqMA(data=data, outcome="OR",CONBI="binary",model="both",ref="Control") # will make it the default that it calculates the fixed and random effects, but switch in UI will be which to present (rather than calculate)
+#summary(MA$MAObject) # matches Stata example
+#forest(MA$MAObject)
+MAdata <- escalc(measure="OR", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
+MA <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="OR") #fixed effects#
+forest(MA, atransf=exp)
+summary(MA)
+
 
 # Calculate the average mean and SD in the control group #
-#prob.c = mean(data$R.2/data$N.2) # average proportion
+prob.c = mean(data$R.2/data$N.2) # average proportion
 mean.c = mean(data$Mean.2) #average mean outcome
 stdev.c = mean(data$SD.2) #standard deviation
 #mean.TE = mean(data$TE)
@@ -110,48 +115,60 @@ rerunMA <- function(new, model, NMA, n, measure, outcome) {   # new - newly simu
     if (new$new.events.c==0) {new$new.events.c=new$new.events.c+0.5}
   }
   # put together dataframe for new trial
-  if (measure=='OR') {
-    newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
-                         TE=log((new$new.events.t*((n/2)-new$new.events.c))/(new$new.events.c*((n/2)-new$new.events.t))), 
-                         seTE=sqrt(1/new$new.events.t + 1/((n/2)-new$new.events.t) + 1/new$new.events.c + 1/((n/2)-new$new.events.c)))
-  } else if (measure=='RR') {
-    newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
-                           TE=log(new$new.events.t/new$new.events.c),
-                           seTE=sqrt(1/new$new.events.t + 1/new$new.events.c - 4/n))
-  } else if (measure=='RD') {
-    newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
-                           TE=((new$new.events.t/(n/2)) - (new$new.events.c/(n/2))),
-                           seTE=sqrt(((new$new.events.t*((n/2)-new$new.events.t))/((n/2)^3)) + ((new$new.events.c*((n/2)-new$new.events.c))/((n/2)^3))))
-  } else if (measure=='MD') {
+  if (outcome=='binary') {
+    newtrial <- data.frame(Study="New", Year=2021, T.1="Treatment", T.2="Control", R.1=new$new.events.t, R.2=new$new.events.c, N.1=n/2, N.2=n/2)
+    #newtrial <- pairwise(treat=c("Treatment","Control"), n=c(n/2, n/2), event=c(new$new.events.t, new$new.events.c), 
+    #                     studlab=c("New","New"), sm=measure)
+  }
+  #if (measure=='OR') {
+  #  newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
+  #                       TE=log((new$new.events.t*((n/2)-new$new.events.c))/(new$new.events.c*((n/2)-new$new.events.t))), 
+  #                       seTE=sqrt(1/new$new.events.t + 1/((n/2)-new$new.events.t) + 1/new$new.events.c + 1/((n/2)-new$new.events.c)))
+  #} else if (measure=='RR') {
+  #  newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
+  #                         TE=log(new$new.events.t/new$new.events.c),
+  #                         seTE=sqrt(1/new$new.events.t + 1/new$new.events.c - 4/n))
+  #} else if (measure=='RD') {
+  #  newtrial <- data.frame(studlab="New", treat1="Treatment", treat2="Control",
+  #                         TE=((new$new.events.t/(n/2)) - (new$new.events.c/(n/2))),
+  #                         seTE=sqrt(((new$new.events.t*((n/2)-new$new.events.t))/((n/2)^3)) + ((new$new.events.c*((n/2)-new$new.events.c))/((n/2)^3))))
+  #} else if (measure=='MD') {
     #if (contrastform==FALSE) {
+  if (outcome=='continuous') {
       newtrial <- pairwise(treat=c("Treatment","Control"), n=c(n/2, n/2), mean=c(new$new.mean.t, new$new.mean.c),
                            sd=c(new$new.stdev.t, new$new.stdev.c), studlab=c("New","New"), sm=measure)
+  }
     #} else {
     #  newtrial <- data.frame(studlab="New", treat1="OA", treat2="CPAP", TE=new$new.TE, seTE=new$new.seTE)
     #}
-  }
-  newdata <- rbind(NMA$MAData[,1:5],newtrial[,1:5]) # using pairwise data from FreqMA function
+  #}
+  newdata <- rbind(data, newtrial)
+  #newdata <- rbind(NMA$MAData[,1:5],newtrial[,1:5]) # using pairwise data from FreqMA function
   # re-run meta-analysis
-    newMA <- netmeta(TE, seTE, treat1, treat2, studlab, data=newdata,
-                   sm=measure, level=0.95, level.comb=0.95,
-                   comb.random=(model=='random'), comb.fixed=(model=='fixed'), reference.group="Control",
-                   all.treatments=NULL, seq=NULL, tau.preset=NULL,
-                   tol.multiarm=0.05, tol.multiarm.se=0.2, warn=FALSE)
+    #newMA <- netmeta(TE, seTE, treat1, treat2, studlab, data=newdata,
+    #               sm=measure, level=0.95, level.comb=0.95,
+    #               comb.random=(model=='random'), comb.fixed=(model=='fixed'), reference.group="Control",
+    #               all.treatments=NULL, seq=NULL, tau.preset=NULL,
+    #               tol.multiarm=0.05, tol.multiarm.se=0.2, warn=FALSE)
+    newMAdata <- escalc(measure="OR", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=newdata)
+    newMA <- rma(yi, vi, slab=Study, data=newMAdata, method="FE", measure=measure) #fixed effects#
   return(newMA)
   }
 # function for calculating power
-metapow <- function(NMA, n, nit, p, measure, outcome) {  # NMA - an NMA object from inbuilt function FreqMA; n - total sample size; nit - number of iterations; p - p-value cut offmeasure - type of outcome (or/rr/rd); outcome - binary or continuous;
+metapow <- function(NMA, n, nit, p, measure, outcome, model) {  # NMA - an NMA object from inbuilt function FreqMA; n - total sample size; nit - number of iterations; p - p-value cut offmeasure - type of outcome (or/rr/rd); outcome - binary or continuous;
   # create empty list elements
   power <- data.frame(Fixed=NA, Random=NA)
   CI_lower <- data.frame(Fixed=NA, Random=NA)
   CI_upper <- data.frame(Fixed=NA, Random=NA)
   sims <- data.frame(Fixed=rep(x=NA, times=nit), Random=rep(x=NA, times=nit))
   # fixed-effects
+  if (model=='fixed') {
   print("Running fixed-effects iterations:")
   progress_bar = txtProgressBar(min=0, max=nit, style = 1, char="=")
   for (i in 1:nit) {
     # obtain new data, add to existing data, and re-run MA
-    if (outcome=='binary') {new <- metasim(es=NMA$MAObject$TE.direct.fixed[2,1], tausq=NMA$MAObject$tau2, var=NMA$MAObject$seTE.nma.fixed[1], model='fixed', n=n, prob.c=prob.c, measure=measure, outcome=outcome)}
+    #if (outcome=='binary') {new <- metasim(es=NMA$MAObject$TE.direct.fixed[2,1], tausq=NMA$MAObject$tau2, var=NMA$MAObject$seTE.nma.fixed[1], model='fixed', n=n, prob.c=prob.c, measure=measure, outcome=outcome)}
+    if (outcome=='binary') {new<- metasim(es=NMA$beta, tausq=NMA$tau2, var=(NMA$se)^2, model='fixed', n=n, prob.c=prob.c, measure=measure, outcome=outcome)}
     if (outcome=='continuous') {
       #if (contrastform==FALSE) {
         new <- metasim(es=MA$MAObject$TE.direct.fixed[2,1], tausq=MA$MAObject$tau2, var=MA$MAObject$seTE.nma.fixed[1], model='fixed', n=n, mean.c=mean.c, stdev.c=stdev.c, measure=measure, outcome=outcome)
@@ -160,7 +177,7 @@ metapow <- function(NMA, n, nit, p, measure, outcome) {  # NMA - an NMA object f
     }
       newMA <- rerunMA(new=new, model='fixed', NMA=NMA, n=n, measure=measure, outcome=outcome)
     # Ascertain whether new MA had a significant result
-    sims$Fixed[i] <- newMA$pval.nma.fixed[1]<p
+    sims$Fixed[i] <- newMA$pval<p
     setTxtProgressBar(progress_bar, value = i)
   }
   close(progress_bar)
@@ -169,7 +186,9 @@ metapow <- function(NMA, n, nit, p, measure, outcome) {  # NMA - an NMA object f
   power$Fixed <- power_results$estimate
   CI_lower$Fixed <- power_results$conf.int[1]
   CI_upper$Fixed <- power_results$conf.int[2]
+  }
   # random-effects
+  if (model=='random') {
   print("Running random-effects iterations:")
   progress_bar = txtProgressBar(min=0, max=nit, style = 1, char="=")
     for (i in 1:nit) {
@@ -192,12 +211,13 @@ metapow <- function(NMA, n, nit, p, measure, outcome) {  # NMA - an NMA object f
     power$Random <- power_results$estimate
     CI_lower$Random <- power_results$conf.int[1]
     CI_upper$Random <- power_results$conf.int[2]
+  }
   return(list(simdata=sims, power=power, CI_lower=CI_lower, CI_upper=CI_upper))
 }
 
 
-#test<- metapow(NMA=MA, n=200, nit=50, p=0.05, measure='RD')
-test <- metapow(NMA=MA, n=500, nit=100, p=0.05, measure='MD', outcome='continuous')
+test<- metapow(NMA=MA, n=200, nit=100, p=0.05, measure='OR', outcome='binary', model='fixed')
+#test <- metapow(NMA=MA, n=500, nit=100, p=0.05, measure='MD', outcome='continuous')
 
 
 # function for plotting the power curve
