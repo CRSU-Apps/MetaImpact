@@ -24,10 +24,10 @@ data <- data.frame(Study=c("DRCRnet","Ekinci","Nepomuceno","Wiley"),
 
 
 # Conduct base MA (will be within app, so will be an input to stop uneccesary recalculations)
-MAdata <- escalc(measure="RD", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
-MAdata <- escalc(measure="SMD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
-MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="SMD") #fixed effects#
-MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="SMD") #random effects #
+MAdata <- escalc(measure="OR", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
+MAdata <- escalc(measure="MD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
+MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="OR") #fixed effects#
+MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="OR") #random effects #
 forest(MA.Fixed)
 forest(MA.Fixed, atransf=exp)
 summary(MA.Fixed)
@@ -163,16 +163,12 @@ metapow <- function(NMA, data, n, nit, p, measure) {  # NMA - an NMA object from
 }
 
 
-test<- metapow(NMA=MA, data=data, n=5000, nit=100, p=0.05, measure='SMD')
-#test <- metapow(NMA=MA, n=500, nit=100, p=0.05, measure='MD', outcome='continuous')
-
-
 # function for plotting the power curve
-metapowplot <- function(SampleSizes, NMA, nit, p, measure, outcome, ModelOpt, regraph=FALSE) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; nit - number of iterations; p - p-value cut off; measure - type of outcome (or/rr/rd); outcome - binary or continuous; ModelOpt - either show fixed or random results, or both; regraph - change plot settings without re-running analysis
+metapowplot <- function(SampleSizes, NMA, data, nit, p, measure, ModelOpt, regraph=FALSE) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; p - p-value cut off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; regraph - change plot settings without re-running analysis
   if (regraph==FALSE) {   # obtain power data if its the first run
   PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
   for (i in 1:length(SampleSizes)) {
-    results <- metapow(NMA=NMA, n=SampleSizes[i], nit=nit, p=p, measure=measure, outcome=outcome)
+    results <- metapow(NMA=NMA, data=data, n=SampleSizes[i], nit=nit, p=p, measure=measure)
     PowerData$Estimate[i] <- results$power$Fixed*100
     PowerData$Estimate[i+length(SampleSizes)] <- results$power$Random*100
     PowerData$CI_lower[i] <- results$CI_lower$Fixed*100
@@ -212,5 +208,5 @@ metapowplot <- function(SampleSizes, NMA, nit, p, measure, outcome, ModelOpt, re
   return(list(plot=g, data=PowerData))
 }   
 
-test<-metapowplot(SampleSizes=c(100,200,300,400,500,600,700,800,900,1000), NMA=MA, nit=25, p=0.05, measure='MD', outcome='continuous', ModelOpt='both', regraph=FALSE)
+test<-metapowplot(SampleSizes=c(1000, 2000, 3000, 4000, 5000, 6000), NMA=MA, data=data, nit=50, p=0.05, measure='OR', ModelOpt='both', regraph=FALSE)
 test$plot
