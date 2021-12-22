@@ -25,12 +25,12 @@ data <- data.frame(Study=c("DRCRnet","Ekinci","Nepomuceno","Wiley"),
 
 # Conduct base MA (will be within app, so will be an input to stop uneccesary recalculations)
 MAdata <- escalc(measure="OR", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
-MAdata <- escalc(measure="MD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
-MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="OR") #fixed effects#
-MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="OR") #random effects #
-forest(MA.Fixed)
-forest(MA.Fixed, atransf=exp)
-summary(MA.Fixed)
+MAdata <- escalc(measure="SMD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
+MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="SMD") #fixed effects#
+MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="SMD") #random effects #
+forest(MA.Random)
+forest(MA.Random, atransf=exp)
+summary(MA.Fixed, atransf=exp)
 MA <- list(MA.Fixed=MA.Fixed, MA.Random=MA.Random)
 
 # Function for creating new trial
@@ -119,12 +119,15 @@ rerunMA <- function(new, data, model, n, measure) {   # new - newly simulated tr
   return(newMA)
 }
 # function for calculating power
-metapow <- function(NMA, data, n, nit, p, measure) {  # NMA - an NMA object from inbuilt function FreqMA; data - original data; n - total sample size; nit - number of iterations; p - p-value cut offmeasure - type of outcome (or/rr/rd);
+metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, plot_ext=NA) {  # NMA - an NMA object from inbuilt function FreqMA; data - original data; n - total sample size; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); recalc - re-calculate power based on difference inference; plot - whether it is being used within the metapowplot function
   # create empty list elements
   power <- data.frame(Fixed=NA, Random=NA)
   CI_lower <- data.frame(Fixed=NA, Random=NA)
   CI_upper <- data.frame(Fixed=NA, Random=NA)
-  sims <- data.frame(Fixed=rep(x=NA, times=nit), Random=rep(x=NA, times=nit))
+  sim.inference <- data.frame(Fixed=rep(x=NA, times=nit), Random=rep(x=NA, times=nit))
+  if (recalc=='FALSE') {
+  sims <- data.frame(Fixed.p=rep(x=NA, times=nit), Fixed.lci=rep(x=NA, times=nit), Fixed.uci=rep(x=NA, times=nit), 
+                     Random.p=rep(x=NA, times=nit), Random.lci=rep(x=NA, times=nit), Random.uci=rep(x=NA, times=nit))
   # fixed-effects
   print("Running fixed-effects iterations:")
   progress_bar = txtProgressBar(min=0, max=nit, style = 1, char="=")
@@ -132,16 +135,18 @@ metapow <- function(NMA, data, n, nit, p, measure) {  # NMA - an NMA object from
     # obtain new data, add to existing data, and re-run MA
     new <- metasim(es=NMA$MA.Fixed$beta, tausq=NMA$MA.Fixed$tau2, var=(NMA$MA.Fixed$se)^2, model='fixed', n=n, data=data, measure=measure)
     newMA <- rerunMA(new=new, data=data, model='fixed', n=n, measure=measure)
-    # Ascertain whether new MA had a significant result
-    sims$Fixed[i] <- newMA$pval<p
+    # Collect inference information
+    sims$Fixed.p[i] <- newMA$pval
+    if (measure=='OR' | measure=='RR') {
+      sims$Fixed.lci[i] <- exp(newMA$ci.lb)
+      sims$Fixed.uci[i] <- exp(newMA$ci.ub)
+    } else {
+      sims$Fixed.lci[i] <- newMA$ci.lb
+      sims$Fixed.uci[i] <- newMA$ci.ub
+    }
     setTxtProgressBar(progress_bar, value = i)
   }
   close(progress_bar)
-    # Calculate power with 95% CI = proportion of 'TRUE'
-  power_results <- prop.test(sum(sims$Fixed),nit) #sum(sims) counts number TRUE
-  power$Fixed <- power_results$estimate
-  CI_lower$Fixed <- power_results$conf.int[1]
-  CI_upper$Fixed <- power_results$conf.int[2]
   # random-effects
   print("Running random-effects iterations:")
   progress_bar = txtProgressBar(min=0, max=nit, style = 1, char="=")
@@ -149,26 +154,66 @@ metapow <- function(NMA, data, n, nit, p, measure) {  # NMA - an NMA object from
       # obtain new data, add to existing data, and re-run MA
       new <- metasim(es=NMA$MA.Random$beta, tausq=NMA$MA.Random$tau2, var=(NMA$MA.Random$se)^2, model='random', n=n, data=data, measure=measure)
       newMA <- rerunMA(new=new, data=data, model='random', n=n, measure=measure)
-      # Ascertain whether new MA had a significant result
-      sims$Random[i] <- newMA$pval<p
+      # Collect inference information
+      sims$Random.p[i] <- newMA$pval
+      if (measure=='OR' | measure=='RR') {
+        sims$Random.lci[i] <- exp(newMA$ci.lb)
+        sims$Random.uci[i] <- exp(newMA$ci.ub)
+      } else {
+        sims$Random.lci[i] <- newMA$ci.lb
+        sims$Random.uci[i] <- newMA$ci.ub
+      }
       setTxtProgressBar(progress_bar, value = i)
     }
   close(progress_bar)
-    # Calculate power with 95% CI = proportion of 'TRUE'
-    power_results <- prop.test(sum(sims$Random),nit) #sum(sims) counts number TRUE
-    power$Random <- power_results$estimate
-    CI_lower$Random <- power_results$conf.int[1]
-    CI_upper$Random <- power_results$conf.int[2]
+  if (is.na(plot_ext)==TRUE) {
+    write.table(sims, file='sims.txt', sep = "\t", row.names=FALSE)  # save this data if model option is changed
+  } else {
+    write.table(sims, file=paste('sims',plot_ext,'.txt', sep=""), sep = "\t", row.names=FALSE)  # extra option needed for metapowplot
+  }
+  }
+  if (is.na(plot_ext)==TRUE) {
+    sims <- read.table('sims.txt', sep = "\t", header = TRUE) # read in simulated data
+  } else {
+    sims <- read.table(paste('sims',plot_ext,'.txt', sep=""), sep="\t", header=TRUE)
+  }
+  # Calculate power with 95% CI = proportion of 'TRUE' - true statements depend on inference
+  for (i in 1:nit) {
+    if (inference=='pvalue') {
+      sim.inference$Fixed[i] <- sims$Fixed.p[i] < pow
+      sim.inference$Random[i] <- sims$Random.p[i] < pow
+    } else if (inference=='ciwidth') {
+      sim.inference$Fixed[i] <- sims$Fixed.uci[i]-sims$Fixed.lci[i] < pow
+      sim.inference$Random[i] <- sims$Random.uci[i]-sims$Random.lci[i] < pow
+    } else if (inference=='lci') {
+      sim.inference$Fixed[i] <- sims$Fixed.lci[i] > pow
+      sim.inference$Random[i] <- sims$Random.lci[i] > pow
+    } else if (inference=='uci') {
+      sim.inference$Fixed[i] <- sims$Fixed.uci[i] < pow
+      sim.inference$Random[i] <- sims$Random.uci[i] < pow
+    }
+  }
+  power_results <- prop.test(sum(sim.inference$Fixed),nit) #sum(sims) counts number TRUE
+  power$Fixed <- power_results$estimate
+  CI_lower$Fixed <- power_results$conf.int[1]
+  CI_upper$Fixed <- power_results$conf.int[2]
+  power_results <- prop.test(sum(sim.inference$Random),nit) #sum(sims) counts number TRUE
+  power$Random <- power_results$estimate
+  CI_lower$Random <- power_results$conf.int[1]
+  CI_upper$Random <- power_results$conf.int[2]
   return(list(simdata=sims, power=power, CI_lower=CI_lower, CI_upper=CI_upper))
 }
 
+test <- metapow(NMA=MA, data=data, n=500, nit=100, inference='pvalue', pow=0.05, measure='SMD')
+test <- metapow(nit=100, inference='ciwidth', pow=0.25, recalc='TRUE')
+
 
 # function for plotting the power curve
-metapowplot <- function(SampleSizes, NMA, data, nit, p, measure, ModelOpt, regraph=FALSE) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; p - p-value cut off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; regraph - change plot settings without re-running analysis
+metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, ModelOpt, recalc=FALSE, regraph=FALSE) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
   if (regraph==FALSE) {   # obtain power data if its the first run
   PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
   for (i in 1:length(SampleSizes)) {
-    results <- metapow(NMA=NMA, data=data, n=SampleSizes[i], nit=nit, p=p, measure=measure)
+    results <- metapow(NMA=NMA, data=data, n=SampleSizes[i], nit=nit, inference=inference, pow=pow, measure=measure, recalc=recalc, plot_ext=i)
     PowerData$Estimate[i] <- results$power$Fixed*100
     PowerData$Estimate[i+length(SampleSizes)] <- results$power$Random*100
     PowerData$CI_lower[i] <- results$CI_lower$Fixed*100
@@ -186,7 +231,7 @@ metapowplot <- function(SampleSizes, NMA, data, nit, p, measure, ModelOpt, regra
       labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves (fixed-effects model)", subtitle = "with 95% confidence intervals") 
   }
   if (ModelOpt == 'random') { # only random
-    g <- ggplot(PowerData[PowerData$Model=='Random-effects'], aes(x=SampleSize, y=Estimate)) +
+    g <- ggplot(PowerData[PowerData$Model=='Random-effects',], aes(x=SampleSize, y=Estimate)) +
       geom_ribbon(aes(ymin=CI_lower, ymax=CI_upper),alpha=0.3, colour='gray70', linetype='blank') +
       labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves (random-effects model)", subtitle = "with 95% confidence intervals") 
   }
@@ -208,5 +253,11 @@ metapowplot <- function(SampleSizes, NMA, data, nit, p, measure, ModelOpt, regra
   return(list(plot=g, data=PowerData))
 }   
 
-test<-metapowplot(SampleSizes=c(1000, 2000, 3000, 4000, 5000, 6000), NMA=MA, data=data, nit=50, p=0.05, measure='OR', ModelOpt='both', regraph=FALSE)
+test<-metapowplot(SampleSizes=c(1000, 2000, 3000, 4000, 5000, 6000), NMA=MA, data=data, nit=50, inference='pvalue', pow=0.05, measure='SMD', ModelOpt='both')
 test$plot
+test <- metapowplot(SampleSizes=c(1000,2000,3000,4000,5000,6000), nit=50, inference='ciwidth', pow=0.2, ModelOpt='both', recalc=TRUE) #testing re-calculation option
+test$plot
+test <- metapowplot(SampleSizes=c(1000,2000,3000,4000,5000,6000), regraph=TRUE, ModelOpt='random') #testing regraph option
+test$plot
+
+# need to make base-app have separate part for conducting pairwise MA - i.e. change the NMA to be an additional feature for now (want options to go 'above', not 'below')
