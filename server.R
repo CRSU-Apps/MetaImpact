@@ -18,16 +18,34 @@ source("MAFunctions.R",local = TRUE)
 #----------------#
 function(input, output, session) {
 
+# how to use the switchInput in the server    
+output$Test <- reactive({
+  if (input$Pairwise_NMA=='TRUE') {
+    paste("Pairwise")
+  } else {
+    paste("NMA")
+  }
+})
+
+
   
 ### Load and present Data ###
   
   data <- reactive({                     # Read in user or default data
     file <- input$data             
     if (is.null(file)) {
-      if (input$ChooseExample=='continuousEx') {
-        data <- read.csv("./AntiVEGF_Continuous.csv")
+      if (input$Pairwise_NMA=='FALSE') {
+        if (input$ChooseExample=='continuousEx') {
+          data <- read.csv("./AntiVEGF_Continuous.csv")
+        } else {
+          data <- read.csv("./AntiVEGF_Binary.csv")
+        }
       } else {
-        data <- read.csv("./AntiVEGF_Binary.csv")
+        if (input$ChooseExample=='continuousEx') {
+          data <- read.csv("./AntiVEGF_Continuous_Pairwise.csv")
+        } else {
+          data <- read.csv("./AntiVEGF_Binary_Pairwise.csv")
+        }
       }
     } else {
     data <- read.table(file = file$datapath, sep =",", header=TRUE, stringsAsFactors = FALSE, quote="\"")
@@ -46,14 +64,43 @@ function(input, output, session) {
       return(data()$levels[1])
     }
   })
+  pairwise_ref <- function(trt_ctrl) {   # pairwise options
+    if (trt_ctrl=='trt') {
+      ref <- reactive({
+        file <- input$data
+        if (is.null(file)) {
+          return("BEVA")
+        } else {
+          return(data()$levels[1])
+        }
+      })
+    } else {
+      ref <- reactive({
+        file <- input$data
+        if (is.null(file)) {
+          return("RANI")
+        } else {
+          return(data()$levels[2])
+        }
+      })
+    }
+    return(ref())
+  }
   
   observe({                              # populating reference treatment options
     updateSelectInput(session = session, inputId = "Reference", choices = data()$levels, selected = reference())
+  })
+  observe({
+    updateSelectInput(session=session, inputId = "Pair_Trt", choices = data()$levels, selected = pairwise_ref(trt_ctrl='trt'))
+  })
+  observe({
+    updateSelectInput(session=session, inputId = "Pair_Ctrl", choices = data()$levels, selected = pairwise_ref(trt_ctrl='ctrl'))
   })
   
   output$data <- renderTable({           # Create a table which displays the raw data just uploaded by the user
     data()$data
   })
+  
   
   ContBin <- reactive({           # automatically detect if continuous or binary
     if (max(grepl("^Mean", names(data()$data)))==TRUE) {

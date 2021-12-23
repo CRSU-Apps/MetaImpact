@@ -6,6 +6,7 @@
 library(shiny)
 library(shinythemes)
 library(shinyBS)
+library(shinyWidgets)
 
 # load user-written functions #
 #-----------------------------#
@@ -42,8 +43,9 @@ tabPanel("Data",
                 fileInput(inputId="data", label="", buttonLabel="Select", placeholder="No file selected"),
                 br(),
                 p("If you wish to explore the app, you are welcome to choose one of the example datasets below."),
-                p("Both example datasets are based on a network meta-analysis reviewing the affect anti-vasuclar endothelial growth factor has on diabetic macular oedema. 
+                p("Both example datasets are based on a (network) meta-analysis reviewing the affect anti-vasuclar endothelial growth factor has on diabetic macular oedema. 
                   Visual acuity (VA) outcomes were reported and chosen for these examples. The paper by Virgili et al can be found ", a(href="https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD007419.pub6/full", "here.")),
+                p("To explore an example network meta-analysis, NMA options are available on the 'Evidence Synthesis' tab."),
                 radioButtons("ChooseExample", "Example Datasets Available", c("Continuous outcome: Change in VA in terms of LogMAR (negative change in LogMAR = improved vision)" = "continuousEx", 
                                                                               "Binary outcome: Number of people that improved their VA by gaining 3+ lines during a vision test" = "binaryEx"), width='100%')),
          column(7, h4("View Data"),
@@ -62,15 +64,21 @@ tabPanel("Evidence Synthesis",
                      actionButton("BayesRun", "Run Bayesian meta-analysis", class="btn-primary btn-lg")),
            # Inputs #
            column(8, bsCollapsePanel(title="Synthesis Options", style='info',
+                    switchInput('Pairwise_NMA', onLabel = "Pairwise", offLabel = "NMA", value=TRUE, onStatus='info', offStatus='info'),
                     column(6, conditionalPanel(condition = "output.ContBin=='continuous'",
                                     radioButtons("OutcomeCont", "Outcome for continuous data:", c("Mean Difference (MD)" = "MD","Standardised Mean Difference (SMD)" = "SMD"))),
                               conditionalPanel(condition = "output.ContBin=='binary'",
                                      radioButtons("OutcomeBina", "Outcome for binary data:", c("Odds Ratio (OR)" = "OR","Risk Ratio (RR)" = "RR", "Risk Difference (RD)" = "RD"))),
                               radioButtons("FixRand", "Model selection:", c("Fixed-effects model (FE)" = "fixed", "Random-effects model (RE)" = "random"))),
-                    column(6, selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL),
+                    column(6, conditionalPanel(condition = "input.Pairwise_NMA",
+                                               column(6, selectInput(inputId = "Pair_Trt", label = "Select Treatment", choices = NULL)),
+                                               column(6, selectInput(inputId = "Pair_Ctrl", label = "Select Comparator", choices = NULL))),
+                              conditionalPanel(condition = "!input.Pairwise_NMA",
+                                               selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL)),
                               radioButtons("prior", "Choice of vague between-study prior (Bayesian only):", c("Standard deviation ~ Uniform(0,2)" = "uniform", "Precision ~ Gamma(0.1,0.1)" = "gamma", "Standard deviation ~ Half-Normal(0,1)" = "half-normal")))))),
          # Outputs #
          # Frequentist #
+         htmlOutput("Test"),
          conditionalPanel(condition = "input.FreqRun!=0",
           fluidRow(p(htmlOutput("SynthesisSummaryFreq")),
                   p("To change the model options, please adjust synthesis options above and re-run analysis."),

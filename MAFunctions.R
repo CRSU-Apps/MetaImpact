@@ -36,6 +36,7 @@ Wide2Long <- function(data) { #inputs: data frame
 #-------------#
 
 ### Frequentist MA ###
+# reference treatment no longer works - guessing its from netmeta update 22.12.21
 
 FreqMA <- function(data, outcome, CONBI, model, ref, contrastform=FALSE) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group; data already in contrast form
   if (contrastform==FALSE) {
