@@ -18,16 +18,6 @@ source("MAFunctions.R",local = TRUE)
 #----------------#
 function(input, output, session) {
 
-# how to use the switchInput in the server    
-output$Test <- reactive({
-  if (input$Pairwise_NMA=='TRUE') {
-    paste("Pairwise")
-  } else {
-    paste("NMA")
-  }
-})
-
-
   
 ### Load and present Data ###
   
@@ -112,7 +102,7 @@ output$Test <- reactive({
   output$ContBin <- renderText({
     ContBin()
   })
-  outputOptions(output, "ContBin", suspendWhenHidden=FALSE)
+  outputOptions(output, "ContBin", suspendWhenHidden=FALSE) #needed for UI options, but doesn't need displaying itself
   
   outcome <- reactive({                  # different outcome variables if continuous or binary
     if (ContBin()=='continuous') {
@@ -124,16 +114,23 @@ output$Test <- reactive({
   
   
 ### Summary sentence of meta-analysis ###  
-  # Need to change to be reactive to the results rather than inputs#
-  
-output$SynthesisSummaryFreq <- renderText({
-    paste("Results for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
-    with reference treatment ", strong(input$Reference), ".")
+MAText <- reactive({ #different phrases
+  if (input$Pairwise_NMA=='TRUE') {
+    paste(strong("Pairwise"), "meta-analysis")
+  } else {
+    paste(strong("NMA"))
+  }
+}) 
+FreqSummaryText <- eventReactive( input$FreqRun, {
+  paste("Results for ", strong(input$FixRand), "-effects ", MAText(), " of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
+    with reference treatment ", ifelse(input$Pairwise_NMA=='TRUE',paste(strong(input$Pair_Ctrl)),paste(strong(input$Reference))), ".", sep="")
 })
-output$SynthesisSummaryBayes <- renderText({
-    paste("Results for ", strong(input$FixRand), "-effects meta-analysis of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
-    reference treatment ", strong(input$Reference), ".") 
+output$SynthesisSummaryFreq <- renderText({FreqSummaryText()})
+BayesSummaryText <- eventReactive( input$BayesRun, {
+  paste("Results for ", strong(input$FixRand), "-effects ", MAText(), " of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
+    reference treatment ", ifselse(input$Pairwise_NMA=='TRUE', paste(strong(input$Pair_Ctrl)), paste(strong(input$Reference))), ".", sep="")
 })
+output$SynthesisSummaryBayes <- renderText({BayesSummaryText()})
 
 
 ### Run frequentist NMA ###
