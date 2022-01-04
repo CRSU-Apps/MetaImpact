@@ -38,20 +38,16 @@ Wide2Long <- function(data) { #inputs: data frame
 ### Frequentist MA ###
 # reference treatment no longer works - guessing its from netmeta update 22.12.21
 
-FreqMA <- function(data, outcome, CONBI, model, ref, contrastform=FALSE) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group; data already in contrast form
-  if (contrastform==FALSE) {
-    treat <- data[,grep(pattern="^T", colnames(data))]
-    n <- data[,grep(pattern="^N", colnames(data))]
-    if (CONBI=='continuous') { #convert to contrast form
-      mean <- data[,grep(pattern="^Mean", colnames(data))]
-      sd <- data[,grep(pattern="^SD", colnames(data))]
-      d1 <- pairwise(treat=treat,n=n,mean=mean,sd=sd, data=data, studlab=Study, sm=outcome)
-    } else {
-      event <- data[,grep(pattern="^R", colnames(data))]
-      d1 <- pairwise(treat=treat,event=event,n=n, data=data, studlab=Study, sm=outcome)
-    }
+FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group
+  treat <- data[,grep(pattern="^T", colnames(data))]
+  n <- data[,grep(pattern="^N", colnames(data))]
+  if (CONBI=='continuous') { 
+    mean <- data[,grep(pattern="^Mean", colnames(data))]
+    sd <- data[,grep(pattern="^SD", colnames(data))]
+    d1 <- pairwise(treat=treat,n=n,mean=mean,sd=sd, data=data, studlab=Study, sm=outcome) #convert to contrast form
   } else {
-    d1 <- data
+    event <- data[,grep(pattern="^R", colnames(data))]
+    d1 <- pairwise(treat=treat,event=event,n=n, data=data, studlab=Study, sm=outcome)
   }
   net1 <- netmeta(TE, seTE, treat1, treat2, studlab, data=d1,
                   sm=outcome, level=0.95, level.comb=0.95,

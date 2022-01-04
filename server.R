@@ -42,7 +42,8 @@ function(input, output, session) {
     }
     cols <- grep("^T", names(data), value=TRUE)
     data[cols] <- lapply(data[cols], factor)  # factor variables for treatment columns
-    levels <- levels(as_vector(data[cols]))
+    levels <- levels(as_vector(data[cols])) # obtain list of treatments
+    data[cols] <- lapply(data[cols], as.character) #revert back to character variables to allow analyses to function
     return(list(data=data, levels=levels))
   })
   
@@ -143,7 +144,7 @@ observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
   updateCollapse(session=session, id="FreqID", open="Frequentist Analysis")
 }) 
 
-Freq <- eventReactive( input$FreqRun, {                   # Run frequentist NMA 
+Freq <- eventReactive( input$FreqRun & input$Pairwise_NMA=='FALSE', {                   # Run frequentist NMA 
   FreqMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
 })
 output$NetworkPlotF <- renderPlot({   # Network plot
@@ -168,7 +169,7 @@ observeEvent( input$BayesRun, {                           # reopen panel when a 
   updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
 })                                                        
 
-Bayes <- eventReactive( input$BayesRun, {                 # Run Bayesian MA
+Bayes <- eventReactive( input$BayesRun & input$Pairwise_NMA=='FALSE', {                 # Run Bayesian NMA
   BayesMA(data=LongData(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
 })
 
