@@ -4,18 +4,20 @@
 #----------------#
 # load libraries #
 #----------------#
-library(shiny)
 library(netmeta)
 library(sjlabelled)
 library(gemtc)
 library(tidyverse)
 library(metafor)
+library(ggplot2)
+library(tidyr)
 
 #-----------------------------#
 # load user-written functions #
 #-----------------------------#
 
 source("MAFunctions.R",local = TRUE) 
+source("SampleSizeFunctions.R", local=TRUE)
 
 #----------------#
 # Server Content #
@@ -155,25 +157,11 @@ observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
   updateCollapse(session=session, id="FreqID", open="Frequentist Analysis")
 })
 
-freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise MA
-  if (input$Pairwise_NMA==TRUE) {
-    FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin(), trt=input$Pair_Trt)
-  }
-})
-MA.Model <- reactive({
-  if (input$FixRand=='fixed') {freqpair()$MA.Fixed} else {freqpair()$MA.Random}
-})
-
-output$ForestPlotPairF <- renderPlot({      # Forest plot
-  if (outcome()=='OR' | outcome()=='RR') {forest(MA.Model(), atransf=exp)} else {forest(MA.Model())}
-  title("Forest plot of studies with overall pooled estimate")
-})
-
-output$SummaryTableF <- renderUI({
-  if (outcome()=='OR' | outcome()=='RR') {sum <- summary(MA.Model(), atransf=exp)} else {sum <- summary(MA.Model())}
+PairwiseSummary_function <- function(outcome, MA.Model) {
+  sum <- summary(MA.Model)
   line0<-paste(strong("Results"))
   line1<-paste("Number of studies: ", sum$k, sep="")
-  if (outcome()=='OR' | outcome()=='RR') {
+  if (outcome=='OR' | outcome=='RR') {
     line2<-paste("Pooled estimate: ", round(exp(sum$b),2), " (95% CI: ", round(exp(sum$ci.lb),2), " to ", round(exp(sum$ci.ub),2), ")", sep="")
   } else {
     line2<-paste("Pooled estimate: ", round(sum$b,2), " (95% CI: ", round(sum$ci.lb,2), " to ", round(sum$ci.ub,2), ")", sep="")
@@ -183,7 +171,48 @@ output$SummaryTableF <- renderUI({
   line5<-paste(strong("Model fit statistics"))
   line6<-paste("AIC: ", round(sum$fit.stats[3,1],2), "; BIC: ", round(sum$fit.stats[4,1],2), sep="")
   HTML(paste(line0,line1, line2, line3, line4, line5, line6, sep = '<br/>'))
+}
+
+freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise MA and obtain plots etc.
+  if (input$Pairwise_NMA==TRUE) {
+    information <- list()
+    information$MA <- FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin(), trt=input$Pair_Trt)
+    if (input$FixRand=='fixed') {                   # Forest plot
+      if (outcome()=='OR' | outcome()=='RR') {
+        information$Forest <- {
+          forest(information$MA$MA.Fixed, atransf=exp)
+          title("Forest plot of studies with overall estimate from fixed-effects model") }
+      } else {
+        information$Forest <- {
+          forest(information$MA$MA.Fixed)
+          title("Forest plot of studies with overall estimate from fixed-effects model")}
+      }
+      information$Summary <- PairwiseSummary_function(outcome(),information$MA$MA.Fixed)
+    } else {
+      if (outcome()=='OR' | outcome()=='RR') {
+        information$Forest <- {
+          forest(information$MA$MA.Random, atransf=exp)
+          title("Forest plot of studies with overall estimate from random-effects model")}
+      } else {
+        information$Forest <- {
+          forest(information$MA$MA.Random)
+          title("Forest plot of studies with overall estimate from random-effects model")}
+      }
+      information$Summary <- PairwiseSummary_function(outcome(),information$MA$MA.Random)
+    }
+    information
+  }
 })
+
+output$ForestPlotPairF <- renderPlot({      # Forest plot
+  freqpair()$Forest
+})
+
+output$SummaryTableF <- renderUI({          # Summary table
+  freqpair()$Summary
+})
+
+
 
 
 
@@ -241,6 +270,12 @@ output$TauB <- renderText({          # Between-study standard deviation
 output$DICB <- renderTable({         # DIC
   Bayes()$DIC
 }, digits=3, rownames=TRUE, colnames=FALSE)
+
+
+
+
+### Frequentist Pairwise Sample Size Calculations ###
+  #-----------------------------------------------#
 
 
 

@@ -6,33 +6,33 @@
 # Frequentist #
 #-------------#
 # Follow same set-up as Stata where its made up of three functions
-library(metafor)
-library(ggplot2)
-library(tidyr)
+#library(metafor)
+#library(ggplot2)
+#library(tidyr)
 
 # Test datasets #
 # Binary #
-data <- data.frame(Study=c("Herne","Hoaglund","Kaiser","Lexomboon","McKerrow","Taylor"),
-                   Year=c(1980, 1950, 1996, 1971, 1961, 1977),
-                   R.1=c(7,39,97,8,5,12), N.1=c(7+39,39+115,97+49,8+166,5+10,12+117), T.1=rep("Treatment",6),
-                   R.2=c(10,51,94,4,8,3), N.2=c(10+12,51+104,94+48,4+83,8+10,3+56), T.2=rep("Control",6))
+#data <- data.frame(Study=c("Herne","Hoaglund","Kaiser","Lexomboon","McKerrow","Taylor"),
+#                   Year=c(1980, 1950, 1996, 1971, 1961, 1977),
+#                   R.1=c(7,39,97,8,5,12), N.1=c(7+39,39+115,97+49,8+166,5+10,12+117), T.1=rep("Treatment",6),
+#                   R.2=c(10,51,94,4,8,3), N.2=c(10+12,51+104,94+48,4+83,8+10,3+56), T.2=rep("Control",6))
 # Continuous test data
-data <- data.frame(Study=c("DRCRnet","Ekinci","Nepomuceno","Wiley"),
-                   Year=c(2015, 2014, 2013, 2016),
-                   Mean.1=c(-0.194, -0.237, -0.23, -0.106), SD.1=c(0.202, 0.16, 0.113, 0.169), N.1=c(206, 50, 32, 62), T.1=rep("Treatment",4),
-                   Mean.2=c(-0.194, -0.211, -0.29, -0.132), SD.2=c(0.202, 0.16, 0.212, 0.173), N.2=c(206, 50, 28, 62), T.2=rep("Control",4))
+#data <- data.frame(Study=c("DRCRnet","Ekinci","Nepomuceno","Wiley"),
+#                   Year=c(2015, 2014, 2013, 2016),
+#                   Mean.1=c(-0.194, -0.237, -0.23, -0.106), SD.1=c(0.202, 0.16, 0.113, 0.169), N.1=c(206, 50, 32, 62), T.1=rep("Treatment",4),
+#                   Mean.2=c(-0.194, -0.211, -0.29, -0.132), SD.2=c(0.202, 0.16, 0.212, 0.173), N.2=c(206, 50, 28, 62), T.2=rep("Control",4))
 
 
 # Conduct base MA (will be within app, so will be an input to stop uneccesary recalculations)
-MAdata <- escalc(measure="OR", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
-MAdata <- escalc(measure="SMD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
-MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="SMD") #fixed effects#
-MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="OR") #random effects #
-forest(MA.Random)
-forest(MA.Random, atransf=exp)   #forest.rma for options
-summary(MA.Random, transf=exp)
-test <- summary(MA.Random)
-MA <- list(MA.Fixed=MA.Fixed, MA.Random=MA.Random)
+#MAdata <- escalc(measure="OR", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
+#MAdata <- escalc(measure="SMD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
+#MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="SMD") #fixed effects#
+#MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="OR") #random effects #
+#forest(MA.Random)
+#forest(MA.Random, atransf=exp)   #forest.rma for options
+#summary(MA.Random, transf=exp)
+#test <- summary(MA.Random)
+#MA <- list(MA.Fixed=MA.Fixed, MA.Random=MA.Random)
 
 # Function for creating new trial
 metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean estimate from MA; tausq - estimated tau-squared from MA; var = estimated variance of estimate from MA; model - fixed or random; n - total sample size; data - original MA data; measure - type of outcome (or/rr/rd/md);
@@ -205,8 +205,8 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
   return(list(simdata=sims, power=power, CI_lower=CI_lower, CI_upper=CI_upper))
 }
 
-test <- metapow(NMA=MA, data=data, n=500, nit=100, inference='pvalue', pow=0.05, measure='SMD')
-test <- metapow(nit=100, inference='ciwidth', pow=0.25, recalc='TRUE')
+#test <- metapow(NMA=MA, data=data, n=500, nit=100, inference='pvalue', pow=0.05, measure='SMD')
+#test <- metapow(nit=100, inference='ciwidth', pow=0.25, recalc='TRUE')
 
 
 # function for plotting the power curve
@@ -254,11 +254,9 @@ metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, Mo
   return(list(plot=g, data=PowerData))
 }   
 
-test<-metapowplot(SampleSizes=c(1000, 2000, 3000, 4000, 5000, 6000), NMA=MA, data=data, nit=50, inference='pvalue', pow=0.05, measure='SMD', ModelOpt='both')
-test$plot
-test <- metapowplot(SampleSizes=c(1000,2000,3000,4000,5000,6000), nit=50, inference='ciwidth', pow=0.2, ModelOpt='both', recalc=TRUE) #testing re-calculation option
-test$plot
-test <- metapowplot(SampleSizes=c(1000,2000,3000,4000,5000,6000), regraph=TRUE, ModelOpt='random') #testing regraph option
-test$plot
-
-# need to make base-app have separate part for conducting pairwise MA - i.e. change the NMA to be an additional feature for now (want options to go 'above', not 'below')
+#test<-metapowplot(SampleSizes=c(1000, 2000, 3000, 4000, 5000, 6000), NMA=MA, data=data, nit=50, inference='pvalue', pow=0.05, measure='SMD', ModelOpt='both')
+#test$plot
+#test <- metapowplot(SampleSizes=c(1000,2000,3000,4000,5000,6000), nit=50, inference='ciwidth', pow=0.2, ModelOpt='both', recalc=TRUE) #testing re-calculation option
+#test$plot
+#test <- metapowplot(SampleSizes=c(1000,2000,3000,4000,5000,6000), regraph=TRUE, ModelOpt='random') #testing regraph option
+#test$plot
