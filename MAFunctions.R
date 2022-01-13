@@ -35,10 +35,40 @@ Wide2Long <- function(data) { #inputs: data frame
 # Frequentist #
 #-------------#
 
-### Frequentist MA ###
-# reference treatment no longer works - guessing its from netmeta update 22.12.21
+### Frequentist Pairwise ###
 
-FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group
+FreqPair <- function(data, outcome, CONBI, model, trt) { #inputs: data frame in wide format; outcome type; continuous or binary' fixed or random (or both); treatment, control
+  # arrange the data such that input$trt is T.1 and input$ctrl is T.2
+  if (CONBI=='continuous') {  # different variables need swapping if continuous or binary
+    list_vars <- c("T", "N", "Mean", "SD")
+  } else {
+    list_vars <- c("T", "N", "R")
+  }
+  for (i in 1:nrow(data)) {  # need to check for each study
+    if (data$T.1[i]!=trt) {  # if the study data needs swapping
+      for(j in 1:length(list_vars)) {     # complete the swaps for each variable
+        vars <- list(varname = as.name(list_vars[[j]]))
+        eval(parse(text = paste0("data$",vars,".3 <- NA"))) # initialise
+        eval(parse(text = paste0("data$",vars,".3[i] <- data$",vars,".2[i]")))
+        eval(parse(text = paste0("data$",vars,".2[i] <- data$",vars,".1[i]")))
+        eval(parse(text = paste0("data$",vars,".1[i] <- data$",vars,".3[i]")))
+        eval(parse(text = paste0("data <- subset(data, select=-",vars,".3)")))
+      }
+    }
+  }
+  if (CONBI=='continuous') {
+    MAdata <- escalc(measure=outcome, m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
+  } else {
+    MAdata <- escalc(measure=outcome, ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
+  }
+  if (model=='fixed' | model=='both') {MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure=outcome)} #fixed effects#
+  if (model=='random' | model=='both') {MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure=outcome)} #random effects #
+  list(MAdata=MAdata, MA.Random=MA.Random, MA.Fixed=MA.Fixed)
+}
+
+### Frequentist NMA ###
+
+FreqNMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group
   treat <- data[,grep(pattern="^T", colnames(data))]
   n <- data[,grep(pattern="^N", colnames(data))]
   if (CONBI=='continuous') { 
@@ -59,7 +89,7 @@ FreqMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outc
 
 ### Forest Plot ###
 
-FreqForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or random; reference treatment
+FreqNMAForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or random; reference treatment
   metafor::forest(NMA,reference.group=ref, pooled=model)
 }
 

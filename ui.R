@@ -50,7 +50,8 @@ tabPanel("Data",
                                                                               "Binary outcome: Number of people that improved their VA by gaining 3+ lines during a vision test" = "binaryEx"), width='100%')),
          column(7, h4("View Data"),
                 uiOutput("data"))),                      # View data
-  # Make it such that a user can still use example data event after uploading their own
+  # Make it such that a user can still use example data even after uploading their own
+  # NEEDS CORRECTING - pairwise binary data is not from same paper (details in files)
         
                    
 # Evidence Synthesis Tab #
@@ -78,13 +79,16 @@ tabPanel("Evidence Synthesis",
                               radioButtons("prior", "Choice of vague between-study prior (Bayesian only):", c("Standard deviation ~ Uniform(0,2)" = "uniform", "Precision ~ Gamma(0.1,0.1)" = "gamma", "Standard deviation ~ Half-Normal(0,1)" = "half-normal")))))),
          # Outputs #
          # Frequentist #
-         htmlOutput("Test"),
          conditionalPanel(condition = "input.FreqRun!=0",
           fluidRow(p(htmlOutput("SynthesisSummaryFreq")),
                   p("To change the model options, please adjust synthesis options above and re-run analysis."),
                   bsCollapse(id="FreqID", open="Frequentist Analysis", bsCollapsePanel(title="Frequentist Analysis", style='success',
-                    column(4, plotOutput("NetworkPlotF")), #Network plot
-                    column(6,offset=2, plotOutput("ForestPlotF")))))), #Forest plot
+                    conditionalPanel(condition = "!input.Pairwise_NMA",   # NMA results
+                      column(4, plotOutput("NetworkPlotF")), #Network plot
+                      column(6,offset=2, plotOutput("ForestPlotNMAF"))),  # Forest plot
+                    conditionalPanel(condition = "input.Pairwise_NMA",    # Pairwise results
+                      column(5,align='center', htmlOutput("SummaryTableF")), #Summary table
+                      column(6, offset=1, plotOutput("ForestPlotPairF"))))))), #Forest plot
          # Bayesian #
          conditionalPanel(condition = "input.BayesRun!=0",
           fluidRow(p(htmlOutput("SynthesisSummaryBayes")),

@@ -1,6 +1,7 @@
 # MetaImpact Server #
 #-------------------#
 
+#----------------#
 # load libraries #
 #----------------#
 library(shiny)
@@ -8,18 +9,22 @@ library(netmeta)
 library(sjlabelled)
 library(gemtc)
 library(tidyverse)
+library(metafor)
 
+#-----------------------------#
 # load user-written functions #
 #-----------------------------#
 
 source("MAFunctions.R",local = TRUE) 
 
+#----------------#
 # Server Content #
 #----------------#
 function(input, output, session) {
 
   
 ### Load and present Data ###
+  #-----------------------#
   
   data <- reactive({                     # Read in user or default data
     file <- input$data             
@@ -112,9 +117,14 @@ function(input, output, session) {
       input$OutcomeBina
     }
   })
+
   
+### NEED TO SORT OUT/DECIDE WHAT THE 'RUN' BUTTONS DO ###  
+    
   
-### Summary sentence of meta-analysis ###  
+### Summary sentence of meta-analysis ###
+  #-----------------------------------#
+  
 MAText <- reactive({ #different phrases
   if (input$Pairwise_NMA=='TRUE') {
     paste(strong("Pairwise"), "meta-analysis")
@@ -134,7 +144,8 @@ BayesSummaryText <- eventReactive( input$BayesRun, {
 output$SynthesisSummaryBayes <- renderText({BayesSummaryText()})
 
 
-### Run frequentist NMA ###
+### Run frequentist Pairwise MA ###
+  #-----------------------------#
 
 WideData <- reactive({               # convert long format to wide if need be
   Long2Wide(data=data()$data)
@@ -142,24 +153,63 @@ WideData <- reactive({               # convert long format to wide if need be
 
 observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
   updateCollapse(session=session, id="FreqID", open="Frequentist Analysis")
-}) 
+})
 
-Freq <- eventReactive( input$FreqRun & input$Pairwise_NMA=='FALSE', {                   # Run frequentist NMA 
-  FreqMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
+freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise MA
+  if (input$Pairwise_NMA==TRUE) {
+    FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin(), trt=input$Pair_Trt)
+  }
+})
+MA.Model <- reactive({
+  if (input$FixRand=='fixed') {freqpair()$MA.Fixed} else {freqpair()$MA.Random}
+})
+
+output$ForestPlotPairF <- renderPlot({      # Forest plot
+  if (outcome()=='OR' | outcome()=='RR') {forest(MA.Model(), atransf=exp)} else {forest(MA.Model())}
+  title("Forest plot of studies with overall pooled estimate")
+})
+
+output$SummaryTableF <- renderUI({
+  if (outcome()=='OR' | outcome()=='RR') {sum <- summary(MA.Model(), atransf=exp)} else {sum <- summary(MA.Model())}
+  line0<-paste(strong("Results"))
+  line1<-paste("Number of studies: ", sum$k, sep="")
+  if (outcome()=='OR' | outcome()=='RR') {
+    line2<-paste("Pooled estimate: ", round(exp(sum$b),2), " (95% CI: ", round(exp(sum$ci.lb),2), " to ", round(exp(sum$ci.ub),2), ")", sep="")
+  } else {
+    line2<-paste("Pooled estimate: ", round(sum$b,2), " (95% CI: ", round(sum$ci.lb,2), " to ", round(sum$ci.ub,2), ")", sep="")
+  }
+  line3<-paste(strong("Heterogeneity results"))
+  line4<-paste("Between study standard-devation: ", round(sqrt(sum$tau2),3), "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
+  line5<-paste(strong("Model fit statistics"))
+  line6<-paste("AIC: ", round(sum$fit.stats[3,1],2), "; BIC: ", round(sum$fit.stats[4,1],2), sep="")
+  HTML(paste(line0,line1, line2, line3, line4, line5, line6, sep = '<br/>'))
+})
+
+
+
+### Run frequentist NMA ###
+  #---------------------#
+
+freqnma <- eventReactive( input$FreqRun, {                   # Run frequentist NMA 
+  if (input$Pairwise_NMA==FALSE) {
+    FreqNMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
+  }
 })
 output$NetworkPlotF <- renderPlot({   # Network plot
-  netgraph(Freq()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
+  netgraph(freqnma()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
            col.number.of.studies = "forestgreen", col.multiarm = "white", bg.number.of.studies = "black", offset=0.03)
   title("Network plot of all studies")
 })
-output$ForestPlotF <- renderPlot({    # Forest plot
-  FreqForest(NMA=Freq()$MAObject, model=input$FixRand, ref=input$Reference)
+output$ForestPlotNMAF <- renderPlot({    # Forest plot
+  FreqNMAForest(NMA=freqnma()$MAObject, model=input$FixRand, ref=input$Reference)
   title("Forest plot of outcomes")
 })
 
 ## Double zero arms are not included in analysis - need to add warning
 
+
 ### Run Bayesian NMA ###
+  #------------------#
 
 LongData <- reactive({               # convert wide format to long if need be
   Wide2Long(data=data()$data)

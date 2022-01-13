@@ -27,10 +27,11 @@ data <- data.frame(Study=c("DRCRnet","Ekinci","Nepomuceno","Wiley"),
 MAdata <- escalc(measure="OR", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
 MAdata <- escalc(measure="SMD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
 MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="SMD") #fixed effects#
-MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="SMD") #random effects #
+MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="OR") #random effects #
 forest(MA.Random)
-forest(MA.Random, atransf=exp)
-summary(MA.Fixed, atransf=exp)
+forest(MA.Random, atransf=exp)   #forest.rma for options
+summary(MA.Random, transf=exp)
+test <- summary(MA.Random)
 MA <- list(MA.Fixed=MA.Fixed, MA.Random=MA.Random)
 
 # Function for creating new trial
