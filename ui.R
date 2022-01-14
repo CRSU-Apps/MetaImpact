@@ -11,9 +11,10 @@ library(shinyWidgets)
 # load user-written functions #
 #-----------------------------#
 
+
 # UI Content #
 #------------#
-shinyUI(fluidPage(navbarPage(title="MetaImpact",
+shinyUI(fluidPage(navbarPage(id="MetaImpact", title="MetaImpact",
                    theme = shinytheme("readable"),
                    
 # Home Tab #
@@ -98,15 +99,40 @@ tabPanel("Evidence Synthesis",
                   column(6,offset=2, plotOutput("ForestPlotB"), htmlOutput("TauB"), tableOutput("DICB")))))
                   )),
           # See if network plots can be ordered the same as each other
-          # All outputs will need further formatting (including sizing) plus addition of tau for frequentist, and # of studies.
-          # Regarding 'Run' buttons -> some formatting doesn't wait for button to be pressed again -> to be fixed.
+          # All outputs will need further formatting (including sizing) plus addition of tau for frequentist, and # of studies (for NMA only).
+          # Regarding 'Run' buttons -> some formatting doesn't wait for button to be pressed again -> to be fixed (NMA only needs fixing).
+
 
 # Sample Size Calculator Tab #
 #----------------------------#
 
-tabPanel("Sample Size Calculator"),
+tabPanel("Sample Size Calculator",
+         # Evidence Base Summary #
+         column(5, align='center', bsCollapse(id="EvidenceBase", open="Current Evidence Base", 
+                                   bsCollapsePanel(title="Current Evidence Base", style='primary',
+                                              h6("This panel presents the current evidence base from which the sample size calculations are based on. If you wish to change this, please go back to the ", actionLink("link_to_tabpanel_evsynth", "Evidence synthesis tab"), " and alter the synthesis options accordingly."),
+                                              plotOutput("EvBase"),
+                                              radioButtons("EvBase_choice", "", c("Frequentist MA" = "freq", "Bayesian MA" = "bayes"), inline=TRUE))),
+                                   bsCollapse(id="CalcSettings", open="Calculation Settings",
+                                   bsCollapsePanel(title="Calculation Settings", style='info',
+                                              fluidRow(div(style="display: inline-block;vertical-align:top;", textInput("samplesizes", "Total sample size(s)", value = "100")),
+                                                       div(style="display: inline-block;vertical-align:top;", dropMenu(dropdownButton(size='xs',icon=icon('info')), align='left',
+                                                                          h6("Information"),
+                                                                          p("Studies are assumed to have two arms of equal sizes."),
+                                                                          p("If entering multiple sample sizes, please separate them with a semi-colon (e.g. 100; 200; 300)."))),
+                                                       div(style="display: inline-block;vertical-align:top; width: 15px;",HTML("<br>")),
+                                                       div(style="display: inline-block;vertical-align:top;", numericInput("#its", "Number of iterations", value=100, min=1))),
+                                              fluidRow(div(style="display: inline-block;vertical-align:top;", selectInput("impact_type", "Type of impact on evidence base", 
+                                                                          c("Significant p-value" = "pvalue", "95% confidence interval of certain width" = "ciwidth", "Lower bound of 95% confidence interval of certain value" = "lci", "Upper bound 95% confidence interval of certain value" = "uci"))),
+                                                       div(style="display: inline-block;vertical-align:top; width: 35px;",HTML("<br>")),
+                                                       div(style="display: inline-block;vertical-align:top; width: 300px;", uiOutput("CutOff"))))),
+                                   actionButton("CalcRun", "Run Sample Size Calculations", class="btn-primary btn-lg"))),
+
 
 # Education Tab #
 #---------------#
 
 tabPanel("Education"))))
+
+
+# Consider this to help explain how to use the app: https://stackoverflow.com/questions/61811177/how-to-make-an-infomation-button-in-shiny-dashboard

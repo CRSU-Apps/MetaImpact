@@ -18,6 +18,7 @@ library(tidyr)
 
 source("MAFunctions.R",local = TRUE) 
 source("SampleSizeFunctions.R", local=TRUE)
+source("ForestFunctions.R", local=TRUE)
 
 #----------------#
 # Server Content #
@@ -121,7 +122,7 @@ function(input, output, session) {
   })
 
   
-### NEED TO SORT OUT/DECIDE WHAT THE 'RUN' BUTTONS DO ###  
+### NEED TO SORT OUT/DECIDE WHAT THE 'RUN' BUTTONS DO (pairwise complete) ###  
     
   
 ### Summary sentence of meta-analysis ###
@@ -162,9 +163,9 @@ PairwiseSummary_function <- function(outcome, MA.Model) {
   line0<-paste(strong("Results"))
   line1<-paste("Number of studies: ", sum$k, sep="")
   if (outcome=='OR' | outcome=='RR') {
-    line2<-paste("Pooled estimate: ", round(exp(sum$b),2), " (95% CI: ", round(exp(sum$ci.lb),2), " to ", round(exp(sum$ci.ub),2), ")", sep="")
+    line2<-paste("Pooled estimate: ", round(exp(sum$b),2), " (95% CI: ", round(exp(sum$ci.lb),2), " to ", round(exp(sum$ci.ub),2), "); p-value: ", round(sum$pval, 3), sep="")
   } else {
-    line2<-paste("Pooled estimate: ", round(sum$b,2), " (95% CI: ", round(sum$ci.lb,2), " to ", round(sum$ci.ub,2), ")", sep="")
+    line2<-paste("Pooled estimate: ", round(sum$b,2), " (95% CI: ", round(sum$ci.lb,2), " to ", round(sum$ci.ub,2), "); p-value: ", round(sum$pval, 3), sep="")
   }
   line3<-paste(strong("Heterogeneity results"))
   line4<-paste("Between study standard-devation: ", round(sqrt(sum$tau2),3), "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
@@ -276,6 +277,67 @@ output$DICB <- renderTable({         # DIC
 
 ### Frequentist Pairwise Sample Size Calculations ###
   #-----------------------------------------------#
+
+# Forest plot of current evidence base
+output$EvBase <- renderPlot({
+  if (input$EvBase_choice=='freq') {
+    if (freqpair()$MA$MA.Fixed$measure %in% c('OR','RR')) {
+      forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random, atransf=exp)
+    } else {
+      forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
+    }
+    title("Forest plot of studies and overal pooled estimates")
+  }
+})
+
+
+
+### Links ###
+  #-------#
+
+observeEvent(input$link_to_tabpanel_evsynth, {
+  updateTabsetPanel(session, "MetaImpact", "Evidence Synthesis")
+})
+
+
+### Buttons ###
+  #---------#
+
+CutOffSettings <- function(type, outcome, MAFix, MARan) {
+  sumFix <- summary(MAFix)
+  sumRan <- summary(MARan)
+  if (type=='pvalue') {
+    label <- paste("P-value less than ...")
+    initial <- 0.05
+    current <- paste("<i>Current p-values are ", strong(round(sumFix$pval,3)), " (FE) and ", strong(round(sumRan$pval,3)), " (RE)</i>")}
+  else if (type=='ciwidth') {
+    label <- paste("Width less than ...")
+    initial <- 0.5
+    if (outcome %in% c("OR","RR")) {
+      current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(exp(sumFix$ci.ub) - exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub) - exp(sumRan$ci.lb), 2)), " (RE)</i>")
+      } else {current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(sumFix$ci.ub - sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.ub - sumRan$ci.lb, 2)), " (RE)</i>")}}
+  else if (type=='lci') {
+    label <- paste("Lower bound greater than ...")
+    initial <- 1.1
+    if (outcome %in% c("OR","RR")) {
+      current <- paste("<i>Current lower bounds are ", strong(round(exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.lb), 2)), " (RE)</i>")
+      } else {current <- paste("<i>Current lower bounds are ", strong(round(sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.lb, 2)), " (RE)</i>")}}
+  else {
+    label <- paste("Upper bound less than ...")
+    initial <- 0.9
+    if (outcome %in% c("OR","RR")) {
+      current <- paste("<i> Current upper bounds are ", strong(round(exp(sumFix$ci.ub), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub), 2)), " (RE)</i>")
+      } else {current <- paste("<i> Current upper bounds are ", strong(round(sumFix$ci.ub, 2)), " (FE) and ", strong(round(sumRan$ci.ub, 2)), " (RE)</i>")}}
+  list(label=label, initial=initial, current=current)
+}
+
+output$CutOff <- renderUI({
+  cutsettings <- CutOffSettings(input$impact_type, outcome(), freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
+  tagList(
+    numericInput('cutoff', label = paste(cutsettings$label), value=cutsettings$initial),
+    HTML(cutsettings$current)
+  )
+})
 
 
 
