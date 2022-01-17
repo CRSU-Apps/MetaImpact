@@ -113,6 +113,7 @@ tabPanel("Sample Size Calculator",
                                               h6("This panel presents the current evidence base from which the sample size calculations are based on. If you wish to change this, please go back to the ", actionLink("link_to_tabpanel_evsynth", "Evidence synthesis tab"), " and alter the synthesis options accordingly."),
                                               plotOutput("EvBase"),
                                               radioButtons("EvBase_choice", "", c("Frequentist MA" = "freq", "Bayesian MA" = "bayes"), inline=TRUE))),
+        # Calculator Settings #
                                    bsCollapse(id="CalcSettings", open="Calculation Settings",
                                    bsCollapsePanel(title="Calculation Settings", style='info',
                                               fluidRow(div(style="display: inline-block;vertical-align:top;", textInput("samplesizes", "Total sample size(s)", value = "100")),
@@ -121,12 +122,19 @@ tabPanel("Sample Size Calculator",
                                                                           p("Studies are assumed to have two arms of equal sizes."),
                                                                           p("If entering multiple sample sizes, please separate them with a semi-colon (e.g. 100; 200; 300)."))),
                                                        div(style="display: inline-block;vertical-align:top; width: 15px;",HTML("<br>")),
-                                                       div(style="display: inline-block;vertical-align:top;", numericInput("#its", "Number of iterations", value=100, min=1))),
+                                                       div(style="display: inline-block;vertical-align:top;", numericInput("its", "Number of iterations", value=100, min=1))),
                                               fluidRow(div(style="display: inline-block;vertical-align:top;", selectInput("impact_type", "Type of impact on evidence base", 
                                                                           c("Significant p-value" = "pvalue", "95% confidence interval of certain width" = "ciwidth", "Lower bound of 95% confidence interval of certain value" = "lci", "Upper bound 95% confidence interval of certain value" = "uci"))),
                                                        div(style="display: inline-block;vertical-align:top; width: 35px;",HTML("<br>")),
                                                        div(style="display: inline-block;vertical-align:top; width: 300px;", uiOutput("CutOff"))))),
-                                   actionButton("CalcRun", "Run Sample Size Calculations", class="btn-primary btn-lg"))),
+                                   actionButton("CalcRun", "Run Sample Size Calculations", class="btn-primary btn-lg")),
+        # Results #
+        column(7, align='center', conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open="Sample Size Calculator Results", bsCollapsePanel(title="Sample Size Calculator Results", style='success',
+                                                   plotOutput("powplot")
+                                                   #,
+                                                   #tableOutput("powtable")
+                                                   ))))
+        ),
 
 
 # Education Tab #

@@ -11,6 +11,7 @@ library(tidyverse)
 library(metafor)
 library(ggplot2)
 library(tidyr)
+library(stringr)
 
 #-----------------------------#
 # load user-written functions #
@@ -288,6 +289,23 @@ output$EvBase <- renderPlot({
     }
     title("Forest plot of studies and overal pooled estimates")
   }
+})
+
+observeEvent( input$CalcRun, {                           # reopen panel when a user re-runs calculator
+  updateCollapse(session=session, id="Calculator", open="Sample Size Calculator Results")
+})
+
+CalcResults <- eventReactive( input$CalcRun, {
+  list1 <- list()
+  sample_sizes <- as_numeric(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)) # convert to numeric vector
+  if (length(sample_sizes)>1) {  # only plot if input multiple sample sizes
+    list1$plot <- metapowplot(SampleSizes=sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), ModelOpt='both', recalc=FALSE, regraph=FALSE)
+  }
+  list1
+})
+
+output$powplot <- renderPlot({    # only if multiple sample sizes entered
+  CalcResults()$plot$plot
 })
 
 

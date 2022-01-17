@@ -99,9 +99,9 @@ metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean esti
 rerunMA <- function(new, data, model, n, measure) {   # new - newly simulated trial using metasim; data - original dataset; model - fixed or random; n - total sample size; measure - type of outcome (or/rr/rd);
   # put together dataframe for new trial
   if (measure=='OR' | measure=='RR' | measure=='RD') {
-    newtrial <- data.frame(Study="New", Year=2021, T.1="Treatment", T.2="Control", R.1=new$new.events.t, R.2=new$new.events.c, N.1=n/2, N.2=n/2)
+    newtrial <- data.frame(StudyID=max(data$StudyID)+1, Study=paste("New_", format(Sys.Date(), "%Y")), T.1=data$T.1[1], T.2=data$T.2[1], R.1=new$new.events.t, R.2=new$new.events.c, N.1=n/2, N.2=n/2)
   } else {
-    newtrial <- data.frame(Study="New", Year=2021, T.1="Treatment", T.2="Control", Mean.1=new$new.mean.t, Mean.2=new$new.mean.c, 
+    newtrial <- data.frame(StudyID=max(data$StudyID)+1, Study=paste("New_", format(Sys.Date(), "%Y")), T.1=data$T.1[1], T.2=data$T.2[1], Mean.1=new$new.mean.t, Mean.2=new$new.mean.c, 
                            SD.1=new$new.stdev.t, SD.2=new$new.stdev.c, N.1=n/2, N.2=n/2)
   }
   newdata <- rbind(data, newtrial)
@@ -246,10 +246,10 @@ metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, Mo
   g <- g +
     geom_line(size=1) + geom_point(shape=21) +
     theme_classic() +
-    scale_x_continuous(limits=c(0,max(SampleSizes)+5), expand=c(0,0)) +
+    scale_x_continuous(limits=c(min(SampleSizes)-5, max(SampleSizes)+5), breaks=SampleSizes, expand=c(0,0)) +
     scale_y_continuous(limits=c(0,NA), expand=c(0,0)) +
-    theme(legend.position="bottom", legend.title=element_blank(), legend.background = element_rect(linetype="solid",colour ="black"), 
-          panel.grid.major.y = element_line(colour="gray80", linetype='dashed', size=0.5), plot.margin = unit(c(10,15,10,10), "points"), 
+    theme(legend.position="bottom", legend.title=element_blank(), legend.background = element_rect(linetype="solid",colour ="black"), legend.key.size = unit(1,'cm'), legend.text = element_text(size = 10),
+          panel.grid.major.y = element_line(colour="gray80", linetype='dashed', size=0.5), plot.margin = unit(c(10,15,10,10), "points"), axis.text = element_text(size=10), 
           plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
   return(list(plot=g, data=PowerData))
 }   
