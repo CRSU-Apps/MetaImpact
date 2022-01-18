@@ -129,11 +129,7 @@ tabPanel("Sample Size Calculator",
                                                        div(style="display: inline-block;vertical-align:top; width: 300px;", uiOutput("CutOff"))))),
                                    actionButton("CalcRun", "Run Sample Size Calculations", class="btn-primary btn-lg")),
         # Results #
-        column(7, align='center', conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open="Sample Size Calculator Results", bsCollapsePanel(title="Sample Size Calculator Results", style='success',
-                                                   plotOutput("powplot")
-                                                   #,
-                                                   #tableOutput("powtable")
-                                                   ))))
+        column(7, align='center', uiOutput("CalculatorResults"))
         ),
 
 

@@ -291,21 +291,42 @@ output$EvBase <- renderPlot({
   }
 })
 
-observeEvent( input$CalcRun, {                           # reopen panel when a user re-runs calculator
-  updateCollapse(session=session, id="Calculator", open="Sample Size Calculator Results")
+# Settings for UI
+OneOrMultiple <- eventReactive( input$CalcRun, {         # function to be used in update Collapse below
+  if (grepl(';', input$samplesizes)==TRUE) {return('Power Plot of Results')}
+  if (grepl(';', input$samplesizes)==FALSE) {return('Table of power results')}
 })
 
+observeEvent( input$CalcRun, {                           # reopen panel when a user re-runs calculator
+  updateCollapse(session=session, id="Calculator", open=OneOrMultiple())
+})
+
+# Calulate
 CalcResults <- eventReactive( input$CalcRun, {
   list1 <- list()
-  sample_sizes <- as_numeric(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)) # convert to numeric vector
-  if (length(sample_sizes)>1) {  # only plot if input multiple sample sizes
-    list1$plot <- metapowplot(SampleSizes=sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), ModelOpt='both', recalc=FALSE, regraph=FALSE)
+  list1$sample_sizes <- as_numeric(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)) # convert to numeric vector
+  if (length(list1$sample_sizes)>1) {  # only plot if input multiple sample sizes
+    list1$plot <- metapowplot(SampleSizes=list1$sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), ModelOpt='both', recalc=FALSE, regraph=FALSE)
+  } else if (length(list1$sample_sizes)==1) {
+    list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=FALSE)
   }
   list1
 })
 
+# Results
 output$powplot <- renderPlot({    # only if multiple sample sizes entered
   CalcResults()$plot$plot
+})
+
+output$powtable <- renderTable({
+  powdata <- CalcResults()$plot$data
+  names(powdata) <- c("Total Sample Size", "Model", "Power estimate (%)", "Lower 95% CI bound", "Upper 95% CI bound")
+  powdata
+}, digits=1)
+
+output$singleresult <- renderUI({
+  HTML(paste0("<b>Fixed-effects</b>: ", CalcResults()$singleresult$power$Fixed*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Fixed*100, 1), " to ", round(CalcResults()$singleresult$CI_upper$Fixed*100, 1), ")<br>",
+              "<b>Random-effects</b>: ", CalcResults()$singleresult$power$Random*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Random*100, 1), " to ", round(CalcResults()$singleresult$CI_upper$Random*100, 1), ")"))
 })
 
 
@@ -318,8 +339,10 @@ observeEvent(input$link_to_tabpanel_evsynth, {
 })
 
 
-### Buttons ###
-  #---------#
+### Interactive UI ###
+  #----------------#
+
+# Cut-off information #
 
 CutOffSettings <- function(type, outcome, MAFix, MARan) {
   sumFix <- summary(MAFix)
@@ -356,6 +379,33 @@ output$CutOff <- renderUI({
     HTML(cutsettings$current)
   )
 })
+
+# Calculator Results #
+
+SingMult <- eventReactive( input$CalcRun, {           # single or multiple sample sizes
+  if (grepl(';', input$samplesizes)==TRUE) {
+    return('multiple')
+  } else {
+    return ('single')
+  }
+})
+output$SingMult <- renderText({
+  SingMult()
+})
+outputOptions(output, "SingMult", suspendWhenHidden=FALSE) #needed for UI options, but doesn't need displaying itself
+
+output$CalculatorResults <- renderUI({
+  panel <- OneOrMultiple()   # ascertain which panel should be open
+  conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open=panel, multiple=TRUE,  
+                                                            bsCollapsePanel(title="Power Plot of Results", style='success',
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", plotOutput('powplot')),
+                                                                            conditionalPanel(condition = "output.SingMult=='single'", p("Only one sample size has been entered."))),
+                                                            bsCollapsePanel(title="Table of power results", style='success',
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", tableOutput("powtable")),
+                                                                            conditionalPanel(condition = "output.SingMult=='single'", htmlOutput("singleresult"))
+                                                            )))
+})
+
 
 
 

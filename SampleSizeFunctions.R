@@ -213,6 +213,7 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
 metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, ModelOpt, recalc=FALSE, regraph=FALSE) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
   if (regraph==FALSE) {   # obtain power data if its the first run
   PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
+  PowerData <- PowerData[order(PowerData$SampleSize),]
   for (i in 1:length(SampleSizes)) {
     results <- metapow(NMA=NMA, data=data, n=SampleSizes[i], nit=nit, inference=inference, pow=pow, measure=measure, recalc=recalc, plot_ext=i)
     PowerData$Estimate[i] <- results$power$Fixed*100
