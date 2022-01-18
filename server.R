@@ -25,6 +25,7 @@ source("ForestFunctions.R", local=TRUE)
 # Server Content #
 #----------------#
 function(input, output, session) {
+  source("DownloadButtons.R", local=TRUE)  # needs to be within server
 
   
 ### Load and present Data ###
@@ -183,7 +184,7 @@ freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise M
       if (outcome()=='OR' | outcome()=='RR') {
         information$Forest <- {
           forest(information$MA$MA.Fixed, atransf=exp)
-          title("Forest plot of studies with overall estimate from fixed-effects model") }
+          title("Forest plot of studies with overall estimate from fixed-effects model")}
       } else {
         information$Forest <- {
           forest(information$MA$MA.Fixed)
@@ -398,10 +399,10 @@ output$CalculatorResults <- renderUI({
   panel <- OneOrMultiple()   # ascertain which panel should be open
   conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open=panel, multiple=TRUE,  
                                                             bsCollapsePanel(title="Power Plot of Results", style='success',
-                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", plotOutput('powplot')),
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", plotOutput('powplot'), downloadButton('powplot_download', "Download (PNG)")),
                                                                             conditionalPanel(condition = "output.SingMult=='single'", p("Only one sample size has been entered."))),
                                                             bsCollapsePanel(title="Table of power results", style='success',
-                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", tableOutput("powtable")),
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", tableOutput("powtable"), downloadButton('powtable_download', "Download (CSV)")),
                                                                             conditionalPanel(condition = "output.SingMult=='single'", htmlOutput("singleresult"))
                                                             )))
 })

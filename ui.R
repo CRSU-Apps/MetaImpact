@@ -89,7 +89,8 @@ tabPanel("Evidence Synthesis",
                       column(6,offset=2, plotOutput("ForestPlotNMAF"))),  # Forest plot
                     conditionalPanel(condition = "input.Pairwise_NMA",    # Pairwise results
                       column(5,align='center', htmlOutput("SummaryTableF")), #Summary table
-                      column(6, offset=1, plotOutput("ForestPlotPairF"))))))), #Forest plot
+                      column(6, align='center', offset=1, plotOutput("ForestPlotPairF"),    #Forest plot
+                             downloadButton('forestpair_download', "Download forest plot"), radioButtons('forestpair_choice', "", c('pdf','png'), inline=TRUE))))))), 
          # Bayesian #
          conditionalPanel(condition = "input.BayesRun!=0",
           fluidRow(p(htmlOutput("SynthesisSummaryBayes")),
@@ -112,7 +113,10 @@ tabPanel("Sample Size Calculator",
                                    bsCollapsePanel(title="Current Evidence Base", style='primary',
                                               h6("This panel presents the current evidence base from which the sample size calculations are based on. If you wish to change this, please go back to the ", actionLink("link_to_tabpanel_evsynth", "Evidence synthesis tab"), " and alter the synthesis options accordingly."),
                                               plotOutput("EvBase"),
-                                              radioButtons("EvBase_choice", "", c("Frequentist MA" = "freq", "Bayesian MA" = "bayes"), inline=TRUE))),
+                                              radioButtons("EvBase_choice", "", c("Frequentist MA" = "freq", "Bayesian MA" = "bayes"), inline=TRUE),
+                                              fluidRow(div(style="display: inline-block;", downloadButton('evbase_download', "Download forest plot")),
+                                                       div(style="display:inline-block; width: 10px;", HTML("<br>")),
+                                                       div(style="display: inline-block;", radioButtons('evbase_choice', "", c('pdf', 'png'), inline=TRUE))))),
         # Calculator Settings #
                                    bsCollapse(id="CalcSettings", open="Calculation Settings",
                                    bsCollapsePanel(title="Calculation Settings", style='info',
