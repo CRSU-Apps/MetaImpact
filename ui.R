@@ -7,6 +7,7 @@ library(shiny)
 library(shinythemes)
 library(shinyBS)
 library(shinyWidgets)
+library(shinycssloaders)
 
 # load user-written functions #
 #-----------------------------#
@@ -85,19 +86,19 @@ tabPanel("Evidence Synthesis",
                   p("To change the model options, please adjust synthesis options above and re-run analysis."),
                   bsCollapse(id="FreqID", open="Frequentist Analysis", bsCollapsePanel(title="Frequentist Analysis", style='success',
                     conditionalPanel(condition = "!input.Pairwise_NMA",   # NMA results
-                      column(4, plotOutput("NetworkPlotF")), #Network plot
-                      column(6,offset=2, plotOutput("ForestPlotNMAF"))),  # Forest plot
+                      column(4, withSpinner(plotOutput("NetworkPlotF"), type=6)), #Network plot
+                      column(6,offset=2, withSpinner(plotOutput("ForestPlotNMAF"), type=6))),  # Forest plot
                     conditionalPanel(condition = "input.Pairwise_NMA",    # Pairwise results
-                      column(5,align='center', htmlOutput("SummaryTableF")), #Summary table
-                      column(6, align='center', offset=1, plotOutput("ForestPlotPairF"),    #Forest plot
+                      column(5,align='center', withSpinner(htmlOutput("SummaryTableF"), type=6)), #Summary table
+                      column(6, align='center', offset=1, withSpinner(plotOutput("ForestPlotPairF"), type=6),    #Forest plot
                              downloadButton('forestpair_download', "Download forest plot"), radioButtons('forestpair_choice', "", c('pdf','png'), inline=TRUE))))))), 
          # Bayesian #
          conditionalPanel(condition = "input.BayesRun!=0",
           fluidRow(p(htmlOutput("SynthesisSummaryBayes")),
                   p("To change the model options, please adjust synthesis options above and re-run analysis."),
                   bsCollapse(id="BayesID", open="Bayesian Analysis", bsCollapsePanel(title="Bayesian Analysis", style='success',
-                  column(4, plotOutput("NetworkPlotB")),
-                  column(6,offset=2, plotOutput("ForestPlotB"), htmlOutput("TauB"), tableOutput("DICB")))))
+                  column(4, withSpinner(plotOutput("NetworkPlotB"), type=6)),
+                  column(6,offset=2, withSpinner(plotOutput("ForestPlotB"), type=6), htmlOutput("TauB"), tableOutput("DICB")))))
                   )),
           # See if network plots can be ordered the same as each other
           # All outputs will need further formatting (including sizing) plus addition of tau for frequentist, and # of studies (for NMA only).
@@ -112,7 +113,7 @@ tabPanel("Sample Size Calculator",
          column(5, align='center', bsCollapse(id="EvidenceBase", open="Current Evidence Base", 
                                    bsCollapsePanel(title="Current Evidence Base", style='primary',
                                               h6("This panel presents the current evidence base from which the sample size calculations are based on. If you wish to change this, please go back to the ", actionLink("link_to_tabpanel_evsynth", "Evidence synthesis tab"), " and alter the synthesis options accordingly."),
-                                              plotOutput("EvBase"),
+                                              withSpinner(plotOutput("EvBase"), type=6),
                                               radioButtons("EvBase_choice", "", c("Frequentist MA" = "freq", "Bayesian MA" = "bayes"), inline=TRUE),
                                               fluidRow(div(style="display: inline-block;", downloadButton('evbase_download', "Download forest plot")),
                                                        div(style="display:inline-block; width: 10px;", HTML("<br>")),

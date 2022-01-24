@@ -302,14 +302,24 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
   updateCollapse(session=session, id="Calculator", open=OneOrMultiple())
 })
 
-# Calulate
+# Calculate 
 CalcResults <- eventReactive( input$CalcRun, {
   list1 <- list()
   list1$sample_sizes <- as_numeric(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)) # convert to numeric vector
+  progress <- shiny::Progress$new() # Create a Progress object
+  progress$set(message = "Running simulations", value = 0)
+  on.exit(progress$close()) # Close the progress when this reactive exits (even if there's an error)
+  updateProgress <- function(value = NULL, detail = NULL) { #callback function to update progress.
+    if (is.null(value)) {
+      value <- progress$getValue()
+      value <- value + (progress$getMax() / length(list1$sample_sizes)) 
+    }
+    progress$set(value = value, detail = detail)
+  }
   if (length(list1$sample_sizes)>1) {  # only plot if input multiple sample sizes
-    list1$plot <- metapowplot(SampleSizes=list1$sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), ModelOpt='both', recalc=FALSE, regraph=FALSE)
+    list1$plot <- metapowplot(SampleSizes=list1$sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), ModelOpt='both', recalc=FALSE, regraph=FALSE, updateProgress=updateProgress)
   } else if (length(list1$sample_sizes)==1) {
-    list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=FALSE)
+    list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=FALSE, updateProgress=updateProgress)
   }
   list1
 })
@@ -399,11 +409,11 @@ output$CalculatorResults <- renderUI({
   panel <- OneOrMultiple()   # ascertain which panel should be open
   conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open=panel, multiple=TRUE,  
                                                             bsCollapsePanel(title="Power Plot of Results", style='success',
-                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", plotOutput('powplot'), downloadButton('powplot_download', "Download (PNG)")),
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(plotOutput('powplot'), type=6), downloadButton('powplot_download', "Download (PNG)")),
                                                                             conditionalPanel(condition = "output.SingMult=='single'", p("Only one sample size has been entered."))),
                                                             bsCollapsePanel(title="Table of power results", style='success',
-                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", tableOutput("powtable"), downloadButton('powtable_download', "Download (CSV)")),
-                                                                            conditionalPanel(condition = "output.SingMult=='single'", htmlOutput("singleresult"))
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(tableOutput("powtable"), type=6), downloadButton('powtable_download', "Download (CSV)")),
+                                                                            conditionalPanel(condition = "output.SingMult=='single'", withSpinner(htmlOutput("singleresult"), type=6))
                                                             )))
 })
 

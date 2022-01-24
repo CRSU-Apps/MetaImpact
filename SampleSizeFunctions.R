@@ -210,7 +210,7 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
 
 
 # function for plotting the power curve
-metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, ModelOpt, recalc=FALSE, regraph=FALSE) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
+metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, ModelOpt, recalc=FALSE, regraph=FALSE, updateProgress = NULL) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
   if (regraph==FALSE) {   # obtain power data if its the first run
   PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
   PowerData <- PowerData[order(PowerData$SampleSize),]
@@ -223,6 +223,10 @@ metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, Mo
     PowerData$CI_upper[i] <- results$CI_upper$Fixed*100
     PowerData$CI_upper[i+length(SampleSizes)] <- results$CI_upper$Random*100
     print(paste("Simulation",i,"of", length(SampleSizes), "complete"))
+    if (is.function(updateProgress)) {
+      text <- paste0("Simulation ",i," of ", length(SampleSizes), " complete")
+      updateProgress(detail = text)
+    }
   }
   write.table(PowerData, file='PowerData.txt', sep = "\t", row.names=FALSE)  # save this data if model option is changed
   }
