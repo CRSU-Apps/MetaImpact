@@ -333,7 +333,7 @@ CalcResults <- eventReactive( input$CalcRun, {
       }
       progress$set(value = value, detail = detail)
     }
-    list1$plot <- metapowplot(SampleSizes=list1$sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), ModelOpt='both', recalc=as.logical(Recalc()), regraph=FALSE, updateProgress=updateProgress)
+    list1$data <- metapow_multiple(SampleSizes=list1$sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()), updateProgress=updateProgress)
   } else if (length(list1$sample_sizes)==1) {
     list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()))
   }
@@ -342,11 +342,11 @@ CalcResults <- eventReactive( input$CalcRun, {
 
 # Results
 output$powplot <- renderPlot({    # only if multiple sample sizes entered
-  CalcResults()$plot$plot
+  metapowplot(PowerData=CalcResults()$data, ModelOpt=input$powplot_options)
 })
 
 output$powtable <- renderTable({
-  powdata <- CalcResults()$plot$data
+  powdata <- CalcResults()$data
   names(powdata) <- c("Total Sample Size", "Model", "Power estimate (%)", "Lower 95% CI bound", "Upper 95% CI bound")
   powdata
 }, digits=1)
@@ -425,7 +425,7 @@ output$CalculatorResults <- renderUI({
   panel <- OneOrMultiple()   # ascertain which panel should be open
   conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open=panel, multiple=TRUE,  
                                                             bsCollapsePanel(title="Power Plot of Results", style='success',
-                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(plotOutput('powplot'), type=6), downloadButton('powplot_download', "Download (PNG)")),
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(plotOutput('powplot'), type=6), radioButtons('powplot_options', "", c("Fixed-effects only"='fixed', "Random-effects only"='random', "Both fixed- and random-effects"='both'), selected='both', inline=TRUE), downloadButton('powplot_download', "Download (PNG)")),
                                                                             conditionalPanel(condition = "output.SingMult=='single'", p("Only one sample size has been entered."))),
                                                             bsCollapsePanel(title="Table of power results", style='success',
                                                                             conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(tableOutput("powtable"), type=6), downloadButton('powtable_download', "Download (CSV)")),

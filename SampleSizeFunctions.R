@@ -209,9 +209,8 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
 #test <- metapow(nit=100, inference='ciwidth', pow=0.25, recalc='TRUE')
 
 
-# function for plotting the power curve
-metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, ModelOpt, recalc=FALSE, regraph=FALSE, updateProgress = NULL) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
-  if (regraph==FALSE) {   # obtain power data if its the first run
+# function for plotting the power curve (had to split into two functions so that the options for the plot itself could be run without the 'run' button needing to be pressed)
+metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measure, recalc=FALSE, updateProgress = NULL) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
   PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
   PowerData <- PowerData[order(PowerData$SampleSize),]
   for (i in 1:length(SampleSizes)) {
@@ -228,9 +227,10 @@ metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, Mo
       updateProgress(detail = text)
     }
   }
-  write.table(PowerData, file='PowerData.txt', sep = "\t", row.names=FALSE)  # save this data if model option is changed
-  }
-  PowerData <- read.table('PowerData.txt', sep = "\t", header = TRUE) # read in power data
+  return(PowerData)
+}
+metapowplot <- function(PowerData, ModelOpt='both') {
+  PowerData <- PowerData
   if (ModelOpt == 'fixed') { # only fixed
     g <- ggplot(PowerData[PowerData$Model=='Fixed-effects',], aes(x=SampleSize, y=Estimate)) +
       geom_ribbon(aes(ymin=CI_lower, ymax=CI_upper),alpha=0.3, colour='gray70', linetype='blank') +
@@ -256,7 +256,7 @@ metapowplot <- function(SampleSizes, NMA, data, nit, inference, pow, measure, Mo
     theme(legend.position="bottom", legend.title=element_blank(), legend.background = element_rect(linetype="solid",colour ="black"), legend.key.size = unit(1,'cm'), legend.text = element_text(size = 10),
           panel.grid.major.y = element_line(colour="gray80", linetype='dashed', size=0.5), plot.margin = unit(c(10,15,10,10), "points"), axis.text = element_text(size=10), 
           plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
-  return(list(plot=g, data=PowerData))
+  return(g)
 }   
 
 #test<-metapowplot(SampleSizes=c(1000, 2000, 3000, 4000, 5000, 6000), NMA=MA, data=data, nit=50, inference='pvalue', pow=0.05, measure='SMD', ModelOpt='both')
