@@ -288,7 +288,7 @@ output$EvBase <- renderPlot({
     } else {
       forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
     }
-    title("Forest plot of studies and overal pooled estimates")
+    title("Forest plot of studies and overall pooled estimates")
   }
 })
 
@@ -302,6 +302,22 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
   updateCollapse(session=session, id="Calculator", open=OneOrMultiple())
 })
 
+# Function for checking if recalc option needs to be TRUE or FALSE (TRUE if only the impact type and/or cut-off have changed)
+Recalc <- reactiveVal('FALSE')  # initialise
+### Create set of constantly updated reactive values of cached inputs
+tmpInputs <- reactiveValues()  # initialised
+tmp_freqpair <- eventReactive( input$FreqRun, {    # without this, the evidence synthesis tab was getting upset (forest plot)         
+  if (input$Pairwise_NMA==TRUE) {
+    FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin(), trt=input$Pair_Trt) }
+  })
+inputCache <- reactive(list(sample=input$samplesizes, NMA=tmp_freqpair(), nit=input$its))
+source("InputCaches.R", local=TRUE)  # (non elegant) code for caching inputs - updating tmpInputs
+# compare previous input settings to decide on recalc option
+observeEvent(input$CalcRun, {
+  if (input$CalcRun>1) {
+    eval(parse(text = paste0("if (setequal(tmpInputs[['", input$CalcRun, "']]$sample,tmpInputs[['", input$CalcRun-1, "']]$sample) & setequal(tmpInputs[['", input$CalcRun, "']]$NMA,tmpInputs[['", input$CalcRun-1, "']]$NMA) & setequal(tmpInputs[['", input$CalcRun, "']]$nit,tmpInputs[['", input$CalcRun-1, "']]$nit)) {Recalc('TRUE')} else {Recalc('FALSE')}", sep=""))) #compare previous two sets of inputs
+}})
+
 # Calculate 
 CalcResults <- eventReactive( input$CalcRun, {
   list1 <- list()
@@ -309,17 +325,17 @@ CalcResults <- eventReactive( input$CalcRun, {
   progress <- shiny::Progress$new() # Create a Progress object
   progress$set(message = "Running simulations", value = 0)
   on.exit(progress$close()) # Close the progress when this reactive exits (even if there's an error)
-  updateProgress <- function(value = NULL, detail = NULL) { #callback function to update progress.
-    if (is.null(value)) {
-      value <- progress$getValue()
-      value <- value + (progress$getMax() / length(list1$sample_sizes)) 
-    }
-    progress$set(value = value, detail = detail)
-  }
   if (length(list1$sample_sizes)>1) {  # only plot if input multiple sample sizes
-    list1$plot <- metapowplot(SampleSizes=list1$sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), ModelOpt='both', recalc=FALSE, regraph=FALSE, updateProgress=updateProgress)
+    updateProgress <- function(value = NULL, detail = NULL) { #callback function to update progress where there are multiple simulations.
+      if (is.null(value)) {
+        value <- progress$getValue()
+        value <- value + (progress$getMax() / length(list1$sample_sizes)) 
+      }
+      progress$set(value = value, detail = detail)
+    }
+    list1$plot <- metapowplot(SampleSizes=list1$sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), ModelOpt='both', recalc=as.logical(Recalc()), regraph=FALSE, updateProgress=updateProgress)
   } else if (length(list1$sample_sizes)==1) {
-    list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=FALSE, updateProgress=updateProgress)
+    list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()))
   }
   list1
 })
@@ -336,8 +352,8 @@ output$powtable <- renderTable({
 }, digits=1)
 
 output$singleresult <- renderUI({
-  HTML(paste0("<b>Fixed-effects</b>: ", CalcResults()$singleresult$power$Fixed*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Fixed*100, 1), " to ", round(CalcResults()$singleresult$CI_upper$Fixed*100, 1), ")<br>",
-              "<b>Random-effects</b>: ", CalcResults()$singleresult$power$Random*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Random*100, 1), " to ", round(CalcResults()$singleresult$CI_upper$Random*100, 1), ")"))
+  HTML(paste0("<b>Fixed-effects</b>: ", CalcResults()$singleresult$power$Fixed*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Fixed*100, 1), "% to ", round(CalcResults()$singleresult$CI_upper$Fixed*100, 1), "%)<br>",
+              "<b>Random-effects</b>: ", CalcResults()$singleresult$power$Random*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Random*100, 1), "% to ", round(CalcResults()$singleresult$CI_upper$Random*100, 1), "%)"))
 })
 
 
