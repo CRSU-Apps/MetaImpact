@@ -21,11 +21,26 @@ source("MAFunctions.R",local = TRUE)
 source("SampleSizeFunctions.R", local=TRUE)
 source("ForestFunctions.R", local=TRUE)
 
+
 #----------------#
 # Server Content #
 #----------------#
 function(input, output, session) {
   source("DownloadButtons.R", local=TRUE)  # needs to be within server
+  
+#------------------#
+# Warning messages #
+#------------------#
+BadSampleSizes <- function(){
+  showModal(modalDialog(
+    title = "Unsuitable Sample Sizes",
+    easyClose = FALSE,
+    p("The total sample size is assuming two arms of equal size. Therefore, please enter ", tags$strong("even integers.")),
+    br(),
+    modalButton("Close warning"),
+    footer = NULL
+  ))
+}
 
   
 ### Load and present Data ###
@@ -327,7 +342,13 @@ observeEvent(input$CalcRun, {
 # Calculate 
 CalcResults <- eventReactive( input$CalcRun, {
   list1 <- list()
-  list1$sample_sizes <- as_numeric(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)) # convert to numeric vector
+  if (grepl(".", input$samplesizes, fixed=TRUE)) {     # If any decimals have been entered
+    BadSampleSizes()
+  } else {
+  list1$sample_sizes <- as.integer(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)) # convert to vector of integers
+  if (grepl(".", toString(list1$sample_sizes/2), fixed=TRUE)) {           # if any odd integers
+    BadSampleSizes()
+  } else {
   progress <- shiny::Progress$new() # Create a Progress object
   progress$set(message = "Running simulations", value = 0)
   on.exit(progress$close()) # Close the progress when this reactive exits (even if there's an error)
@@ -344,7 +365,7 @@ CalcResults <- eventReactive( input$CalcRun, {
     list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()))
   }
   list1
-})
+}}})
 
 # Results
 output$powplot <- renderPlot({    # only if multiple sample sizes entered

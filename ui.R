@@ -53,7 +53,7 @@ tabPanel("Data",
                                                                               "Binary outcome: Number of people that improved their VA by gaining 3+ lines during a vision test" = "binaryEx"), width='100%')),
          column(7, h4("View Data"),
                 uiOutput("data"))),                      # View data
-  # Make it such that a user can still use example data even after uploading their own
+  # Make it such that a user can still use example data even after uploading their own (maybe a tick box after uploading their own to 'use' example instead or 'remove data')
   # NEEDS CORRECTING - pairwise binary data is not from same paper (details in files)
         
                    
@@ -111,6 +111,7 @@ tabPanel("Evidence Synthesis",
 
 tabPanel("Sample Size Calculator",
          introjsUI(), # help pages
+         bsAlert("SampleSizeAlertUI"), #error warning about sample sizes
          # Evidence Base Summary #
          column(5, align='center', bsCollapse(id="EvidenceBase", open="Current Evidence Base", 
                                    bsCollapsePanel(title="Current Evidence Base", style='primary',
