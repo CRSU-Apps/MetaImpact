@@ -342,11 +342,8 @@ observeEvent(input$CalcRun, {
 # Calculate 
 CalcResults <- eventReactive( input$CalcRun, {
   list1 <- list()
-  if (grepl(".", input$samplesizes, fixed=TRUE)) {     # If any decimals have been entered
-    BadSampleSizes()
-  } else {
   list1$sample_sizes <- as.integer(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)) # convert to vector of integers
-  if (grepl(".", toString(list1$sample_sizes/2), fixed=TRUE)) {           # if any odd integers
+  if (grepl(".", input$samplesizes, fixed=TRUE) | grepl(".", toString(list1$sample_sizes/2), fixed=TRUE)) {     # If any decimals or odds have been entered
     BadSampleSizes()
   } else {
   progress <- shiny::Progress$new() # Create a Progress object
@@ -365,11 +362,11 @@ CalcResults <- eventReactive( input$CalcRun, {
     list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()))
   }
   list1
-}}})
+}})
 
 # Results
 output$powplot <- renderPlot({    # only if multiple sample sizes entered
-  metapowplot(PowerData=CalcResults()$data, ModelOpt=input$powplot_options)
+  metapowplot(PowerData=CalcResults()$data, ModelOpt=input$powplot_options, SampleSizes=CalcResults()$sample_sizes)
 })
 
 output$powtable <- renderTable({

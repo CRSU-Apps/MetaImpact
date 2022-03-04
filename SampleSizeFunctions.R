@@ -229,7 +229,7 @@ metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measur
   }
   return(PowerData)
 }
-metapowplot <- function(PowerData, ModelOpt='both') {
+metapowplot <- function(PowerData, ModelOpt='both', SampleSizes) {
   PowerData <- PowerData
   if (ModelOpt == 'fixed') { # only fixed
     g <- ggplot(PowerData[PowerData$Model=='Fixed-effects',], aes(x=SampleSize, y=Estimate)) +
