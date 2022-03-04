@@ -144,7 +144,7 @@ FreqSummaryText <- eventReactive( input$FreqRun, {
 output$SynthesisSummaryFreq <- renderText({FreqSummaryText()})
 BayesSummaryText <- eventReactive( input$BayesRun, {
   paste("Results for ", strong(input$FixRand), "-effects ", MAText(), " of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
-    reference treatment ", ifselse(input$Pairwise_NMA=='TRUE', paste(strong(input$Pair_Ctrl)), paste(strong(input$Reference))), ".", sep="")
+    reference treatment ", ifelse(input$Pairwise_NMA=='TRUE', paste(strong(input$Pair_Ctrl)), paste(strong(input$Reference))), ".", sep="")
 })
 output$SynthesisSummaryBayes <- renderText({BayesSummaryText()})
 
@@ -302,6 +302,12 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
   updateCollapse(session=session, id="Calculator", open=OneOrMultiple())
 })
 
+# Interactive help boxes for the calculator settings
+observeEvent(input$calc_help,
+             introjs(session, options = list("showBullets"="false", "showProgress"="true", 
+                                             "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip"))
+)
+
 # Function for checking if recalc option needs to be TRUE or FALSE (TRUE if only the impact type and/or cut-off have changed)
 Recalc <- reactiveVal('FALSE')  # initialise
 ### Create set of constantly updated reactive values of cached inputs
@@ -402,7 +408,8 @@ CutOffSettings <- function(type, outcome, MAFix, MARan) {
 output$CutOff <- renderUI({
   cutsettings <- CutOffSettings(input$impact_type, outcome(), freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
   tagList(
-    numericInput('cutoff', label = paste(cutsettings$label), value=cutsettings$initial),
+    introBox(numericInput('cutoff', label = paste(cutsettings$label), value=cutsettings$initial),
+             data.step=4, data.intro="Depending on which type of impact has been chosen, please choose a specific cut-off value for which you define as 'impactful' (e.g. a p-value of less than 0.05)."),
     HTML(cutsettings$current)
   )
 })

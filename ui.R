@@ -8,6 +8,7 @@ library(shinythemes)
 library(shinyBS)
 library(shinyWidgets)
 library(shinycssloaders)
+library(rintrojs)
 
 # load user-written functions #
 #-----------------------------#
@@ -45,7 +46,7 @@ tabPanel("Data",
                 fileInput(inputId="data", label="", buttonLabel="Select", placeholder="No file selected"),
                 br(),
                 p("If you wish to explore the app, you are welcome to choose one of the example datasets below."),
-                p("Both example datasets are based on a (network) meta-analysis reviewing the affect anti-vasuclar endothelial growth factor has on diabetic macular oedema. 
+                p("Both example datasets are based on a (network) meta-analysis reviewing the effect anti-vasuclar endothelial growth factor has on diabetic macular oedema. 
                   Visual acuity (VA) outcomes were reported and chosen for these examples. The paper by Virgili et al can be found ", a(href="https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD007419.pub6/full", "here.")),
                 p("To explore an example network meta-analysis, NMA options are available on the 'Evidence Synthesis' tab."),
                 radioButtons("ChooseExample", "Example Datasets Available", c("Continuous outcome: Change in VA in terms of LogMAR (negative change in LogMAR = improved vision)" = "continuousEx", 
@@ -109,6 +110,7 @@ tabPanel("Evidence Synthesis",
 #----------------------------#
 
 tabPanel("Sample Size Calculator",
+         introjsUI(), # help pages
          # Evidence Base Summary #
          column(5, align='center', bsCollapse(id="EvidenceBase", open="Current Evidence Base", 
                                    bsCollapsePanel(title="Current Evidence Base", style='primary',
@@ -121,15 +123,19 @@ tabPanel("Sample Size Calculator",
         # Calculator Settings #
                                    bsCollapse(id="CalcSettings", open="Calculation Settings",
                                    bsCollapsePanel(title="Calculation Settings", style='info',
-                                              fluidRow(div(style="display: inline-block;vertical-align:top;", textInput("samplesizes", "Total sample size(s)", value = "100")),
+                                              fluidRow(div(style="display: inline-block;vertical-align:top;", introBox(textInput("samplesizes", "Total sample size(s)", value = "100"), 
+                                                                data.step=1, data.intro="This is where you specify sample sizes for which you wish to estimate power. You can enter one sample size, or multiple by separating them with a semi-colon (;). Currently, it is assumed that future designed trials have two arms of equal size.")),
                                                        div(style="display: inline-block;vertical-align:top;", dropMenu(dropdownButton(size='xs',icon=icon('info')), align='left',
                                                                           h6("Information"),
                                                                           p("Studies are assumed to have two arms of equal sizes."),
                                                                           p("If entering multiple sample sizes, please separate them with a semi-colon (e.g. 100; 200; 300)."))),
                                                        div(style="display: inline-block;vertical-align:top; width: 15px;",HTML("<br>")),
-                                                       div(style="display: inline-block;vertical-align:top;", numericInput("its", "Number of iterations", value=100, min=1))),
-                                              fluidRow(div(style="display: inline-block;vertical-align:top;", selectInput("impact_type", "Type of impact on evidence base", 
-                                                                          c("Significant p-value" = "pvalue", "95% confidence interval of certain width" = "ciwidth", "Lower bound of 95% confidence interval of certain value" = "lci", "Upper bound 95% confidence interval of certain value" = "uci"))),
+                                                       div(style="display: inline-block;vertical-align:top;", introBox(numericInput("its", "Number of iterations", value=100, min=1),
+                                                                data.step=2, data.intro="Choose how many iterations (i.e. times the algorithm is run) you wish to have per simulation (sample size). If you choose a higher number of iterations, the simulations will take longer but give more precise estimates (narrower confidence intervals), and vice versa."))),
+                                              fluidRow(div(style="display: inline-block;vertical-align:top;", tagList(introBox(selectInput("impact_type", "Type of impact on evidence base", 
+                                                                          c("Significant p-value" = "pvalue", "95% confidence interval of certain width" = "ciwidth", "Lower bound of 95% confidence interval of certain value" = "lci", "Upper bound 95% confidence interval of certain value" = "uci")),
+                                                                          data.step=3, data.intro="Making an 'impact' on the current evidence base can be done in multiple ways - choose here which method you wish to focus on (1. Having a significant p-value; 2. Having a 95% confidence interval of a certain width; 3. Having the lower bound of the 95% CI above a certain value; 4. Having the upper bound of the 95% CI below a certain value)."),
+                                                                          actionButton("calc_help", "Help", class="btn-xs", style="position: absolute; left: 40px;"))),
                                                        div(style="display: inline-block;vertical-align:top; width: 35px;",HTML("<br>")),
                                                        div(style="display: inline-block;vertical-align:top; width: 300px;", uiOutput("CutOff"))))),
                                    actionButton("CalcRun", "Run Sample Size Calculations", class="btn-primary btn-lg")),
@@ -143,5 +149,3 @@ tabPanel("Sample Size Calculator",
 
 tabPanel("Education"))))
 
-
-# Consider this to help explain how to use the app: https://stackoverflow.com/questions/61811177/how-to-make-an-infomation-button-in-shiny-dashboard
