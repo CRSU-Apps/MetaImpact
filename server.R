@@ -41,6 +41,26 @@ BadSampleSizes <- function(){
     footer = NULL
   ))
 }
+NoBayesian <- function(){
+  showModal(modalDialog(
+    title = "Feature not yet available",
+    easyClose = FALSE,
+    p("This feature is not ready yet within the Bayesian framework. Please ", tags$strong("choose frequentist.")),
+    br(),
+    modalButton("Close warning"),
+    footer = NULL
+  ))
+}
+NoNMA <- function(){
+  showModal(modalDialog(
+    title = "Feature not yet available",
+    easyClose = FALSE,
+    p("Synthesising evidence with an NMA is not quite ready yet. Please ", tags$strong("choose pairwise.")),
+    br(),
+    modalButton("Close warning"),
+    footer = NULL
+  ))
+}
 
   
 ### Load and present Data ###
@@ -239,7 +259,8 @@ output$SummaryTableF <- renderUI({          # Summary table
 
 freqnma <- eventReactive( input$FreqRun, {                   # Run frequentist NMA 
   if (input$Pairwise_NMA==FALSE) {
-    FreqNMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
+    NoNMA()
+    #FreqNMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
   }
 })
 output$NetworkPlotF <- renderPlot({   # Network plot
@@ -267,7 +288,8 @@ observeEvent( input$BayesRun, {                           # reopen panel when a 
 })                                                        
 
 Bayes <- eventReactive( input$BayesRun & input$Pairwise_NMA=='FALSE', {                 # Run Bayesian NMA
-  BayesMA(data=LongData(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
+  NoBayesian()
+  #BayesMA(data=LongData(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
 })
 
 
@@ -297,7 +319,9 @@ output$DICB <- renderTable({         # DIC
 
 # Forest plot of current evidence base
 output$EvBase <- renderPlot({
-  if (input$EvBase_choice=='freq') {
+  if (input$EvBase_choice!='freq') {
+    NoBayesian()
+  } else {
     if (freqpair()$MA$MA.Fixed$measure %in% c('OR','RR')) {
       forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random, atransf=exp)
     } else {
