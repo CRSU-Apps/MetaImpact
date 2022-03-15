@@ -474,7 +474,10 @@ output$CalculatorResults <- renderUI({
   panel <- OneOrMultiple()   # ascertain which panel should be open based on whether one or multple sample sizes have been inputted
   conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open=panel, multiple=TRUE,  
                                                             bsCollapsePanel(title="Power Plot of Results", style='success',
-                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(plotOutput('powplot'), type=6), radioButtons('powplot_options', "", c("Fixed-effects only"='fixed', "Random-effects only"='random', "Both fixed- and random-effects"='both'), selected='both', inline=TRUE), downloadButton('powplot_download', "Download (PNG)")),
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(plotOutput('powplot'), type=6), radioButtons('powplot_options', "", c("Fixed-effects only"='fixed', "Random-effects only"='random', "Both fixed- and random-effects"='both'), selected='both', inline=TRUE), 
+                                                                                             fluidRow(div(style="display: inline-block;", downloadButton('powplot_download', "Download power plot")),
+                                                                                                      div(style="display:inline-block; width: 10px;", HTML("<br>")),
+                                                                                                      div(style="display: inline-block;", radioButtons('powplot_choice', "", c('pdf', 'png'), inline=TRUE)))),
                                                                             conditionalPanel(condition = "output.SingMult=='single'", p("Only one sample size has been entered."))),
                                                             bsCollapsePanel(title="Table of power results", style='success',
                                                                             conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(tableOutput("powtable"), type=6), downloadButton('powtable_download', "Download (CSV)")),

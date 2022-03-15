@@ -6,10 +6,15 @@
 # power plot #
 output$powplot_download <- downloadHandler(
   filename = function() {
-    paste0('PowerPlot.png')
+    paste0('PowerPlot.', input$powplot_choice)
   },
   content = function(file) {
-    ggsave(file,CalcResults()$plot$plot)
+    plot <- metapowplot(PowerData=CalcResults()$data, ModelOpt=input$powplot_options, SampleSizes=CalcResults()$sample_sizes)
+    if (input$powplot_choice=='png') {
+      ggsave(file,plot, height=7, width=12, units="in", device="png")
+    } else {
+      ggsave(file,plot, height=7, width=12, units="in", device="pdf")
+    }
   }
 )
 
@@ -20,7 +25,7 @@ output$powtable_download <- downloadHandler(
   },
   content = function(file) {
     write.csv({
-      powdata <- CalcResults()$plot$data
+      powdata <- CalcResults()$data
       names(powdata) <- c("Total Sample Size", "Model", "Power estimate (%)", "Lower 95% CI bound", "Upper 95% CI bound")
       powdata}, file, row.names=FALSE, col.names=TRUE)
   }
