@@ -46,11 +46,14 @@ tabPanel("Data",
                 fileInput(inputId="data", label="", buttonLabel="Select", placeholder="No file selected"),
                 br(),
                 p("If you wish to explore the app without using your own data, you are welcome to choose one of the example datasets below."),
-                p("Both example datasets are based on a (network) meta-analysis reviewing the effect anti-vasuclar endothelial growth factor has on diabetic macular oedema. 
-                  Visual acuity (VA) outcomes were reported and chosen for these examples. The paper by Virgili et al can be found ", a(href="https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD007419.pub6/full", "here.")),
-                p("To explore an example network meta-analysis, NMA options are available on the 'Evidence Synthesis' tab."),
+                p("Example datasets are based on (network) meta-analyses reviewing the effect anti-vasuclar endothelial growth factor has on diabetic macular oedema. 
+                  Visual acuity (VA) outcomes were reported and chosen for these examples. 
+                  The continuous outcome example is extracted from the paper by Virgili et al which can be found ", a(href="https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD007419.pub6/full", "here."),
+                  "The binary outcome example is extracted from the paper by Pham et al which can be found ", a(href="https://bmjopen.bmj.com/content/9/5/e022031", "here.")),
+                p("Options to explore an example network meta-analysis will be available in the near future."),
+                #p("To explore an example network meta-analysis, NMA options are available on the 'Evidence Synthesis' tab."),
                 radioButtons("ChooseExample", "Example Datasets Available", c("Continuous outcome: Change in VA in terms of LogMAR (negative change in LogMAR = improved vision)" = "continuousEx", 
-                                                                              "Binary outcome: Number of people that improved their VA by gaining 3+ lines during a vision test" = "binaryEx"), width='100%')),
+                                                                              "Binary outcome: Number of people that improved their best-corrected VA by gaining 15+ letters during a vision test" = "binaryEx"), width='100%')),
          column(7, h4("View Data"),
                 uiOutput("data"))),                      # View data
   # Make it such that a user can still use example data even after uploading their own (maybe a tick box after uploading their own to 'use' example instead or 'remove data')
