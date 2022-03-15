@@ -12,8 +12,7 @@
 
 # Test datasets #
 # Binary #
-#data <- data.frame(Study=c("Herne","Hoaglund","Kaiser","Lexomboon","McKerrow","Taylor"),
-#                   Year=c(1980, 1950, 1996, 1971, 1961, 1977),
+#data <- data.frame(StudyID=c(1,2,3,4,5,6), Study=c("Herne_1980","Hoaglund_1950","Kaiser_1996","Lexomboon_1971","McKerrow_1961","Taylor_1977"),
 #                   R.1=c(7,39,97,8,5,12), N.1=c(7+39,39+115,97+49,8+166,5+10,12+117), T.1=rep("Treatment",6),
 #                   R.2=c(10,51,94,4,8,3), N.2=c(10+12,51+104,94+48,4+83,8+10,3+56), T.2=rep("Control",6))
 # Continuous test data
@@ -26,7 +25,7 @@
 # Conduct base MA (will be within app, so will be an input to stop uneccesary recalculations)
 #MAdata <- escalc(measure="OR", ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
 #MAdata <- escalc(measure="SMD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
-#MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="SMD") #fixed effects#
+#MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure="OR") #fixed effects#
 #MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure="OR") #random effects #
 #forest(MA.Random)
 #forest(MA.Random, atransf=exp)   #forest.rma for options
@@ -205,14 +204,13 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
   return(list(simdata=sims, power=power, CI_lower=CI_lower, CI_upper=CI_upper))
 }
 
-#test <- metapow(NMA=MA, data=data, n=500, nit=100, inference='pvalue', pow=0.05, measure='SMD')
-#test <- metapow(nit=100, inference='ciwidth', pow=0.25, recalc='TRUE')
+#test <- metapow(NMA=MA, data=data, n=100, nit=100, inference='uci', pow=1.0, measure='OR')
+#test <- metapow(nit=100, inference='uci', pow=0.25, recalc='TRUE')
 
 
 # function for plotting the power curve (had to split into two functions so that the options for the plot itself could be run without the 'run' button needing to be pressed)
 metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measure, recalc=FALSE, updateProgress = NULL) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
   PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
-  PowerData <- PowerData[order(PowerData$SampleSize),]
   for (i in 1:length(SampleSizes)) {
     results <- metapow(NMA=NMA, data=data, n=SampleSizes[i], nit=nit, inference=inference, pow=pow, measure=measure, recalc=recalc, plot_ext=i)
     PowerData$Estimate[i] <- results$power$Fixed*100
@@ -227,6 +225,7 @@ metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measur
       updateProgress(detail = text)
     }
   }
+  PowerData <- PowerData[order(PowerData$SampleSize),]
   return(PowerData)
 }
 metapowplot <- function(PowerData, ModelOpt='both', SampleSizes) {
@@ -259,8 +258,10 @@ metapowplot <- function(PowerData, ModelOpt='both', SampleSizes) {
   return(g)
 }   
 
-#test<-metapowplot(SampleSizes=c(1000, 2000, 3000, 4000, 5000, 6000), NMA=MA, data=data, nit=50, inference='pvalue', pow=0.05, measure='SMD', ModelOpt='both')
-#test$plot
+#powdat <- metapow_multiple(SampleSizes=c(100, 200, 300, 400, 500), NMA=MA, data=data, nit=100, inference='pvalue', pow=0.1, measure='OR')
+#powdat <- metapow_multiple(SampleSizes=c(100, 200, 300, 400, 500), NMA=MA, data=data, nit=100, inference='uci', pow=1.0, measure='OR')
+#testplot<-metapowplot(PowerData=powdat, ModelOpt='both', SampleSizes=c(100, 200, 300, 400, 500))
+#testplot
 #test <- metapowplot(SampleSizes=c(1000,2000,3000,4000,5000,6000), nit=50, inference='ciwidth', pow=0.2, ModelOpt='both', recalc=TRUE) #testing re-calculation option
 #test$plot
 #test <- metapowplot(SampleSizes=c(1000,2000,3000,4000,5000,6000), regraph=TRUE, ModelOpt='random') #testing regraph option
