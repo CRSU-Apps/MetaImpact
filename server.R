@@ -481,6 +481,9 @@ output$CalculatorResults <- renderUI({
                                                                             conditionalPanel(condition = "output.SingMult=='single'", withSpinner(htmlOutput("singleresult"), type=6))
                                                             )))
 })
+observeEvent(input$CalcRun, {
+  updateRadioButtons(session, "powplot_options", selected = input$powplot_options)  # remember plot settings from before re-running calculator
+})
 
 
 
