@@ -27,25 +27,25 @@ tabPanel("Home",
          h4("About"),
          p("This app is part of a Pre-Doctoral Fellowship looking into how to design a future study such that it's inclusion would make 
            an impact on the current evidence-base."),
-         p("The app contains four other tabs:"),
+         p("The app contains four pages:"),
          p(strong("Data"), " - upload your data or use an example dataset"),
          p(strong("Evidence Synthesis"), " - meta-analyse data such that an evidence base is created"),
          p(strong("Sample Size Calculator"), " - calculate the sample size of a new study such that it has an impact on the evidence base"),
-         p(strong("Education"), " - interactive displays to help understand the maths and assumptions behind app and study design"),
+         p(strong("Education"), " - interactive displays to help understand the maths and assumptions behind app and study design - ", tags$strong("COMING SOON", style="color:#FE2020")),
          br(),
          
          h4("Authors"),
-         p("Pre-Doctoral Fellow: Clareece Nevill; Supervisors: Alex Sutton & Nicola Cooper; Collaborators: Suzanne Freeman, Terry Quinn & Lucinda Bullingham")),
+         p("Pre-Doctoral Fellow: Clareece Nevill; Supervisors: Alex Sutton & Nicola Cooper; Collaborators & Research Support: Suzanne Freeman, Terry Quinn & Lucinda Billingham")),
                    
 # Data Tab #
 #----------#
                    
 tabPanel("Data",
          column(5, h4("Choose Data"),                    # Insert own data or choose example data
-                p("Please upload your data as a .csv file. Other formatting rules will apply {yet to be decided, will depend on what I program to auto-detect}."),
+                p("Please upload your data as a .csv file, with the same column headers as for MetaInsight, however, treatment coding and specifying binary/continuous is not necessary. {Will formalise, and possible auto-detect more format features of the data.}"),
                 fileInput(inputId="data", label="", buttonLabel="Select", placeholder="No file selected"),
                 br(),
-                p("If you wish to explore the app, you are welcome to choose one of the example datasets below."),
+                p("If you wish to explore the app without using your own data, you are welcome to choose one of the example datasets below."),
                 p("Both example datasets are based on a (network) meta-analysis reviewing the effect anti-vasuclar endothelial growth factor has on diabetic macular oedema. 
                   Visual acuity (VA) outcomes were reported and chosen for these examples. The paper by Virgili et al can be found ", a(href="https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD007419.pub6/full", "here.")),
                 p("To explore an example network meta-analysis, NMA options are available on the 'Evidence Synthesis' tab."),
