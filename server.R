@@ -471,7 +471,7 @@ output$SingMult <- renderText({
 outputOptions(output, "SingMult", suspendWhenHidden=FALSE) #needed for UI options, but doesn't need displaying itself
 
 output$CalculatorResults <- renderUI({
-  panel <- OneOrMultiple()   # ascertain which panel should be open
+  panel <- OneOrMultiple()   # ascertain which panel should be open based on whether one or multple sample sizes have been inputted
   conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open=panel, multiple=TRUE,  
                                                             bsCollapsePanel(title="Power Plot of Results", style='success',
                                                                             conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(plotOutput('powplot'), type=6), radioButtons('powplot_options', "", c("Fixed-effects only"='fixed', "Random-effects only"='random', "Both fixed- and random-effects"='both'), selected='both', inline=TRUE), downloadButton('powplot_download', "Download (PNG)")),
@@ -484,6 +484,9 @@ output$CalculatorResults <- renderUI({
 observeEvent(input$CalcRun, {
   updateRadioButtons(session, "powplot_options", selected = input$powplot_options)  # remember plot settings from before re-running calculator
 })
+#observeEvent(input$CalcRun, {   # need to add criteria that its if one/multiple hasn't changed
+#  updateCollapse(session, "Calculator", open = , close = )   # remember open/close status of tabs when re-running calculator (if within same one/multiple state)
+#})
 
 
 
