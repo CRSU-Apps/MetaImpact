@@ -57,7 +57,6 @@ tabPanel("Data",
          column(7, h4("View Data"),
                 uiOutput("data"))),                      # View data
   # Make it such that a user can still use example data even after uploading their own (maybe a tick box after uploading their own to 'use' example instead or 'remove data')
-  # NEEDS CORRECTING - pairwise binary data is not from same paper (details in files)
         
                    
 # Evidence Synthesis Tab #

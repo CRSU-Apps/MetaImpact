@@ -12,6 +12,13 @@ library(metafor)
 library(ggplot2)
 library(tidyr)
 library(stringr)
+library(tidybayes)
+library(dplyr)
+library(ggridges)
+library(glue)
+library(forcats)
+library(rstan)
+library(MetaStan)
 
 #-----------------------------#
 # load user-written functions #
