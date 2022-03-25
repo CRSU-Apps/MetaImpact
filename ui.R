@@ -69,7 +69,8 @@ tabPanel("Evidence Synthesis",
                      div(style = "height:20px"),
                      actionButton("BayesRun", "Run Bayesian meta-analysis", class="btn-primary btn-lg")),
            # Inputs #
-           column(8, bsCollapsePanel(title="Synthesis Options", style='info',
+           column(8, bsCollapse(id="SynthesisInputs", open="Synthesis Options",
+                    bsCollapsePanel(title="Synthesis Options", style='info',
                     switchInput('Pairwise_NMA', onLabel = "Pairwise", offLabel = "NMA", value=TRUE, onStatus='info', offStatus='info'),
                     column(6, conditionalPanel(condition = "output.ContBin=='continuous'",
                                     radioButtons("OutcomeCont", "Outcome for continuous data:", c("Mean Difference (MD)" = "MD","Standardised Mean Difference (SMD)" = "SMD"))),
@@ -81,7 +82,7 @@ tabPanel("Evidence Synthesis",
                                                column(6, selectInput(inputId = "Pair_Ctrl", label = "Select Comparator", choices = NULL))),
                               conditionalPanel(condition = "!input.Pairwise_NMA",
                                                selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL)),
-                              radioButtons("prior", "Choice of vague between-study prior (Bayesian only):", c("Standard deviation ~ Uniform(0,2)" = "uniform", "Precision ~ Gamma(0.1,0.1)" = "gamma", "Standard deviation ~ Half-Normal(0,1)" = "half-normal")))))),
+                              radioButtons("prior", "Choice of vague between-study prior (Bayesian only):", c("Standard deviation ~ Uniform(0,2)" = "uniform", "Precision ~ Gamma(0.1,0.1)" = "gamma", "Standard deviation ~ Half-Normal(0,1)" = "half-normal"))))))),
          # Outputs #
          # Frequentist #
          conditionalPanel(condition = "input.FreqRun!=0",

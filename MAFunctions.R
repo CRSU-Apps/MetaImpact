@@ -196,7 +196,7 @@ BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warm
 #test$MAdata
 
 #MA.Random$Rhat.max                        # Rhat (want near 1)
-#stan_trace(MA.Random$fit, pars="theta")   # trace plot
+#stan_trace(test$MA.Random$fit, pars="theta")   # trace plot
 
 ## Forest plot ##
 BayesPairForest <- function(MAdata, model, outcome) {    # inputs: summary MA data, random/fixed/both, OR/RR etc.
