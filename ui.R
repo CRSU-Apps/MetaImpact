@@ -77,12 +77,18 @@ tabPanel("Evidence Synthesis",
                               conditionalPanel(condition = "output.ContBin=='binary'",
                                      radioButtons("OutcomeBina", "Outcome for binary data:", c("Odds Ratio (OR)" = "OR","Risk Ratio (RR)" = "RR", "Risk Difference (RD)" = "RD"))),
                               radioButtons("FixRand", "Model selection:", c("Fixed-effects model (FE)" = "fixed", "Random-effects model (RE)" = "random"))),
-                    column(6, conditionalPanel(condition = "input.Pairwise_NMA",
+                    column(6, fluidRow(conditionalPanel(condition = "input.Pairwise_NMA",
                                                column(6, selectInput(inputId = "Pair_Trt", label = "Select Treatment", choices = NULL)),
                                                column(6, selectInput(inputId = "Pair_Ctrl", label = "Select Comparator", choices = NULL))),
                               conditionalPanel(condition = "!input.Pairwise_NMA",
-                                               selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL)),
-                              radioButtons("prior", "Choice of vague between-study prior (Bayesian only):", c("Standard deviation ~ Uniform(0,2)" = "uniform", "Precision ~ Gamma(0.1,0.1)" = "gamma", "Standard deviation ~ Half-Normal(0,1)" = "half-normal"))))))),
+                                               selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL))),
+                              fluidRow(bsCollapsePanel(title="Bayesian options", style='info',
+                                                       column(6, radioButtons("prior", "Vague prior for between study standard deviation:", c("Half-Cauchy(0,0.5)" = "half-cauchy", "Uniform(0,2)" = "uniform", "Half-Normal(0,1)" = "half-normal"))),
+                                                       column(6, numericInput("chains", "Number of chains:", value=2, min=1),
+                                                                 numericInput("iter", "Number of iterations:", value=1000, min=1),
+                                                                 numericInput("burn", "Burn-in:", value=100, min=1))
+                                                       ))
+                           ))))),
          # Outputs #
          # Frequentist #
          conditionalPanel(condition = "input.FreqRun!=0",
