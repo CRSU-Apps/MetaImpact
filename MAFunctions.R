@@ -117,7 +117,7 @@ FreqNMAForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or rando
 #ctrl <- 'Control'
 #outcome <- 'OR'
 
-BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warmup=400, model) {         # inputs: continuous/binary; data frame (wide); treatment and control interventions; OR/RR/MD etc; number of chains; number of iterations, number of iterations to burn; fixed/random/both
+BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warmup=400, model, prior) {         # inputs: continuous/binary; data frame (wide); treatment and control interventions; OR/RR/MD etc; number of chains; number of iterations, number of iterations to burn; fixed/random/both; type of prior for tau
   # prep data #
   StanData <- create_MetaStan_dat(dat = SwapTrt(CONBI=CONBI, data=data, trt=ctrl),      # arrange data such that 'control' columns are first (metastan backwards) and suitable for meta-stan
                                   armVars = c(responders="R.", sampleSize="N."))
@@ -125,6 +125,13 @@ BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warm
     like <- 'binomial'
   } else {
     like <- 'normal'
+  }
+  if (prior=='uniform') {
+    prior.value <- 2                      # uniform(0,2)
+  } else if (prior=='half-cauchy') {
+    prior.value <- 0.5                    # hCauchy(0,0.5)
+  } else if (prior=='half-normal') {
+    prior.value <- 1                      # hNormal(0,1)
   }
   # Run analysis #
   if (model=='random' | model=='both') {
@@ -134,8 +141,8 @@ BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warm
                          ncp = TRUE,                     # suggested for small datasets
                          mu_prior = c(0, 100),           # vague normal prior for all study baseline/control effects
                          theta_prior = c(0, 10),         # vague normal prior for treatment effect estimate (which is mean of distribution from which all study treatment effects come from)
-                         tau_prior_dist = "uniform",     # type of prior distribution for tau (between study SD)
-                         tau_prior = sqrt(((2-0)^2)/12), # details of prior distribution are only standard deviation
+                         tau_prior_dist = prior,         # type of prior distribution for tau (between study SD)
+                         tau_prior = prior.value,        # details of prior distribution
                          chains = chains,
                          iter = iter,
                          warmup = warmup)
@@ -185,7 +192,7 @@ BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warm
   list(MAdata=MAdata, MA.Fixed=MA.Fixed, MA.Random=MA.Random)
 }
 
-#test <- BayesPair(CONBI=CONBI, data=data, trt=trt, ctrl=ctrl, outcome=outcome, model='both')
+#test <- BayesPair(CONBI=CONBI, data=data, trt=trt, ctrl=ctrl, outcome=outcome, model='both', prior='half-cauchy')
 #test$MAdata
 
 #MA.Random$Rhat.max                        # Rhat (want near 1)
@@ -245,7 +252,7 @@ BayesPairForest <- function(MAdata, model, outcome) {    # inputs: summary MA da
   }
 }
 
-#BayesPairForest(test$MAdata, outcome, model='random')
+#BayesPairForest(test$MAdata, outcome, model='both')
 
 
 ### Bayesian NMA ###
