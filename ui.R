@@ -101,15 +101,20 @@ tabPanel("Evidence Synthesis",
                     conditionalPanel(condition = "input.Pairwise_NMA",    # Pairwise results
                       column(5,align='center', withSpinner(htmlOutput("SummaryTableF"), type=6)), #Summary table
                       column(6, align='center', offset=1, withSpinner(plotOutput("ForestPlotPairF"), type=6),    #Forest plot
-                             downloadButton('forestpair_download', "Download forest plot"), radioButtons('forestpair_choice', "", c('pdf','png'), inline=TRUE))))))), 
+                             downloadButton('forestpairF_download', "Download forest plot"), radioButtons('forestpairF_choice', "", c('pdf','png'), inline=TRUE))))))), 
          # Bayesian #
          conditionalPanel(condition = "input.BayesRun!=0",
           fluidRow(p(htmlOutput("SynthesisSummaryBayes")),
                   p("To change the model options, please adjust synthesis options above and re-run analysis."),
                   bsCollapse(id="BayesID", open="Bayesian Analysis", bsCollapsePanel(title="Bayesian Analysis", style='success',
-                  column(4, withSpinner(plotOutput("NetworkPlotB"), type=6)),
-                  column(6,offset=2, withSpinner(plotOutput("ForestPlotB"), type=6), htmlOutput("TauB"), tableOutput("DICB")))))
-                  )),
+                    conditionalPanel(condition = "!input.Pairwise_NMA",     # NMA results
+                      column(4, withSpinner(plotOutput("NetworkPlotB"), type=6)),
+                      column(6,offset=2, withSpinner(plotOutput("ForestPlotB"), type=6), htmlOutput("TauB"), tableOutput("DICB"))),
+                    conditionalPanel(condition = "input.Pairwise_NMA",
+                      column(5, align='center', withSpinner(htmlOutput("SummaryTableB"), type=6)),  # Summary table
+                      column(6, align='centre', offset=1, withSpinner(plotOutput("ForestPlotPairB"), type=6),   # Forest plot
+                             downloadButton('forestpairB_download', "Download forest plot"), radioButtons('forestpairB_choice', "", c('pdf','png'), inline=TRUE)))))
+                  ))),
           # See if network plots can be ordered the same as each other
           # All outputs will need further formatting (including sizing) plus addition of tau for frequentist, and # of studies (for NMA only).
           # Regarding 'Run' buttons -> some formatting doesn't wait for button to be pressed again -> to be fixed (NMA only needs fixing).

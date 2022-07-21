@@ -55,12 +55,12 @@ output$evbase_download <- downloadHandler(
 ### Pairwise Meta-Analysis ###
   #------------------------#
 
-output$forestpair_download <- downloadHandler(
+output$forestpairF_download <- downloadHandler(
   filename = function() {
-    paste0("PairwiseAnalysis.", input$forestpair_choice)
+    paste0("PairwiseAnalysis.", input$forestpairF_choice)
   },
   content = function(file) {
-    if (input$forestpair_choice=='pdf') {pdf(file=file)}
+    if (input$forestpairF_choice=='pdf') {pdf(file=file)}
     else {png(file=file)}
     if (input$FixRand=='fixed') { 
       if (outcome()=='OR' | outcome()=='RR') {

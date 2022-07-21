@@ -19,6 +19,7 @@ library(glue)
 library(forcats)
 library(rstan)
 library(MetaStan)
+library(purrr)
 
 #-----------------------------#
 # load user-written functions #
@@ -92,10 +93,7 @@ NoNMA <- function(){
     } else {
     data <- read.table(file = file$datapath, sep =",", header=TRUE, stringsAsFactors = FALSE, quote="\"")
     }
-    cols <- grep("^T", names(data), value=TRUE)
-    data[cols] <- lapply(data[cols], factor)  # factor variables for treatment columns
-    levels <- levels(as_vector(data[cols])) # obtain list of treatments
-    data[cols] <- lapply(data[cols], as.character) #revert back to character variables to allow analyses to function
+    levels <- levels(as_vector(lapply(data[grep("^T", names(data), value=TRUE)], factor)))  # extract treatment names/levels
     return(list(data=data, levels=levels))
   })
   
@@ -202,7 +200,7 @@ observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
   updateCollapse(session=session, id="FreqID", open="Frequentist Analysis")
 })
 
-PairwiseSummary_function <- function(outcome, MA.Model) {
+PairwiseSummary_functionF <- function(outcome, MA.Model) {
   sum <- summary(MA.Model)
   line0<-paste(strong("Results"))
   line1<-paste("Number of studies: ", sum$k, sep="")
@@ -232,7 +230,7 @@ freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise M
           forest(information$MA$MA.Fixed)
           title("Forest plot of studies with overall estimate from fixed-effects model")}
       }
-      information$Summary <- PairwiseSummary_function(outcome(),information$MA$MA.Fixed)
+      information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Fixed)
     } else {
       if (outcome()=='OR' | outcome()=='RR') {
         information$Forest <- {
@@ -243,7 +241,7 @@ freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise M
           forest(information$MA$MA.Random)
           title("Forest plot of studies with overall estimate from random-effects model")}
       }
-      information$Summary <- PairwiseSummary_function(outcome(),information$MA$MA.Random)
+      information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Random)
     }
     information
   }
@@ -283,8 +281,12 @@ output$ForestPlotNMAF <- renderPlot({    # Forest plot
 ## Double zero arms are not included in analysis - need to add warning
 
 
-### Run Bayesian NMA ###
-  #------------------#
+
+
+
+
+### Run Bayesian Pairwise MA ###
+  #--------------------------#
 
 LongData <- reactive({               # convert wide format to long if need be
   Wide2Long(data=data()$data)
@@ -292,10 +294,33 @@ LongData <- reactive({               # convert wide format to long if need be
 
 observeEvent( input$BayesRun, {                           # reopen panel when a user re-runs analysis
   updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
-})                                                        
+})  
+
+## IN PROCESS OF CONVERTING TO BAYESIAN ##
+PairwiseSummary_functionB <- function(outcome, MA.Model) {
+  line0<-paste(strong("Results"))
+  line1<-paste("Number of studies: ", sum$k, sep="")
+  if (outcome=='OR' | outcome=='RR') {
+    line2<-paste("Pooled estimate: ", round(exp(MA.Model$fit_sum['theta', 1]),2), " (95% CI: ", round(exp(MA.Model$fit_sum['theta', 4]),2), " to ", round(exp(MA.Model$fit_sum['theta', 8]),2), sep="")
+  } else {
+    line2<-paste("Pooled estimate: ", round(MA.Model$fit_sum['theta', 1],2), " (95% CI: ", round(MA.Model$fit_sum['theta', 4],2), " to ", round(MA.Model$fit_sum['theta', 8],2), sep="")
+  }
+  line3<-paste(strong("Heterogeneity results"))   # Only section left that needs updating
+  line4<-paste("Between study standard-devation: ", round(sqrt(sum$tau2),3), "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
+  line5<-paste(strong("Model fit assessment"))
+  line6<-paste("Rhat: ", round(MA.Model$Rhat.max,2), sep="")
+  line7<-paste(strong("Trace plot"))
+  HTML(paste(line0,line1, line2, line3, line4, line5, line6, line7, sep = '<br/>'))
+}
+
+
+
+
+### Run Bayesian NMA ###
+#------------------#
 
 Bayes <- eventReactive( input$BayesRun & input$Pairwise_NMA=='FALSE', {                 # Run Bayesian NMA
-  NoBayesian()
+  NoNMA()
   #BayesMA(data=LongData(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
 })
 
