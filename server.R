@@ -206,11 +206,14 @@ PairwiseSummary_functionF <- function(outcome, MA.Model) {
   line1<-paste("Number of studies: ", sum$k, sep="")
   if (outcome=='OR' | outcome=='RR') {
     line2<-paste("Pooled estimate: ", round(exp(sum$b),2), " (95% CI: ", round(exp(sum$ci.lb),2), " to ", round(exp(sum$ci.ub),2), "); p-value: ", round(sum$pval, 3), sep="")
+    tau <- round(exp(sqrt(sum$tau2)),3)  # as everything is initially converted to the log scale, got to exp as last step
+    # Note to self: "SD is expressed in same units as mean is", and so as the ratio scale is not symmetric, we wouldn't expect the variance (normally squared unit) to behave in a standard 'squared' fashion (explains that its okay that exp(sqrt) != sqrt(exp))
   } else {
     line2<-paste("Pooled estimate: ", round(sum$b,2), " (95% CI: ", round(sum$ci.lb,2), " to ", round(sum$ci.ub,2), "); p-value: ", round(sum$pval, 3), sep="")
+    tau <- round(sqrt(sum$tau2),3)
   }
   line3<-paste(strong("Heterogeneity results"))
-  line4<-paste("Between study standard-devation: ", round(sqrt(sum$tau2),3), "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
+  line4<-paste("Between study standard-devation: ", tau, "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
   line5<-paste(strong("Model fit statistics"))
   line6<-paste("AIC: ", round(sum$fit.stats[3,1],2), "; BIC: ", round(sum$fit.stats[4,1],2), sep="")
   HTML(paste(line0,line1, line2, line3, line4, line5, line6, sep = '<br/>'))
@@ -296,22 +299,68 @@ observeEvent( input$BayesRun, {                           # reopen panel when a 
   updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
 })  
 
-## IN PROCESS OF CONVERTING TO BAYESIAN ##
+
 PairwiseSummary_functionB <- function(outcome, MA.Model) {
   line0<-paste(strong("Results"))
-  line1<-paste("Number of studies: ", sum$k, sep="")
+  line1<-paste("Number of studies: ", nrow(MA.Model$data_wide), sep="") 
+  line2<-paste("Pooled estimate: ", round(MA.Model$fit_sum['theta', 1],2), " (95% CI: ", round(MA.Model$fit_sum['theta', 4],2), " to ", round(MA.Model$fit_sum['theta', 8],2), ")", sep="") # already exponentiated where needed within BayesPair function
   if (outcome=='OR' | outcome=='RR') {
-    line2<-paste("Pooled estimate: ", round(exp(MA.Model$fit_sum['theta', 1]),2), " (95% CI: ", round(exp(MA.Model$fit_sum['theta', 4]),2), " to ", round(exp(MA.Model$fit_sum['theta', 8]),2), sep="")
+        tau <- round(exp(MA.Model$fit_sum['tau[1]',1]),3)    # tau is also on log scale
+        tau.lci <- round(exp(MA.Model$fit_sum['tau[1]',4]),3)
+        tau.uci <- round(exp(MA.Model$fit_sum['tau[1]',8]),3)
   } else {
-    line2<-paste("Pooled estimate: ", round(MA.Model$fit_sum['theta', 1],2), " (95% CI: ", round(MA.Model$fit_sum['theta', 4],2), " to ", round(MA.Model$fit_sum['theta', 8],2), sep="")
+    tau <- round(MA.Model$fit_sum['tau[1]',1],3)
+    tau.lci <- round(MA.Model$fit_sum['tau[1]',4],3)
+    tau.uci <- round(MA.Model$fit_sum['tau[1]',8],3)
   }
-  line3<-paste(strong("Heterogeneity results"))   # Only section left that needs updating
-  line4<-paste("Between study standard-devation: ", round(sqrt(sum$tau2),3), "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
-  line5<-paste(strong("Model fit assessment"))
-  line6<-paste("Rhat: ", round(MA.Model$Rhat.max,2), sep="")
-  line7<-paste(strong("Trace plot"))
-  HTML(paste(line0,line1, line2, line3, line4, line5, line6, line7, sep = '<br/>'))
+  line3<-paste("Between study standard-devation: ", tau, " (95% CI: ", tau.lci, " to ", tau.uci, ")", sep="")
+  line4<-paste(strong("Model fit assessment"))
+  line5<-paste("Rhat: ", round(MA.Model$Rhat.max,2), sep="")
+  line6<-paste(strong("Trace plot"))
+  HTML(paste(line0,line1, line2, line3, line4, line5, line6, sep = '<br/>'))
 }
+
+bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA and obtain plots etc.
+  if (input$Pairwise_NMA==TRUE) {
+    information <- list()
+    information$MA <- BayesPair(CONBI=ContBin(), data=WideData(), trt=input$Pair_Trt, ctrl=input$Pair_Ctrl, outcome=outcome(), chains=input$chains, iter=input$iter, warmup=input$burn, model='both', prior=input$prior)
+    if (input$FixRand=='fixed') {                   
+      information$Forest <- {               
+        g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='fixed')
+        g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model")
+      }
+      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Fixed)
+      information$Trace <- {
+        g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
+        g + ggtitle("Trace plot of the pooled estimate over iterations")
+      }
+    } else {
+      information$Forest <- {               
+        g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
+        g + ggtitle("Forest plot of studies with overall estimate from random-effects model")
+      }
+      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Random)
+      information$Trace <- {
+        g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
+        g + ggtitle("Trace plot of the pooled estimate and between-study SD over iterations")
+      }
+    }
+    information
+  }
+})
+
+
+output$ForestPlotPairB <- renderPlot({      # Forest plot
+  bayespair()$Forest
+})
+
+output$SummaryTableB <- renderUI({          # Summary table
+  bayespair()$Summary
+})
+
+output$TracePlot <- renderPlot({            # Trace plot
+  bayespair()$Trace
+})
 
 
 

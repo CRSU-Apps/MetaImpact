@@ -85,8 +85,8 @@ tabPanel("Evidence Synthesis",
                               fluidRow(bsCollapsePanel(title="Bayesian options", style='info',
                                                        column(6, radioButtons("prior", "Vague prior for between study standard deviation:", c("Half-Cauchy(0,0.5)" = "half-cauchy", "Uniform(0,2)" = "uniform", "Half-Normal(0,1)" = "half-normal"))),
                                                        column(6, numericInput("chains", "Number of chains:", value=2, min=1),
-                                                                 numericInput("iter", "Number of iterations:", value=1000, min=1),
-                                                                 numericInput("burn", "Burn-in:", value=100, min=1))
+                                                                 numericInput("iter", "Number of iterations:", value=4000, min=1),
+                                                                 numericInput("burn", "Burn-in:", value=400, min=1))
                                                        ))
                            ))))),
          # Outputs #

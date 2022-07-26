@@ -71,7 +71,8 @@ FreqPair <- function(data, outcome, CONBI, model, trt) { #inputs: data frame in 
   if (model=='fixed' | model=='both') {MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure=outcome)} #fixed effects#
   if (model=='random' | model=='both') {MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure=outcome)} #random effects #
   list(MAdata=MAdata, MA.Random=MA.Random, MA.Fixed=MA.Fixed)
-}
+} 
+## DOESN'T WORK UNLESS MODEL=='BOTH'
 
 ### Frequentist NMA ###
 
@@ -251,7 +252,8 @@ BayesPairForest <- function(MAdata, model, outcome) {    # inputs: summary MA da
   }
 }
 
-#BayesPairForest(test$MAdata, outcome, model='both')
+#g<- BayesPairForest(test$MAdata, outcome, model='both')
+#g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model")
 
 
 ### Bayesian NMA ###
