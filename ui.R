@@ -14,6 +14,7 @@ library(rintrojs)
 #-----------------------------#
 
 
+
 # UI Content #
 #------------#
 shinyUI(fluidPage(navbarPage(id="MetaImpact", title="MetaImpact",
@@ -111,8 +112,10 @@ tabPanel("Evidence Synthesis",
                       column(4, withSpinner(plotOutput("NetworkPlotB"), type=6)),
                       column(6,offset=2, withSpinner(plotOutput("ForestPlotB"), type=6), htmlOutput("TauB"), tableOutput("DICB"))),
                     conditionalPanel(condition = "input.Pairwise_NMA",
-                      column(5, align='center', withSpinner(htmlOutput("SummaryTableB"), type=6)),  # Summary table
-                      column(6, align='centre', offset=1, withSpinner(plotOutput("ForestPlotPairB"), type=6),   # Forest plot
+                      column(5, align='center', withSpinner(htmlOutput("SummaryTableB"), type=6),   # Summary table
+                                                plotOutput("TracePlot"),                            # Trace plot
+                             downloadButton('tracepair_download', "Download trace plot"), radioButtons('tracepair_choice', "", c('pdf','png'), inline=TRUE)),                           
+                      column(6, align='center', offset=1, withSpinner(plotOutput("ForestPlotPairB"), type=6),   # Forest plot
                              downloadButton('forestpairB_download', "Download forest plot"), radioButtons('forestpairB_choice', "", c('pdf','png'), inline=TRUE)))))
                   ))),
           # See if network plots can be ordered the same as each other

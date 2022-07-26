@@ -300,20 +300,24 @@ observeEvent( input$BayesRun, {                           # reopen panel when a 
 })  
 
 
-PairwiseSummary_functionB <- function(outcome, MA.Model) {
+PairwiseSummary_functionB <- function(outcome, MA.Model, model) {
   line0<-paste(strong("Results"))
   line1<-paste("Number of studies: ", nrow(MA.Model$data_wide), sep="") 
   line2<-paste("Pooled estimate: ", round(MA.Model$fit_sum['theta', 1],2), " (95% CI: ", round(MA.Model$fit_sum['theta', 4],2), " to ", round(MA.Model$fit_sum['theta', 8],2), ")", sep="") # already exponentiated where needed within BayesPair function
-  if (outcome=='OR' | outcome=='RR') {
-        tau <- round(exp(MA.Model$fit_sum['tau[1]',1]),3)    # tau is also on log scale
-        tau.lci <- round(exp(MA.Model$fit_sum['tau[1]',4]),3)
-        tau.uci <- round(exp(MA.Model$fit_sum['tau[1]',8]),3)
+  if (model=='random' | model=='both') {
+    if (outcome=='OR' | outcome=='RR') {
+      tau <- round(exp(MA.Model$fit_sum['tau[1]',1]),3)    # tau is also on log scale
+      tau.lci <- round(exp(MA.Model$fit_sum['tau[1]',4]),3)
+      tau.uci <- round(exp(MA.Model$fit_sum['tau[1]',8]),3)
+    } else {
+      tau <- round(MA.Model$fit_sum['tau[1]',1],3)
+      tau.lci <- round(MA.Model$fit_sum['tau[1]',4],3)
+      tau.uci <- round(MA.Model$fit_sum['tau[1]',8],3)
+    }
+    line3<-paste("Between study standard-devation: ", tau, " (95% CI: ", tau.lci, " to ", tau.uci, ")", sep="")
   } else {
-    tau <- round(MA.Model$fit_sum['tau[1]',1],3)
-    tau.lci <- round(MA.Model$fit_sum['tau[1]',4],3)
-    tau.uci <- round(MA.Model$fit_sum['tau[1]',8],3)
+    line3<-paste("For fixed models, between study standard-deviation is set to 0.")
   }
-  line3<-paste("Between study standard-devation: ", tau, " (95% CI: ", tau.lci, " to ", tau.uci, ")", sep="")
   line4<-paste(strong("Model fit assessment"))
   line5<-paste("Rhat: ", round(MA.Model$Rhat.max,2), sep="")
   line6<-paste(strong("Trace plot"))
@@ -327,22 +331,26 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
     if (input$FixRand=='fixed') {                   
       information$Forest <- {               
         g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='fixed')
-        g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model")
+        g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
+          theme(plot.title = element_text(hjust = 0.5))
       }
-      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Fixed)
+      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Fixed,input$FixRand)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
-        g + ggtitle("Trace plot of the pooled estimate over iterations")
+        g + ggtitle("Trace plot of the pooled estimate over iterations") +
+          theme(plot.title = element_text(hjust = 0.5))
       }
     } else {
       information$Forest <- {               
         g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
-        g + ggtitle("Forest plot of studies with overall estimate from random-effects model")
+        g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
+          theme(plot.title = element_text(hjust = 0.5))
       }
-      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Random)
+      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Random,input$FixRand)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
-        g + ggtitle("Trace plot of the pooled estimate and between-study SD over iterations")
+        g + ggtitle("Trace plot of the pooled estimate and between-study SD over iterations") +
+          theme(plot.title = element_text(hjust = 0.5))
       }
     }
     information
