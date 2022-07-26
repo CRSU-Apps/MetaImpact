@@ -204,16 +204,18 @@ PairwiseSummary_functionF <- function(outcome, MA.Model) {
   sum <- summary(MA.Model)
   line0<-paste(strong("Results"))
   line1<-paste("Number of studies: ", sum$k, sep="")
-  if (outcome=='OR' | outcome=='RR') {
+  if (outcome=="OR") {
     line2<-paste("Pooled estimate: ", round(exp(sum$b),2), " (95% CI: ", round(exp(sum$ci.lb),2), " to ", round(exp(sum$ci.ub),2), "); p-value: ", round(sum$pval, 3), sep="")
-    tau <- round(exp(sqrt(sum$tau2)),3)  # as everything is initially converted to the log scale, got to exp as last step
-    # Note to self: "SD is expressed in same units as mean is", and so as the ratio scale is not symmetric, we wouldn't expect the variance (normally squared unit) to behave in a standard 'squared' fashion (explains that its okay that exp(sqrt) != sqrt(exp))
+    line4<-paste("Between study standard-deviation (log-odds scale): ")
+  } else if (outcome=="RR") {
+    line2<-paste("Pooled estimate: ", round(exp(sum$b),2), " (95% CI: ", round(exp(sum$ci.lb),2), " to ", round(exp(sum$ci.ub),2), "); p-value: ", round(sum$pval, 3), sep="")
+    line4<-paste("Between study standard-deviation (log-probability scale): ")
   } else {
     line2<-paste("Pooled estimate: ", round(sum$b,2), " (95% CI: ", round(sum$ci.lb,2), " to ", round(sum$ci.ub,2), "); p-value: ", round(sum$pval, 3), sep="")
-    tau <- round(sqrt(sum$tau2),3)
+    line4<-paste("Between study standard-reviation: ")
   }
   line3<-paste(strong("Heterogeneity results"))
-  line4<-paste("Between study standard-devation: ", tau, "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
+  line4<-paste(line4, round(sqrt(sum$tau2),3), "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
   line5<-paste(strong("Model fit statistics"))
   line6<-paste("AIC: ", round(sum$fit.stats[3,1],2), "; BIC: ", round(sum$fit.stats[4,1],2), sep="")
   HTML(paste(line0,line1, line2, line3, line4, line5, line6, sep = '<br/>'))
@@ -304,17 +306,14 @@ PairwiseSummary_functionB <- function(outcome, MA.Model, model) {
   line0<-paste(strong("Results"))
   line1<-paste("Number of studies: ", nrow(MA.Model$data_wide), sep="") 
   line2<-paste("Pooled estimate: ", round(MA.Model$fit_sum['theta', 1],2), " (95% CI: ", round(MA.Model$fit_sum['theta', 4],2), " to ", round(MA.Model$fit_sum['theta', 8],2), ")", sep="") # already exponentiated where needed within BayesPair function
-  if (model=='random' | model=='both') {
-    if (outcome=='OR' | outcome=='RR') {
-      tau <- round(exp(MA.Model$fit_sum['tau[1]',1]),3)    # tau is also on log scale
-      tau.lci <- round(exp(MA.Model$fit_sum['tau[1]',4]),3)
-      tau.uci <- round(exp(MA.Model$fit_sum['tau[1]',8]),3)
+  if (model=='random') {
+    if (outcome=='OR') {
+      line3<-paste("Between study standard-deviation (log-odds scale): ", round(MA.Model$fit_sum['tau[1]',1],3), " (95% CI: ", round(MA.Model$fit_sum['tau[1]',4],3), " to ", round(MA.Model$fit_sum['tau[1]',8],3), ")", sep="")
+    } else if (outcome=='RR') {
+      line3<-paste("Between study standard-deviation (log-probability scale): ", round(MA.Model$fit_sum['tau[1]',1],3), " (95% CI: ", round(MA.Model$fit_sum['tau[1]',4],3), " to ", round(MA.Model$fit_sum['tau[1]',8],3), ")", sep="")
     } else {
-      tau <- round(MA.Model$fit_sum['tau[1]',1],3)
-      tau.lci <- round(MA.Model$fit_sum['tau[1]',4],3)
-      tau.uci <- round(MA.Model$fit_sum['tau[1]',8],3)
+      line3<-paste("Between study standard-deviation: ", round(MA.Model$fit_sum['tau[1]',1],3), " (95% CI: ", round(MA.Model$fit_sum['tau[1]',4],3), " to ", round(MA.Model$fit_sum['tau[1]',8],3), ")", sep="")
     }
-    line3<-paste("Between study standard-devation: ", tau, " (95% CI: ", tau.lci, " to ", tau.uci, ")", sep="")
   } else {
     line3<-paste("For fixed models, between study standard-deviation is set to 0.")
   }
