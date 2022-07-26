@@ -55,7 +55,6 @@ output$evbase_download <- downloadHandler(
 ### Pairwise Meta-Analysis ###
   #------------------------#
 
-# I think these functions could be much smaller by just calling the freqpair() and bayespair() list elements that relate to forest/trace plots?
 
 output$forestpairF_download <- downloadHandler(
   filename = function() {
@@ -90,15 +89,7 @@ output$forestpairB_download <- downloadHandler(
     paste0("PairwiseAnalysis.", input$forestpairB_choice)
   },
   content = function(file) {
-    if (input$FixRand=='fixed') { 
-      plot <- BayesPairForest(bayespair()$MA$MAdata, outcome=outcome(), model='fixed')
-      plot <- plot + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
-        theme(plot.title = element_text(hjust = 0.5))
-    } else if (input$FixRand=='random') {
-      plot <- BayesPairForest(bayespair()$MA$MAdata, outcome=outcome(), model='random')
-      plot <- plot + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
-        theme(plot.title = element_text(hjust = 0.5))
-    }
+    plot <- bayespair()$Forest
     if (input$forestpairB_choice=='png') {
       ggsave(file, plot, height=7, width=12, units="in", device="png")
     } else {
@@ -112,15 +103,7 @@ output$tracepair_download <- downloadHandler(
     paste0("PairwiseTrace.", input$tracepair_choice)
   },
   content = function(file) {
-    if (input$FixRand=='fixed') { 
-      plot <- stan_trace(bayespair()$MA$MA.Fixed$fit, pars="theta")
-      plot <- plot + ggtitle("Trace plot of the pooled estimate over iterations") +
-        theme(plot.title = element_text(hjust = 0.5))
-    } else if (input$FixRand=='random') {
-      plot <- stan_trace(bayespair()$MA$MA.Random$fit, pars=c("theta","tau"))
-      plot <- plot + ggtitle("Trace plot of the pooled estimate and between-study SD over iterations") +
-        theme(plot.title = element_text(hjust = 0.5))
-    }
+    plot <- bayespair()$Trace
     if (input$forestpairB_choice=='png') {
       ggsave(file, plot, height=7, width=12, units="in", device="png")
     } else {

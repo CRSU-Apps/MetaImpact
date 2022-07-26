@@ -236,7 +236,7 @@ freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise M
           title("Forest plot of studies with overall estimate from fixed-effects model")}
       }
       information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Fixed)
-    } else {
+    } else if (input$FixRand=='random') {
       if (outcome()=='OR' | outcome()=='RR') {
         information$Forest <- {
           forest(information$MA$MA.Random, atransf=exp)
@@ -339,7 +339,7 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
         g + ggtitle("Trace plot of the pooled estimate over iterations") +
           theme(plot.title = element_text(hjust = 0.5))
       }
-    } else {
+    } else if (input$FixRand=='random') {
       information$Forest <- {               
         g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
         g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
