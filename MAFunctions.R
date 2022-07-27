@@ -215,11 +215,11 @@ BayesPairForest <- function(MAdata, model, outcome) {    # inputs: summary MA da
                   StudyID.new),
               data = MAdata) +
     # Add vertical lines 
-    geom_vline(xintercept = 1, color = "black",
+    geom_vline(xintercept = ifelse(outcome %in% c('OR','RR'),1,0), color = "black",
                size = 0.5, linetype = "dashed") +
     geom_hline(yintercept = 0, color = "black", size = 0.5) +
     # Add horizontal lines
-    geom_pointinterval(size = 1, point_size = 2,
+    geom_pointinterval(size = 0.5, point_size = 2,
                        aes(xmin = lci, xmax = uci)) +
     # Add weights squares
     #geom_point(aes(size = MAdata$weight)) +       # don't have weighted squares as weighting is more complex with GLMs rather than inverse variance?
@@ -228,7 +228,7 @@ BayesPairForest <- function(MAdata, model, outcome) {    # inputs: summary MA da
                                is.numeric, round, 2),
               aes(label = glue("{est} [{lci}, {uci}]"),
                   x = max(uci)+0.2), hjust = "outward") +
-    theme_classic() + theme(axis.line.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())
+    theme_classic() + theme(axis.line.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.text.x=element_text(size=11), axis.title.x=element_text(size=13))
   if (outcome=='OR') {
     g + labs(x = "Odds Ratio (log scale)", y = element_blank()) +
       scale_x_continuous(trans='log2', expand = expansion(mult = 0.4), labels=scaleFUN) +

@@ -331,25 +331,26 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
       information$Forest <- {               
         g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='fixed')
         g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
-          theme(plot.title = element_text(hjust = 0.5))
+          theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
       }
       information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Fixed,input$FixRand)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
-        g + ggtitle("Trace plot of the pooled estimate over iterations") +
-          theme(plot.title = element_text(hjust = 0.5))
+        g + theme(legend.position='none', aspect.ratio = 0.45, axis.title=element_text(size=10,face="bold")) + 
+          labs(y="Pooled estimate", x="Iteration")
       }
     } else if (input$FixRand=='random') {
       information$Forest <- {               
         g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
         g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
-          theme(plot.title = element_text(hjust = 0.5))
+          theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
       }
       information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Random,input$FixRand)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
-        g + ggtitle("Trace plot of the pooled estimate and between-study SD over iterations") +
-          theme(plot.title = element_text(hjust = 0.5))
+        g + theme(legend.position='none', strip.placement = "outside", aspect.ratio=0.3, axis.title=element_text(size=10,face="bold")) +
+          labs(x="Iteration") +
+          facet_wrap(~parameter, strip.position='left', nrow=2, scales='free', labeller=as_labeller(c(theta = "Pooled estimate", 'tau[1]' = "Between-study SD") ) )
       }
     }
     information
