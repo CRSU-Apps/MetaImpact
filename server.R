@@ -430,12 +430,6 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
   updateCollapse(session=session, id="Calculator", open=OneOrMultiple())
 })
 
-# Interactive help boxes for the calculator settings
-observeEvent(input$calc_help,
-             introjs(session, options = list("showBullets"="false", "showProgress"="true", 
-                                             "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip"))
-)
-
 # Function for checking if recalc option needs to be TRUE or FALSE (TRUE if only the impact type and/or cut-off have changed)
 Recalc <- reactiveVal('FALSE')  # initialise
 ### Create set of constantly updated reactive values of cached inputs
@@ -506,6 +500,34 @@ observeEvent(input$link_to_tabpanel_evsynth, {
 ### Interactive UI ###
   #----------------#
 
+
+# Interactive help boxes #
+
+steps <- reactive(data.frame(
+  category=c(rep("CalcSettings",4), rep("BayesSettings",4)),
+  element=c("#samplesizes", "#its", "#impact_type", "#cutoff", "#prior", "#chains", "#iter", "#burn"),
+  intro=c("This is where you specify sample sizes for which you wish to estimate power. You can enter one sample size, or multiple by separating them with a semi-colon (;). Currently, it is assumed that future designed trials have two arms of equal size.",
+          "Choose how many iterations (i.e. times the algorithm is run) you wish to have per simulation (sample size). If you choose a higher number of iterations, the simulations will take longer but give more precise estimates (narrower confidence intervals), and vice versa.",
+          "Making an 'impact' on the current evidence base can be done in multiple ways - choose here which method you wish to focus on (1. Having a significant p-value; 2. Having a 95% confidence interval of a certain width; 3. Having the lower bound of the 95% CI above a certain value; 4. Having the upper bound of the 95% CI below a certain value).",
+          "Depending on which type of impact has been chosen, please choose a specific cut-off value for which you define as 'impactful' (e.g. a p-value of less than 0.05).",
+          "Choose which vague prior to use to initially model the between-study standard deviation (used for random-effects models)",
+          "Choose the number of chains. A chain represents a run-through of the analysis, with each chain starting with different values to aid robustness. The results then incorporate all chains.",
+          "The number of iterations to run through. A higher number of iterations is likely to lead to more robust results but does take longer.",
+          "The number of iterations to 'burn' (i.e. not include in the results) at the start. In early iterations, estimated parameters are unlikely to have converged and thus are likely to give spurious results.")
+))
+# Calculator settings #
+observeEvent(input$calc_help,
+             introjs(session, options = list(steps=steps() %>% filter(category=="CalcSettings"), "showBullets"="false", "showProgress"="true", 
+                                             "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip"))   # IMPACT_TYPE NOT WORKING and don't know why...
+)
+# Bayesian settings #
+observeEvent(input$bayes_help,
+             introjs(session, options = list(steps=steps() %>% filter(category=="BayesSettings"), "showBullets"="false", "showProgress"="true", 
+                                             "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip"))  
+)
+
+
+
 # Cut-off information #
 
 CutOffSettings <- function(type, outcome, MAFix, MARan) {
@@ -539,8 +561,7 @@ CutOffSettings <- function(type, outcome, MAFix, MARan) {
 output$CutOff <- renderUI({
   cutsettings <- CutOffSettings(input$impact_type, outcome(), freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
   tagList(
-    introBox(numericInput('cutoff', label = paste(cutsettings$label), value=cutsettings$initial),
-             data.step=4, data.intro="Depending on which type of impact has been chosen, please choose a specific cut-off value for which you define as 'impactful' (e.g. a p-value of less than 0.05)."),
+    numericInput('cutoff', label = paste(cutsettings$label), value=cutsettings$initial),
     HTML(cutsettings$current)
   )
 })
