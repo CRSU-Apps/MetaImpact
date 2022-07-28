@@ -355,7 +355,7 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
           theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
       }
       information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Random,input$FixRand)
-      informaton$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
+      information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
         g + theme(legend.position='none', strip.placement = "outside", aspect.ratio=0.3, axis.title=element_text(size=10,face="bold")) +

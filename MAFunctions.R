@@ -120,8 +120,10 @@ FreqNMAForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or rando
 
 BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warmup=400, model, prior) {         # inputs: continuous/binary; data frame (wide); treatment and control interventions; OR/RR/MD etc; number of chains; number of iterations, number of iterations to burn; fixed/random/both; type of prior for tau
   # prep data #
+  if (CONBI=='binary') {armVars=c(responders="R.", sampleSize="N.")
+  } else {armVars=c(mean="Mean.", std.err="SD.")}
   StanData <- create_MetaStan_dat(dat = SwapTrt(CONBI=CONBI, data=data, trt=ctrl),      # arrange data such that 'control' columns are first (metastan backwards) and suitable for meta-stan
-                                  armVars = c(responders="R.", sampleSize="N."))
+                                  armVars=armVars)
   if (outcome=='OR' | outcome=='RR' | outcome=='RD') {
     like <- 'binomial'
   } else {
@@ -179,15 +181,16 @@ BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warm
   }
   MAdata <- bind_cols(data.frame(StudyID.new = seq(from=1, by=1, length=nrow(data))),
                       MAdata[order(-MAdata$StudyID),])    # reverse ID so that forest plot matched frequentist
+  if (CONBI=='binary') {cols_n <- 9} else {cols_n <- 11}  # number of columns in MAdata differs between binary and continuous
   if (model=='fixed') {
-    MAdata[nrow(data)+1, -c(3)] <- c(rep(NA,10), MA.Fixed$fit_sum['theta', 1], MA.Fixed$fit_sum['theta', 4], MA.Fixed$fit_sum['theta', 8])
+    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), MA.Fixed$fit_sum['theta', 1], MA.Fixed$fit_sum['theta', 4], MA.Fixed$fit_sum['theta', 8])
     MAdata[nrow(data)+1, 3] <- "FE Model"
   } else if (model=='random') {
-    MAdata[nrow(data)+1, -c(3)] <- c(rep(NA,10), MA.Random$fit_sum['theta', 1], MA.Random$fit_sum['theta', 4], MA.Random$fit_sum['theta', 8])
+    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), MA.Random$fit_sum['theta', 1], MA.Random$fit_sum['theta', 4], MA.Random$fit_sum['theta', 8])
     MAdata[nrow(data)+1, 3] <- "RE Model"
   } else {
-    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,9), MA.Fixed$fit_sum['theta', 1], MA.Fixed$fit_sum['theta', 4], MA.Fixed$fit_sum['theta', 8])
-    MAdata[nrow(data)+2, -c(3)] <- c(-2, rep(NA,9), MA.Random$fit_sum['theta', 1], MA.Random$fit_sum['theta', 4], MA.Random$fit_sum['theta', 8])
+    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), MA.Fixed$fit_sum['theta', 1], MA.Fixed$fit_sum['theta', 4], MA.Fixed$fit_sum['theta', 8])
+    MAdata[nrow(data)+2, -c(3)] <- c(-2, rep(NA,cols_n), MA.Random$fit_sum['theta', 1], MA.Random$fit_sum['theta', 4], MA.Random$fit_sum['theta', 8])
     MAdata[(nrow(data)+1):(nrow(data)+2), 3] <- c("FE Model", "RE Model")
   }
   list(MAdata=MAdata, MA.Fixed=MA.Fixed, MA.Random=MA.Random)
