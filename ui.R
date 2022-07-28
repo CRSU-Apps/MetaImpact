@@ -101,7 +101,13 @@ tabPanel("Evidence Synthesis",
                       column(4, withSpinner(plotOutput("NetworkPlotF"), type=6)), #Network plot
                       column(6,offset=2, withSpinner(plotOutput("ForestPlotNMAF"), type=6))),  # Forest plot
                     conditionalPanel(condition = "input.Pairwise_NMA",    # Pairwise results
-                      column(5,align='center', withSpinner(htmlOutput("SummaryTableF"), type=6)), #Summary table
+                      column(5,align='center', withSpinner(htmlOutput("SummaryTableF"), type=6), #Summary table
+                             fluidRow(div(style="display: inline-block;", p(strong("Model fit statistics"))),
+                                      div(style="display: inline-block;", dropMenu(dropdownButton(size='xs',icon=icon('info')), align='left',
+                                        h6("Model fit statistics"),
+                                        p("Akaike information criterion (AIC) and Bayesian information criterion (BIC) measure 'model performance' whilst taking into account model complexity."),
+                                        p("The smaller the AIC or BIC, the 'better' the model. Values are best interpreted between models rather than alone.")))),
+                             htmlOutput("ModelFitF")), 
                       column(6, align='center', offset=1, withSpinner(plotOutput("ForestPlotPairF"), type=6),    #Forest plot
                              downloadButton('forestpairF_download', "Download forest plot"), radioButtons('forestpairF_choice', "", c('pdf','png'), inline=TRUE))))))), 
          # Bayesian #
@@ -114,7 +120,13 @@ tabPanel("Evidence Synthesis",
                       column(6,offset=2, withSpinner(plotOutput("ForestPlotB"), type=6), htmlOutput("TauB"), tableOutput("DICB"))),
                     conditionalPanel(condition = "input.Pairwise_NMA",
                       column(5, align='center', withSpinner(htmlOutput("SummaryTableB"), type=6),   # Summary table
-                                                plotOutput("TracePlot"),                            # Trace plot
+                                fluidRow(div(style="display: inline-block;", p(strong("Model assessment"))),
+                                         div(style="display: inline-block;", dropMenu(dropdownButton(size='xs',icon=icon('info')), align='left',
+                                                                                      h6("Model assessment"),
+                                                                                      p("For Bayesian models it is key that the model has converged (i.e. that the MCMC algorithm found the optimal solution)"),
+                                                                                      p("If a model has converged, Rhat should be smaller than 1.01 and the trace plot (parameter estimates over all iterations) should be 'spiky' and show no signs of distinct pattens")))),
+                                htmlOutput("ModelFitB"),
+                                plotOutput("TracePlot"),                            # Trace plot
                              downloadButton('tracepair_download', "Download trace plot"), radioButtons('tracepair_choice', "", c('pdf','png'), inline=TRUE)),                           
                       column(6, align='center', offset=1, withSpinner(plotOutput("ForestPlotPairB"), type=6),   # Forest plot
                              downloadButton('forestpairB_download', "Download forest plot"), radioButtons('forestpairB_choice', "", c('pdf','png'), inline=TRUE)))))

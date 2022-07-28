@@ -216,9 +216,11 @@ PairwiseSummary_functionF <- function(outcome, MA.Model) {
   }
   line3<-paste(strong("Heterogeneity results"))
   line4<-paste(line4, round(sqrt(sum$tau2),3), "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
-  line5<-paste(strong("Model fit statistics"))
-  line6<-paste("AIC: ", round(sum$fit.stats[3,1],2), "; BIC: ", round(sum$fit.stats[4,1],2), sep="")
-  HTML(paste(line0,line1, line2, line3, line4, line5, line6, sep = '<br/>'))
+  HTML(paste(line0,line1, line2, line3, line4, sep = '<br/>'))
+}
+PairwiseModelFit_functionF <- function(MA.Model) {
+  sum <- summary(MA.Model)
+  HTML(paste("AIC: ", round(sum$fit.stats[3,1],2), "; BIC: ", round(sum$fit.stats[4,1],2), sep=""))
 }
 
 freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise MA and obtain plots etc.
@@ -236,6 +238,7 @@ freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise M
           title("Forest plot of studies with overall estimate from fixed-effects model")}
       }
       information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Fixed)
+      information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Fixed)
     } else if (input$FixRand=='random') {
       if (outcome()=='OR' | outcome()=='RR') {
         information$Forest <- {
@@ -247,6 +250,7 @@ freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise M
           title("Forest plot of studies with overall estimate from random-effects model")}
       }
       information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Random)
+      information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Random)
     }
     information
   }
@@ -258,6 +262,10 @@ output$ForestPlotPairF <- renderPlot({      # Forest plot
 
 output$SummaryTableF <- renderUI({          # Summary table
   freqpair()$Summary
+})
+
+output$ModelFitF <- renderUI({              # Model fit statistics
+  freqpair()$ModelFit
 })
 
 
@@ -317,10 +325,10 @@ PairwiseSummary_functionB <- function(outcome, MA.Model, model) {
   } else {
     line3<-paste("For fixed models, between study standard-deviation is set to 0.")
   }
-  line4<-paste(strong("Model fit assessment"))
-  line5<-paste("Rhat: ", round(MA.Model$Rhat.max,2), sep="")
-  line6<-paste(strong("Trace plot"))
-  HTML(paste(line0,line1, line2, line3, line4, line5, line6, sep = '<br/>'))
+  HTML(paste(line0,line1, line2, line3, sep = '<br/>'))
+}
+PairwiseModelFit_functionB <- function(MA.Model) {
+  HTML(paste("Rhat: ", round(MA.Model$Rhat.max,2), sep=""))
 }
 
 bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA and obtain plots etc.
@@ -334,6 +342,7 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
           theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
       }
       information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Fixed,input$FixRand)
+      information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Fixed)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
         g + theme(legend.position='none', aspect.ratio = 0.45, axis.title=element_text(size=10,face="bold")) + 
@@ -346,6 +355,7 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
           theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
       }
       information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Random,input$FixRand)
+      informaton$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
         g + theme(legend.position='none', strip.placement = "outside", aspect.ratio=0.3, axis.title=element_text(size=10,face="bold")) +
@@ -364,6 +374,10 @@ output$ForestPlotPairB <- renderPlot({      # Forest plot
 
 output$SummaryTableB <- renderUI({          # Summary table
   bayespair()$Summary
+})
+
+output$ModelFitB <- renderUI({              # Model fit statistic
+  bayespair()$ModelFit
 })
 
 output$TracePlot <- renderPlot({            # Trace plot
