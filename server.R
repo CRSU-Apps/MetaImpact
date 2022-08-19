@@ -192,8 +192,8 @@ output$SynthesisSummaryBayes <- renderText({BayesSummaryText()})
 ### Run frequentist Pairwise MA ###
   #-----------------------------#
 
-WideData <- reactive({               # convert long format to wide if need be
-  Long2Wide(data=data()$data)
+WideData <- reactive({               # convert long format to wide if need be (and ensure trt and ctrl are the right way round)
+  SwapTrt(CONBI=ContBin(), data=Long2Wide(data=data()$data), trt=input$Pair_Trt)
 })
 
 observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
@@ -226,7 +226,7 @@ PairwiseModelFit_functionF <- function(MA.Model) {
 freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise MA and obtain plots etc.
   if (input$Pairwise_NMA==TRUE) {
     information <- list()
-    information$MA <- FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin(), trt=input$Pair_Trt)
+    information$MA <- FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin())
     if (input$FixRand=='fixed') {                   # Forest plot
       if (outcome()=='OR' | outcome()=='RR') {
         information$Forest <- {
@@ -310,19 +310,21 @@ observeEvent( input$BayesRun, {                           # reopen panel when a 
 })  
 
 
-PairwiseSummary_functionB <- function(outcome, MA.Model, model) {
+PairwiseSummary_functionB <- function(outcome, MA.Model, model) {   # MA.Model has to have MAData, MA.Fixed and MA.Random
   line0<-paste(strong("Results"))
-  line1<-paste("Number of studies: ", nrow(MA.Model$data_wide), sep="") 
-  line2<-paste("Pooled estimate: ", round(MA.Model$fit_sum['theta', 1],2), " (95% CI: ", round(MA.Model$fit_sum['theta', 4],2), " to ", round(MA.Model$fit_sum['theta', 8],2), ")", sep="") # already exponentiated where needed within BayesPair function
+  line1<-paste("Number of studies: ", nrow(MA.Model$MA.Fixed$data_wide), sep="") # same for fixed or random
   if (model=='random') {
+    line2<-paste("Pooled estimate: ", round(MA.Model$MAdata[MA.Model$MAdata$Study=='RE Model','est'],2), " (95% CI: ", round(MA.Model$MAdata[MA.Model$MAdata$Study=='RE Model','lci'],2), " to ", round(MA.Model$MAdata[MA.Model$MAdata$Study=='RE Model','uci'],2), ")", sep="") # already exponentiated where needed within BayesPair function
     if (outcome=='OR') {
-      line3<-paste("Between study standard-deviation (log-odds scale): ", round(MA.Model$fit_sum['tau[1]',1],3), " (95% CI: ", round(MA.Model$fit_sum['tau[1]',4],3), " to ", round(MA.Model$fit_sum['tau[1]',8],3), ")", sep="")
+      line3<-paste("Between study standard-deviation (log-odds scale): ")
     } else if (outcome=='RR') {
-      line3<-paste("Between study standard-deviation (log-probability scale): ", round(MA.Model$fit_sum['tau[1]',1],3), " (95% CI: ", round(MA.Model$fit_sum['tau[1]',4],3), " to ", round(MA.Model$fit_sum['tau[1]',8],3), ")", sep="")
+      line3<-paste("Between study standard-deviation (log-probability scale): ")
     } else {
-      line3<-paste("Between study standard-deviation: ", round(MA.Model$fit_sum['tau[1]',1],3), " (95% CI: ", round(MA.Model$fit_sum['tau[1]',4],3), " to ", round(MA.Model$fit_sum['tau[1]',8],3), ")", sep="")
+      line3<-paste("Between study standard-deviation: ")
     }
+    line3<-paste(line3, round(MA.Model$MA.Random$fit_sum['tau[1]',1],3), " (95% CI: ", round(MA.Model$MA.Random$fit_sum['tau[1]',4],3), " to ", round(MA.Model$MA.Random$fit_sum['tau[1]',8],3), ")", sep="")
   } else {
+    line2<-paste("Pooled estimate: ", round(MA.Model$MAdata[MA.Model$MAdata$Study=='FE Model','est'],2), " (95% CI: ", round(MA.Model$MAdata[MA.Model$MAdata$Study=='FE Model','lci'],2), " to ", round(MA.Model$MAdata[MA.Model$MAdata$Study=='FE Model','uci'],2), ")", sep="") # already exponentiated where needed within BayesPair function
     line3<-paste("For fixed models, between study standard-deviation is set to 0.")
   }
   HTML(paste(line0,line1, line2, line3, sep = '<br/>'))
@@ -341,7 +343,7 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
         g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
           theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
       }
-      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Fixed,input$FixRand)
+      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'fixed')
       information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Fixed)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
@@ -354,7 +356,7 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
         g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
           theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
       }
-      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA$MA.Random,input$FixRand)
+      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'random')
       information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
       information$Trace <- {
         g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
@@ -417,13 +419,15 @@ output$DICB <- renderTable({         # DIC
 
 
 
-### Frequentist Pairwise Sample Size Calculations ###
-  #-----------------------------------------------#
+### Pairwise Sample Size Calculations ###
+  #-----------------------------------#
 
 # Forest plot of current evidence base
 output$EvBase <- renderPlot({
   if (input$EvBase_choice!='freq') {
-    NoBayesian()
+    g <- BayesPairForest(bayespair()$MA$MAdata, outcome=outcome(), model='both')
+    g + ggtitle("Forest plot of studies and overall pooled estimates") +
+      theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
   } else {
     if (freqpair()$MA$MA.Fixed$measure %in% c('OR','RR')) {
       forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random, atransf=exp)
@@ -444,15 +448,16 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
   updateCollapse(session=session, id="Calculator", open=OneOrMultiple())
 })
 
+## UPDATE WITH BAYESIAN LAST ##
 # Function for checking if recalc option needs to be TRUE or FALSE (TRUE if only the impact type and/or cut-off have changed)
 Recalc <- reactiveVal('FALSE')  # initialise
 ### Create set of constantly updated reactive values of cached inputs
 tmpInputs <- reactiveValues()  # initialised
-tmp_freqpair <- eventReactive( input$FreqRun, {    # without this, the evidence synthesis tab was getting upset (forest plot)         
+tmp_pairwise <- eventReactive( input$FreqRun, {    # without this, the evidence synthesis tab was getting upset (forest plot)         
   if (input$Pairwise_NMA==TRUE) {
-    FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin(), trt=input$Pair_Trt) }
+    FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin()) }
   })
-inputCache <- reactive(list(sample=input$samplesizes, NMA=tmp_freqpair(), nit=input$its))
+inputCache <- reactive(list(sample=input$samplesizes, NMA=tmp_pairwise(), nit=input$its))
 source("InputCaches.R", local=TRUE)  # (non elegant) code for caching inputs - updating tmpInputs
 # compare previous input settings to decide on recalc option
 observeEvent(input$CalcRun, {

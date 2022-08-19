@@ -124,7 +124,7 @@ tabPanel("Evidence Synthesis",
                                          div(style="display: inline-block;", dropMenu(dropdownButton(size='xs',icon=icon('info')), align='left',
                                                                                       h6("Model assessment"),
                                                                                       p("For Bayesian models it is key that the model has converged (i.e. that the MCMC algorithm found the optimal solution)"),
-                                                                                      p("If a model has converged, Rhat should be smaller than 1.01 and the trace plot (parameter estimates over all iterations) should be 'spiky' and show no signs of distinct pattens")))),
+                                                                                      p("If a model has converged, Rhat should be smaller than 1.01 and the trace plot (parameter estimates over all iterations) should be 'spiky' and show no signs of distinct pattens. Also note that for ORs and RRs, the parameter estimate has been log-transformed.")))),
                                 htmlOutput("ModelFitB"),
                                 plotOutput("TracePlot"),                            # Trace plot
                              downloadButton('tracepair_download', "Download trace plot"), radioButtons('tracepair_choice', "", c('pdf','png'), inline=TRUE)),                           

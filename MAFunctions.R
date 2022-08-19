@@ -61,12 +61,11 @@ SwapTrt <- function(CONBI, data, trt) { # inputs: continuous/binary; data frame;
 
 ### Frequentist Pairwise ###
 
-FreqPair <- function(data, outcome, CONBI, model, trt) { #inputs: data frame in wide format; outcome type; continuous or binary' fixed or random (or both); treatment, control
-  data_corrected <- SwapTrt(CONBI=CONBI, data=data, trt=trt)  # arrange the data such that input$trt is T.1 and input$ctrl is T.2
+FreqPair <- function(data, outcome, CONBI, model) { #inputs: data frame in wide format; outcome type; continuous or binary' fixed or random (or both);
   if (CONBI=='continuous') {
-    MAdata <- escalc(measure=outcome, m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data_corrected)
+    MAdata <- escalc(measure=outcome, m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=data)
   } else {
-    MAdata <- escalc(measure=outcome, ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data_corrected)
+    MAdata <- escalc(measure=outcome, ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
   }
   if (model=='fixed' | model=='both') {MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure=outcome)} #fixed effects#
   if (model=='random' | model=='both') {MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="DL", measure=outcome)} #random effects #
@@ -148,7 +147,8 @@ BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warm
                          tau_prior = prior.value,        # details of prior distribution
                          chains = chains,
                          iter = iter,
-                         warmup = warmup)
+                         warmup = warmup,
+                         adapt_delta = 0.99)
   }
   if (model=='fixed' | model=='both') {
     MA.Fixed <- meta_stan(data = StanData,
@@ -159,7 +159,8 @@ BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warm
                          theta_prior = c(0, 10),         # vague normal prior for treatment effect estimate (which is same for all studies)
                          chains = chains,
                          iter = iter,
-                         warmup = warmup)
+                         warmup = warmup,
+                         adapt_delta = 0.99)
   }
   # prep output data
   MAdata <- SwapTrt(CONBI=CONBI, data=data, trt=trt)   # base data
@@ -172,25 +173,28 @@ BayesPair <- function(CONBI, data, trt, ctrl, outcome, chains=2, iter=4000, warm
     MAdata$est <- exp(MAdata$yi)
     MAdata$lci <- exp(MAdata$yi - 1.96 * sqrt(MAdata$vi))
     MAdata$uci <- exp(MAdata$yi + 1.96 * sqrt(MAdata$vi))
-    MA.Fixed$fit_sum['theta', c(1,4,8)] <- exp(MA.Fixed$fit_sum['theta', c(1,4,8)])
-    MA.Random$fit_sum['theta', c(1,4,8)] <- exp(MA.Random$fit_sum['theta', c(1,4,8)])
+    results.fixed <- exp(MA.Fixed$fit_sum['theta', c(1,4,8)])
+    results.random <- exp(MA.Random$fit_sum['theta', c(1,4,8)])
   } else {
     MAdata$est <- MAdata$yi
     MAdata$lci <- MAdata$yi - 1.96 * sqrt(MAdata$vi)
     MAdata$uci <- MAdata$yi + 1.96 * sqrt(MAdata$vi)
+    results.fixed <- MA.Fixed$fit_sum['theta', c(1,4,8)]
+    results.random <- MA.Random$fit_sum['theta', c(1,4,8)]
   }
+  
   MAdata <- bind_cols(data.frame(StudyID.new = seq(from=1, by=1, length=nrow(data))),
                       MAdata[order(-MAdata$StudyID),])    # reverse ID so that forest plot matched frequentist
   if (CONBI=='binary') {cols_n <- 9} else {cols_n <- 11}  # number of columns in MAdata differs between binary and continuous
   if (model=='fixed') {
-    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), MA.Fixed$fit_sum['theta', 1], MA.Fixed$fit_sum['theta', 4], MA.Fixed$fit_sum['theta', 8])
+    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), results.fixed[1], results.fixed[2], results.fixed[3])
     MAdata[nrow(data)+1, 3] <- "FE Model"
   } else if (model=='random') {
-    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), MA.Random$fit_sum['theta', 1], MA.Random$fit_sum['theta', 4], MA.Random$fit_sum['theta', 8])
+    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), results.random[1], results.random[2], results.random[3])
     MAdata[nrow(data)+1, 3] <- "RE Model"
   } else {
-    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), MA.Fixed$fit_sum['theta', 1], MA.Fixed$fit_sum['theta', 4], MA.Fixed$fit_sum['theta', 8])
-    MAdata[nrow(data)+2, -c(3)] <- c(-2, rep(NA,cols_n), MA.Random$fit_sum['theta', 1], MA.Random$fit_sum['theta', 4], MA.Random$fit_sum['theta', 8])
+    MAdata[nrow(data)+1, -c(3)] <- c(-1, rep(NA,cols_n), results.fixed[1], results.fixed[2], results.fixed[3])
+    MAdata[nrow(data)+2, -c(3)] <- c(-2, rep(NA,cols_n), results.random[1], results.random[2], results.random[3])
     MAdata[(nrow(data)+1):(nrow(data)+2), 3] <- c("FE Model", "RE Model")
   }
   list(MAdata=MAdata, MA.Fixed=MA.Fixed, MA.Random=MA.Random)
