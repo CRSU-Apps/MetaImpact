@@ -227,8 +227,10 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
   return(list(simdata=sims, power=power, CI_lower=CI_lower, CI_upper=CI_upper))
 }
 
-#test_bayes <- metapow(NMA=bayespair, data=data, n=7500, nit=50, inference='uci', pow=1.15, measure='OR', FreqBayes='bayes', chains=2, iter=1000, warmup=200, prior='half-cauchy')
+#bayespair <- BayesPair(CONBI, data, trt, ctrl, outcome, chains=2, iter=1000, warmup=200, model='both', prior='uniform')
+#test_bayes <- metapow(NMA=bayespair, data=data, n=7500, nit=50, inference='uci', pow=1.15, measure='OR', FreqBayes='bayes', chains=2, iter=1000, warmup=200, prior='uniform')
 #test_bayes_2 <- metapow(nit=50, inference='lci', pow=0.55, recalc='TRUE')
+#freqpair <- FreqPair(data=data_wide, outcome=outcome, CONBI=CONBI, model='both')
 #test_freq <- metapow(NMA=freqpair, data=data, n=7500, nit=50, inference='uci', pow=1.15, measure='OR', FreqBayes='freq')
 #test_freq_2 <- metapow(nit=50, inference='lci', pow=0.55, recalc='TRUE')  # must be done after frequentist...need to implement Bayes/Freq into recalc function
 
