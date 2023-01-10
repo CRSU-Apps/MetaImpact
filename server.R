@@ -448,22 +448,35 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
   updateCollapse(session=session, id="Calculator", open=OneOrMultiple())
 })
 
-## UPDATE WITH BAYESIAN LAST ##
 # Function for checking if recalc option needs to be TRUE or FALSE (TRUE if only the impact type and/or cut-off have changed)
 Recalc <- reactiveVal('FALSE')  # initialise
 ### Create set of constantly updated reactive values of cached inputs
 tmpInputs <- reactiveValues()  # initialised
-tmp_pairwise <- eventReactive( input$FreqRun, {    # without this, the evidence synthesis tab was getting upset (forest plot)         
-  if (input$Pairwise_NMA==TRUE) {
-    FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin()) }
-  })
-inputCache <- reactive(list(sample=input$samplesizes, NMA=tmp_pairwise(), nit=input$its))
+tmp_pairwise <- reactive({                
+  if (input$EvBase_choice=='freq') {
+    FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin()) # if I use freqpair(), then the forest plot on evidence synthesis tab doesn't load - minor bug for now (extra run-time and hope no-one changes frequentist settings without re-running)
+  } else {
+    bayespair()$MA
+  }
+})
+inputCache <- reactive(list(sample=input$samplesizes, 
+                            NMA=tmp_pairwise(), 
+                            nit=input$its,
+                            FreqBayes=input$EvBase_choice))
 source("InputCaches.R", local=TRUE)  # (non elegant) code for caching inputs - updating tmpInputs
 # compare previous input settings to decide on recalc option
 observeEvent(input$CalcRun, {
   if (input$CalcRun>1) {
-    eval(parse(text = paste0("if (setequal(tmpInputs[['", input$CalcRun, "']]$sample,tmpInputs[['", input$CalcRun-1, "']]$sample) & setequal(tmpInputs[['", input$CalcRun, "']]$NMA,tmpInputs[['", input$CalcRun-1, "']]$NMA) & setequal(tmpInputs[['", input$CalcRun, "']]$nit,tmpInputs[['", input$CalcRun-1, "']]$nit)) {Recalc('TRUE')} else {Recalc('FALSE')}", sep=""))) #compare previous two sets of inputs
+    eval(parse(text = paste0("if (setequal(tmpInputs[['", input$CalcRun, "']]$sample,tmpInputs[['", input$CalcRun-1, "']]$sample) & setequal(tmpInputs[['", input$CalcRun, "']]$NMA,tmpInputs[['", input$CalcRun-1, "']]$NMA) & setequal(tmpInputs[['", input$CalcRun, "']]$nit,tmpInputs[['", input$CalcRun-1, "']]$nit) & setequal(tmpInputs[['", input$CalcRun, "']]$FreqBayes,tmpInputs[['", input$CalcRun-1, "']]$FreqBayes)) {Recalc('TRUE')} else {Recalc('FALSE')}", sep=""))) #compare previous two sets of inputs
 }})
+
+pairwise_MA <- reactive({
+  if (input$EvBase_choice=='freq') {
+    freqpair()$MA
+  } else {
+    bayespair()$MA
+  }
+})
 
 # Calculate 
 CalcResults <- eventReactive( input$CalcRun, {
@@ -483,12 +496,13 @@ CalcResults <- eventReactive( input$CalcRun, {
       }
       progress$set(value = value, detail = detail)
     }
-    list1$data <- metapow_multiple(SampleSizes=list1$sample_sizes, NMA=freqpair()$MA, data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()), updateProgress=updateProgress)
+    list1$data <- metapow_multiple(SampleSizes=list1$sample_sizes, NMA=pairwise_MA(), data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()), updateProgress=updateProgress, chains=input$chains, iter=input$iter, warmup=input$burn, prior=input$prior)
   } else if (length(list1$sample_sizes)==1) {
-    list1$singleresult <- metapow(NMA=freqpair()$MA, data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()))
+    list1$singleresult <- metapow(NMA=pairwise_MA(), data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()), chains=input$chains, iter=input$iter, warmup=input$burn, prior=input$prior)
   }
   list1
 }})
+# Bayesian takes a while doing 'something' before starting to run simulations (which also means when using recalc option, it takes longer than I think it should?)
 
 # Results
 output$powplot <- renderPlot({    # only if multiple sample sizes entered

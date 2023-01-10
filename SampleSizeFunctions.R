@@ -95,7 +95,7 @@ metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean esti
 
 
 # function to conduct bulk of power function below
-rerunMA <- function(new, data, model, n, measure, FreqBayes, chains, iter, warmup, prior) {   # new - newly simulated trial using metasim; data - original dataset; model - fixed or random; n - total sample size; measure - type of outcome (or/rr/rd); FreqBayes - frequentist of bayesian MA; chains, iter, warmup, prior = bayesian options
+rerunMA <- function(new, data, model, n, measure, chains, iter, warmup, prior) {   # new - newly simulated trial using metasim; data - original dataset; model - fixed or random; n - total sample size; measure - type of outcome (or/rr/rd); chains, iter, warmup, prior = bayesian options
   # put together dataframe for new trial
   if (measure=='OR' | measure=='RR' | measure=='RD') {
     newtrial <- data.frame(StudyID=max(data$StudyID)+1, Study=paste("New_", format(Sys.Date(), "%Y")), T.1=data$T.1[1], T.2=data$T.2[1], R.1=new$new.events.t, R.2=new$new.events.c, N.1=n/2, N.2=n/2)
@@ -109,22 +109,17 @@ rerunMA <- function(new, data, model, n, measure, FreqBayes, chains, iter, warmu
   }
   newdata <- rbind(data, newtrial)
   # re-meta-analyse
-  if (FreqBayes=='freq') {
-    newMA <- FreqPair(data=newdata, outcome=measure, CONBI=ifelse(measure %in% c('OR','RR','RD'), 'binary','continuous'), model='both')  # once fixed FreqPar, can change model='fixed' to reduce computation
-    if (model=='fixed') {
-      return(newMA$MA.Fixed)
-    } else {
-      return(newMA$MA.Random)
-    }   # had to do it this way (which is wasteful) as FreqPair command is currently only happy with the model='both' option
+  newMA <- FreqPair(data=newdata, outcome=measure, CONBI=ifelse(measure %in% c('OR','RR','RD'), 'binary','continuous'), model='both')  # once fixed FreqPar, can change model='fixed' to reduce computation
+  if (model=='fixed') {
+    return(newMA$MA.Fixed)
   } else {
-    newMA <- BayesPair(CONBI=ifelse(measure %in% c('OR','RR','RD'), 'binary', 'continuous'), data=newdata, trt=newdata$T.1[1], ctrl=newdata$T.2[1], outcome=measure, chains=chains, iter=iter, warmup=warmup, model=model, prior=prior)   # in server, I ensure that T.1 is the treatment
-    return(newMA)
-  }
+    return(newMA$MA.Random)
+  }   # had to do it this way (which is wasteful) as FreqPair command is currently only happy with the model='both' option
 }
 
 
 # function for calculating power
-metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, plot_ext=NA, FreqBayes='freq', chains, iter, warmup, prior) {  # NMA - an NMA object from inbuilt function FreqMA; data - original data; n - total sample size; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); recalc - re-calculate power based on difference inference; plot - whether it is being used within the metapowplot function; FreqBayes - using frequentist of bayesian MA; chains, iter, warmup, prior = bayesian options
+metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, plot_ext=NA, chains, iter, warmup, prior) {  # NMA - an NMA object from inbuilt function FreqMA; data - original data; n - total sample size; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); recalc - re-calculate power based on difference inference; plot - whether it is being used within the metapowplot function; chains, iter, warmup, prior = bayesian options
   # create empty list elements
   power <- data.frame(Fixed=NA, Random=NA)
   CI_lower <- data.frame(Fixed=NA, Random=NA)
@@ -138,25 +133,16 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
   progress_bar = txtProgressBar(min=0, max=nit, style = 1, char="=")
   for (i in 1:nit) {
     # obtain new data, add to existing data, and re-run MA
-    if (FreqBayes=='freq') {
-      new <- metasim(es=NMA$MA.Fixed$beta, tausq=0, var=(NMA$MA.Fixed$se)^2, model='fixed', n=n, data=data, measure=measure)
-    } else {
-      new <- metasim(es=NMA$MA.Fixed$fit_sum['theta', 1], tausq=0, var=(NMA$MA.Fixed$fit_sum['theta',3])^2, model='fixed', n=n, data=data, measure=measure)
-    }
-    newMA <- rerunMA(new=new, data=data, model='fixed', n=n, measure=measure, FreqBayes=FreqBayes, chains=chains, iter=iter, warmup=warmup, prior=prior)
+    new <- metasim(es=NMA$MA.Fixed$beta, tausq=0, var=(NMA$MA.Fixed$se)^2, model='fixed', n=n, data=data, measure=measure)
+    newMA <- rerunMA(new=new, data=data, model='fixed', n=n, measure=measure, chains=chains, iter=iter, warmup=warmup, prior=prior)
     # Collect inference information
-    if (FreqBayes=='freq') {
-      sims$Fixed.p[i] <- newMA$pval
-      if (measure=='OR' | measure=='RR') {
-        sims$Fixed.lci[i] <- exp(newMA$ci.lb)
-        sims$Fixed.uci[i] <- exp(newMA$ci.ub)
-      } else {
-        sims$Fixed.lci[i] <- newMA$ci.lb
-        sims$Fixed.uci[i] <- newMA$ci.ub
-      }
-    } else {    # no p-value for Bayesian
-      sims$Fixed.lci[i] <- newMA$MAdata[nrow(newMA$MAdata),ncol(newMA$MAdata)-1]   # BayesPair already converts OR/RR/RD
-      sims$Fixed.uci[i] <- newMA$MAdata[nrow(newMA$MAdata),ncol(newMA$MAdata)]
+    sims$Fixed.p[i] <- newMA$pval
+    if (measure=='OR' | measure=='RR') {
+      sims$Fixed.lci[i] <- exp(newMA$ci.lb)
+      sims$Fixed.uci[i] <- exp(newMA$ci.ub)
+    } else {
+      sims$Fixed.lci[i] <- newMA$ci.lb
+      sims$Fixed.uci[i] <- newMA$ci.ub
     }
     setTxtProgressBar(progress_bar, value = i)
   }
@@ -166,25 +152,16 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
   progress_bar = txtProgressBar(min=0, max=nit, style = 1, char="=")
     for (i in 1:nit) {
       # obtain new data, add to existing data, and re-run MA
-      if (FreqBayes=='freq') {
-        new <- metasim(es=NMA$MA.Random$beta, tausq=NMA$MA.Random$tau2, var=(NMA$MA.Random$se)^2, model='random', n=n, data=data, measure=measure)
-      } else {
-        new <- metasim(NMA$MA.Random$fit_sum['theta',1], tausq=(NMA$MA.Random$fit_sum['tau[1]',1])^2, var=(NMA$MA.Random$fit_sum['theta',3])^2, model='random', n=n, data=data, measure=measure)
-      }
-      newMA <- rerunMA(new=new, data=data, model='random', n=n, measure=measure, FreqBayes=FreqBayes, chains=chains, iter=iter, warmup=warmup, prior=prior)
+      new <- metasim(es=NMA$MA.Random$beta, tausq=NMA$MA.Random$tau2, var=(NMA$MA.Random$se)^2, model='random', n=n, data=data, measure=measure)
+      newMA <- rerunMA(new=new, data=data, model='random', n=n, measure=measure, chains=chains, iter=iter, warmup=warmup, prior=prior)
       # Collect inference information
-      if (FreqBayes=='freq') {
-        sims$Random.p[i] <- newMA$pval
-        if (measure=='OR' | measure=='RR') {
-          sims$Random.lci[i] <- exp(newMA$ci.lb)
-          sims$Random.uci[i] <- exp(newMA$ci.ub)
-        } else {
-          sims$Random.lci[i] <- newMA$ci.lb
-          sims$Random.uci[i] <- newMA$ci.ub
-        }
-      } else {    # no p-value for Bayesian
-        sims$Random.lci[i] <- newMA$MAdata[nrow(newMA$MAdata),ncol(newMA$MAdata)-1]   # BayesPair already converts OR/RR/RD
-        sims$Random.uci[i] <- newMA$MAdata[nrow(newMA$MAdata),ncol(newMA$MAdata)]
+      sims$Random.p[i] <- newMA$pval
+      if (measure=='OR' | measure=='RR') {
+        sims$Random.lci[i] <- exp(newMA$ci.lb)
+        sims$Random.uci[i] <- exp(newMA$ci.ub)
+      } else {
+        sims$Random.lci[i] <- newMA$ci.lb
+        sims$Random.uci[i] <- newMA$ci.ub
       }
       setTxtProgressBar(progress_bar, value = i)
     }
@@ -237,10 +214,10 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
 
 
 # function for plotting the power curve (had to split into two functions so that the options for the plot itself could be run without the 'run' button needing to be pressed)
-metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measure, recalc=FALSE, updateProgress = NULL) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
+metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measure, recalc=FALSE, updateProgress = NULL, chains, iter, warmup, prior) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
   PowerData <- data.frame(SampleSize = rep(SampleSizes,2), Model = c(rep("Fixed-effects",length(SampleSizes)),rep("Random-effects",length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
   for (i in 1:length(SampleSizes)) {
-    results <- metapow(NMA=NMA, data=data, n=SampleSizes[i], nit=nit, inference=inference, pow=pow, measure=measure, recalc=recalc, plot_ext=i)
+    results <- metapow(NMA=NMA, data=data, n=SampleSizes[i], nit=nit, inference=inference, pow=pow, measure=measure, recalc=recalc, plot_ext=i, chains=chains, iter=iter, warmup=warmup, prior=prior)
     PowerData$Estimate[i] <- results$power$Fixed*100
     PowerData$Estimate[i+length(SampleSizes)] <- results$power$Random*100
     PowerData$CI_lower[i] <- results$CI_lower$Fixed*100
