@@ -35,7 +35,7 @@ model {
   rc ~ binomial(nc, pc);
   rt ~ binomial(nt, pt);
   // Priors
-  for(i in 1:Num) mu[i] ~ normal(0,100);    // Vague priors
+  mu ~ normal(0,100);    // Vague priors
   delta ~ normal(d, sigma);                 // random-effects model with common effect
   d ~ normal(0, 1000);
   sigma ~ cauchy(0,0.5);
