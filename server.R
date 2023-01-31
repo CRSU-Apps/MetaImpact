@@ -306,7 +306,8 @@ LongData <- reactive({               # convert wide format to long if need be
 })
 
 observeEvent( input$BayesRun, {                           # reopen panel when a user re-runs analysis
-  updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
+  NoBayesian()
+  #updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
 })  
 
 
@@ -334,39 +335,40 @@ PairwiseModelFit_functionB <- function(MA.Model) {
 }
 
 bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA and obtain plots etc.
-  if (input$Pairwise_NMA==TRUE) {
-    information <- list()
-    information$MA <- BayesPair(CONBI=ContBin(), data=WideData(), trt=input$Pair_Trt, ctrl=input$Pair_Ctrl, outcome=outcome(), chains=input$chains, iter=input$iter, warmup=input$burn, model='both', prior=input$prior)
-    if (input$FixRand=='fixed') {                   
-      information$Forest <- {               
-        g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='fixed')
-        g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
-          theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
-      }
-      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'fixed')
-      information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Fixed)
-      information$Trace <- {
-        g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
-        g + theme(legend.position='none', aspect.ratio = 0.45, axis.title=element_text(size=10,face="bold")) + 
-          labs(y="Pooled estimate", x="Iteration")
-      }
-    } else if (input$FixRand=='random') {
-      information$Forest <- {               
-        g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
-        g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
-          theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
-      }
-      information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'random')
-      information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
-      information$Trace <- {
-        g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
-        g + theme(legend.position='none', strip.placement = "outside", aspect.ratio=0.3, axis.title=element_text(size=10,face="bold")) +
-          labs(x="Iteration") +
-          facet_wrap(~parameter, strip.position='left', nrow=2, scales='free', labeller=as_labeller(c(theta = "Pooled estimate", 'tau[1]' = "Between-study SD") ) )
-      }
-    }
-    information
-  }
+  NoBayesian()
+  #if (input$Pairwise_NMA==TRUE) {
+  #  information <- list()
+  #  information$MA <- BayesPair(CONBI=ContBin(), data=WideData(), trt=input$Pair_Trt, ctrl=input$Pair_Ctrl, outcome=outcome(), chains=input$chains, iter=input$iter, warmup=input$burn, model='both', prior=input$prior)
+  #  if (input$FixRand=='fixed') {                   
+  #    information$Forest <- {               
+  #      g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='fixed')
+  #      g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
+  #        theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
+  #    }
+  #    information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'fixed')
+  #    information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Fixed)
+  #    information$Trace <- {
+  #      g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
+  #      g + theme(legend.position='none', aspect.ratio = 0.45, axis.title=element_text(size=10,face="bold")) + 
+  #        labs(y="Pooled estimate", x="Iteration")
+  #    }
+  #  } else if (input$FixRand=='random') {
+  #    information$Forest <- {               
+  #      g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
+  #      g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
+  #        theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
+  #    }
+  #    information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'random')
+  #    information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
+  #    information$Trace <- {
+  #      g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
+  #      g + theme(legend.position='none', strip.placement = "outside", aspect.ratio=0.3, axis.title=element_text(size=10,face="bold")) +
+  #        labs(x="Iteration") +
+  #        facet_wrap(~parameter, strip.position='left', nrow=2, scales='free', labeller=as_labeller(c(theta = "Pooled estimate", 'tau[1]' = "Between-study SD") ) )
+  #    }
+  #  }
+  #  information
+  #}
 })
 
 
@@ -425,9 +427,10 @@ output$DICB <- renderTable({         # DIC
 # Forest plot of current evidence base
 output$EvBase <- renderPlot({
   if (input$EvBase_choice!='freq') {
-    g <- BayesPairForest(bayespair()$MA$MAdata, outcome=outcome(), model='both')
-    g + ggtitle("Forest plot of studies and overall pooled estimates") +
-      theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
+    NoBayesian()
+    #g <- BayesPairForest(bayespair()$MA$MAdata, outcome=outcome(), model='both')
+    #g + ggtitle("Forest plot of studies and overall pooled estimates") +
+    #  theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
   } else {
     if (freqpair()$MA$MA.Fixed$measure %in% c('OR','RR')) {
       forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random, atransf=exp)
