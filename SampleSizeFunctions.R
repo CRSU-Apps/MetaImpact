@@ -64,8 +64,8 @@ metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean esti
   if (measure=='OR' | measure=='RR' | measure=='RD') {
     new.events.c <- rbinom(n=1, size=n/2, prob=prob.c)
   } else {
-    sample <- rnorm(n=n/2, mean=mean.c, sd=stdev.c)
-    new.mean.c <- mean(sample)
+    sample <- rnorm(n=n/2, mean=mean.c, sd=stdev.c)  # recreate the new study
+    new.mean.c <- mean(sample)   # take mean and SD of new study results
     new.stdev.c <-sd(sample)
   }
   # calculate number of events/mean/sd in the treatment group
@@ -125,6 +125,7 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
   CI_lower <- data.frame(Fixed=NA, Random=NA)
   CI_upper <- data.frame(Fixed=NA, Random=NA)
   sim.inference <- data.frame(Fixed=rep(x=NA, times=nit), Random=rep(x=NA, times=nit))
+  sim_study <- data.frame(estimate=rep(NA, nit), st_err=rep(NA,nit))
   if (recalc=='FALSE') {
   sims <- data.frame(Fixed.p=rep(x=NA, times=nit), Fixed.lci=rep(x=NA, times=nit), Fixed.uci=rep(x=NA, times=nit), 
                      Random.p=rep(x=NA, times=nit), Random.lci=rep(x=NA, times=nit), Random.uci=rep(x=NA, times=nit))
@@ -135,6 +136,9 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
     # obtain new data, add to existing data, and re-run MA
     new <- metasim(es=NMA$MA.Fixed$beta, tausq=0, var=(NMA$MA.Fixed$se)^2, model='fixed', n=n, data=data, measure=measure)
     newMA <- rerunMA(new=new, data=data, model='fixed', n=n, measure=measure, chains=chains, iter=iter, warmup=warmup, prior=prior)
+    # Collect data about simulated data (will be same for fixed and random) (for OR, RR, on log scale)
+    sim_study$estimate[i] <- newMA$data$yi[nrow(data)+1]
+    sim_study$st_err[i] <- sqrt(newMA$data$vi[nrow(data)+1])
     # Collect inference information
     sims$Fixed.p[i] <- newMA$pval
     if (measure=='OR' | measure=='RR') {
@@ -201,7 +205,7 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
   power$Random <- power_results$estimate
   CI_lower$Random <- power_results$conf.int[1]
   CI_upper$Random <- power_results$conf.int[2]
-  return(list(simdata=sims, power=power, CI_lower=CI_lower, CI_upper=CI_upper))
+  return(list(simdata=sims, power=power, CI_lower=CI_lower, CI_upper=CI_upper, sim_study=sim_study))
 }
 
 #bayespair <- BayesPair(CONBI, data, trt, ctrl, outcome, chains=2, iter=1000, warmup=200, model='both', prior='uniform')

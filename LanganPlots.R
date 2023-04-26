@@ -165,3 +165,20 @@ for (j in 1:(length(cSS)-1)) {
 # random effects maxed out gpplot
 
 
+### Add simulation results ###
+
+## Add results to environment ##
+source("SampleSizeFunctions.R")
+source("MAFunctions.R")
+
+app_MA <- FreqPair(data=MAdata, outcome='OR', CONBI='binary', model='both')
+sims <- metapow(NMA=app_MA, data=raw_data, n=2000, nit=300, inference='pvalue', pow=0.05, measure='OR', recalc=FALSE, plot_ext=NA)
+# result was 73% power (95% CI: 67.5% to 77.9%)
+
+Langan_sims <- Langan_cont +
+  geom_point(data=sims$sim_study, aes(x=estimate, y=st_err))    
+Langan_sims
+
+
+# Need to add predictive interval of MA
+# Need to wrap into function where user can specify x and y limits so that we can zoom in onto simulated area (or have it auto zoom in?)
