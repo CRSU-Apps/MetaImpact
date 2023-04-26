@@ -12,14 +12,14 @@ raw_data <- data.frame(StudyID=c(1,2,3,4,5,6), Study=c("Herne_1980","Hoaglund_19
 MAdata <- escalc(measure='OR', ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=raw_data)   # gives ES (effect estimate) and seES (sampling variances) on logOR scale for binary data
 MAdata$sei <- sqrt((1/raw_data$R.1) + (1/(raw_data$N.1-raw_data$R.1)) + (1/raw_data$R.2) + (1/(raw_data$N.2-raw_data$R.2)))  # Calculate standard errors
 outcome <- 'OR'
-method='random'
+method='fixed'
 rand.load <- 10
 if (outcome %in% c("OR","RR")) {
   MAdata$yi_trans <- exp(MAdata$yi)
 }
 # pairwise meta-analysis #
-random_model <- rma(yi, vi, slab=Study, data=MAdata, method="PM", measure=outcome)
-MAresults <- summary(random_model)
+og_model <- rma(yi, vi, slab=Study, data=MAdata, method='FE', measure=outcome)
+MAresults <- summary(og_model)
 # data frame for summary diamond #
 sediff <- max(MAdata$sei) - min(MAdata$sei)
 ylim <- c(0,1)   # pre-set for plot
@@ -59,9 +59,9 @@ ci <- qnorm(1-((0.05)/2))  #converts significance level (e.g. 0.05 -> 1.96)
 zero <- 0    # option of what is 'zero-effect'
 # fixed-effect model #
 if (method=="fixed")  {
-  vwt <- 1/(csize^2)
-  c1SS <- (1/vwt)*(zero*(sum(size) + vwt) - sum(size*MAdata$yi) +  ci * (sum(size)+vwt)^0.5)
-  c2SS <- (1/vwt)*(zero*(sum(size) + vwt) - sum(size*MAdata$yi) -  ci * (sum(size)+vwt)^0.5)
+  vwt <- 1/(csize^2)     # weight for each point on plot (inverse of variance) (i.e. weight of new study)
+  c1SS <- (1/vwt)*(zero*(sum(size) + vwt) - sum(size*MAdata$yi) +  ci * (sum(size)+vwt)^0.5)   # formulae based on CI boundaries meeting no effect
+  c2SS <- (1/vwt)*(zero*(sum(size) + vwt) - sum(size*MAdata$yi) -  ci * (sum(size)+vwt)^0.5)   
 }
 # random-effects model #  
 if (method=="random")  {
@@ -118,8 +118,30 @@ Langan <- ggplot(MAdata, aes(x=yi, y=sei)) +
   theme_classic() + theme(aspect.ratio=1, panel.background = element_rect(colour = "black")) +
   scale_x_continuous(breaks=log(c(0.25, 0.5, 1, 2, 4)), labels=c(0.25, 0.5, 1, 2, 4), limits=xlim, expand=c(0,0)) +
   scale_y_continuous(limits=c(0,1), expand=c(0,0))
+Langan
 
-#The significance contours (creates squares of colour)
+# Add significance contours for fixed-effects #
+if (method='fixed') {
+  Langan_cont <- ggplot(MAdata, aes(x=yi, y=sei)) +
+    geom_polygon(data=data.frame(x=c(c1SS, rev(c2SS)), y=c(csize, rev(csize))), aes(x=x, y=y), color="white", fill="white") +
+    geom_polygon(data=data.frame(x=c(c2SS,xlim[1], xlim[1]), y=c(csize, ylim[2], ylim[1])), aes(x=x, y=y), color="gray91", fill="gray91") +
+    geom_polygon(data=data.frame(x=c(c1SS,xlim[2], xlim[2]), y=c(csize, ylim[2], ylim[1])), aes(x=x, y=y), color="gray72", fill="gray72") +
+    # line of no effect
+    geom_vline(xintercept=0, color='lightgrey') +
+    # summary results diamond
+    geom_polygon(data=summary_diamond, aes(x=xsumm, y=ysumm),
+                 color="black", fill = "lavenderblush4") +
+    # plot individual studies in current MA
+    geom_point() +
+    # formatting of plot
+    labs(x = "Odds Ratio", y = "Standard Error", title = "Meta-analysis results with Significance Contours") +
+    theme_classic() + theme(aspect.ratio=1, panel.background = element_rect(colour = "black")) +
+    scale_x_continuous(breaks=log(c(0.25, 0.5, 1, 2, 4)), labels=c(0.25, 0.5, 1, 2, 4), limits=xlim, expand=c(0,0)) +
+    scale_y_continuous(limits=c(0,1), expand=c(0,0))
+}
+Langan_cont
+
+#The significance contours (creates squares of colour) for random-effects
 contour_data <- data.frame(cSS = cSS, csize=csize)
 for (j in 1:(length(cSS)-1)) {
   for (i in 1:(length(csize)-1)) {
@@ -140,8 +162,6 @@ for (j in 1:(length(cSS)-1)) {
                      color="gray72", fill = "gray72", alpha=0.5)
   }
 }
+# random effects maxed out gpplot
 
-
-Langan
-# Maxed out ggplot....
 
