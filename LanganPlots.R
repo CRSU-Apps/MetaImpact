@@ -33,7 +33,7 @@ library(ggplot2)
 #ylab - label for the y axis																#
 #plot.zero - TRUE/FALSE plot the null effect vertical line as defined by the arguament 'zero'					#
 #plot.summ - TRUE/FALSE plot the pooled effect vertical line of current studies								#
-#legendpos - position of the upper left hand corner on the x/y axis scale									#
+#legendpos - position as per ggplot styling									#
 #summ - TRUE/FALSE plot summary diamond including pooled effect and confidence interval (significance level as defined by sig.level		#
 #summ.pos - adjustment of position of summary diamond
 #xpoints/ypoints - add an extra point(s) in the plot just to show as an example								#
@@ -48,8 +48,14 @@ library(ggplot2)
 raw_data <- data.frame(StudyID=c(1,2,3,4,5,6), Study=c("Herne_1980","Hoaglund_1950","Kaiser_1996","Lexomboon_1971","McKerrow_1961","Taylor_1977"),
                    R.1=c(7,39,97,8,5,12), N.1=c(7+39,39+115,97+49,8+166,5+10,12+117), T.1=rep("Treatment",6),
                    R.2=c(10,51,94,4,8,3), N.2=c(10+12,51+104,94+48,4+83,8+10,3+56), T.2=rep("Control",6))
+raw_data <- data.frame(StudyID=c(1,2,3,4,5,6,7), Study=c("Connor_2002","Geier_2004","Kinzler_1991","Lehri_2004","Halsch_2001","Volz_1997","Warnecke_1991"),
+                       Mean.1=c(5.7,12.7,12.3,10.6,3,21,25.61), Mean.2=c(8.5,12.3,3.6,9.2,0.6,16.2,7.65), 
+                       SD.1=c(7.6,6.7,8.7,7.3,7.5,13,12.8), SD.2=c(4.2,7.3,8.4,10,4.6,14.3,15.9),
+                       N.1=c(17,25,29,34,20,52,20), N.2=c(18,25,29,23,30,48,20),
+                       T.1=rep("Treatment",7), T.2=rep("Control",7))
 ### Obtain study effects and standard errors #
 MAdata <- escalc(measure='OR', ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=raw_data)   # gives ES (effect estimate) and seES (sampling variances) on logOR scale for binary data
+MAdata <- escalc(measure="MD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=raw_data)
 MAdata$sei <- sqrt(MAdata$vi)  # Calculate standard errors
 #### Add simulated trials ##
 source("SampleSizeFunctions.R")
@@ -68,7 +74,7 @@ extfunnel <- function(SS, seSS, method, outcome,
                       sig.level=0.05, contour=FALSE, contour.points=200, summ=TRUE,
                       summ.pos=0, pred.interval=FALSE, plot.zero=TRUE, plot.summ=FALSE, ylim=NULL, xlim=NULL, legend=FALSE,
                       expxticks=NULL, xticks=NULL, yticks=NULL, zero=0, xlab=NULL, ylab=NULL, rand.load=10,
-                      legendpos=c(xlim[2]+0.05*(xlim[2]-xlim[1]),ylim[2]), sim.points=NULL, points=TRUE) {
+                      legendpos=NULL, sim.points=NULL, points=TRUE) {
 
 
 #----------------------------------------#  
@@ -199,9 +205,13 @@ extfunnel <- function(SS, seSS, method, outcome,
       ysumm = c(ylim[2]-0.10*axisdiff+summ.pos,ylim[2]-0.07*axisdiff+summ.pos,ylim[2]-0.10*axisdiff+summ.pos,ylim[2]-0.13*axisdiff+summ.pos)
     )
     
-    if (pred.interval & method=='random') {	# for fixed-effects models, tau2 is equal to 0 and the PI becomes equivalent to the CI
-      predint1 <- predict(meta)$pi.lb
-      predint2 <- predict(meta)$pi.ub
+    if (pred.interval) {	
+      if (method=='random') { 
+        predint1 <- predict(meta)$pi.lb
+        predint2 <- predict(meta)$pi.ub
+      } else {
+        print("For fixed-effects models, tau-squared is equal to 0 and therefore the PI becomes equivalent to the CI")
+      }
     }
   }
   
@@ -209,7 +219,61 @@ extfunnel <- function(SS, seSS, method, outcome,
 # Design legend #
 #---------------#
   
-  #TBD
+  # empty data frame ready for filling (one for each type of legend)
+  legendmat.col.values <- NULL
+  legendmat.col <- data.frame(labels=rep(NA,5), linetype=rep(NA,5), shape=rep(NA,5), color=rep(NA,5))
+  legendmat.fill.values <- NULL
+  legendmat.fill.labels <- NULL
+  
+  if (points) {
+    legendmat.col.values <- c(legendmat.col.values,"point_col"="black")
+    legendmat.col$labels[1] <- "Current studies"
+    legendmat.col$linetype[1] <- "blank"
+    legendmat.col$shape[1] <- 19
+    legendmat.col$color[1] <- "black"
+  }
+  
+  if (!is.null(sim.points)) {
+    legendmat.col.values <- c(legendmat.col.values,"sim_col"="black")
+    legendmat.col$labels[2] <- "Simulated studies"
+    legendmat.col$linetype[2] <- "blank"
+    legendmat.col$shape[2] <- 20
+    legendmat.col$color[2] <- "black"
+  }
+  
+  if (pred.interval) {
+    legendmat.col.values <- c(legendmat.col.values,"pred_col"="black")
+    legendmat.col$labels[3] <- "95% Predictive Interval"
+    legendmat.col$linetype[3] <- "solid"
+    legendmat.col$color[3] <- "black"
+  }
+  
+  if (plot.summ) {
+    legendmat.col.values <- c(legendmat.col.values,"summ_col"="slategrey")
+    legendmat.col$labels[4] <- "Pooled Effect"
+    legendmat.col$linetype[4] <- "solid"
+    legendmat.col$color[4] <- "slategrey"
+  }
+  
+  if (plot.zero) {
+    legendmat.col.values <- c(legendmat.col.values,"zero_col"="lightgrey")
+    legendmat.col$labels[5] <- "Null Effect"
+    legendmat.col$linetype[5] <- "solid"
+    legendmat.col$color[5] <- "lightgray"
+  }
+  
+  if (summ) {
+    legendmat.fill.values <- c(legendmat.fill.values,"diamond_fill"="lavenderblush4")
+    legendmat.fill.labels <- c(legendmat.fill.labels,"Pooled Result (diamond)")
+  }
+  
+  if (contour) {
+    legendmat.fill.values <- c(legendmat.fill.values,"nosig_col"="white","sigmore_col"="gray91","sigless_col"="gray72")
+    legendmat.fill.labels <- c(legendmat.fill.labels,"No Sig Effect (5% level)","Sig Effect > NULL (5% level)","Sig Effect < NULL (5% level)")
+  }
+  
+  # drop rows that are not included (based on inputs)
+  legendmat.col <- legendmat.col[!is.na(legendmat.col$labels),]
   
 #-------------------#  
 # Put together plot #
@@ -242,46 +306,72 @@ extfunnel <- function(SS, seSS, method, outcome,
   # contours
   if (contour & method=='fixed') {
     plot <- plot +
-      geom_polygon(data=data.frame(x=c(c1SS, rev(c2SS)), y=c(csize, rev(csize))), aes(x=x, y=y), color="white", fill="white") +
-      geom_polygon(data=data.frame(x=c(c2SS,xlim[1], xlim[1]), y=c(csize, ylim[2], ylim[1])), aes(x=x, y=y), color="gray91", fill="gray91") +
-      geom_polygon(data=data.frame(x=c(c1SS,xlim[2], xlim[2]), y=c(csize, ylim[2], ylim[1])), aes(x=x, y=y), color="gray72", fill="gray72")
+      geom_polygon(data=data.frame(x=c(c1SS, rev(c2SS)), y=c(csize, rev(csize))), aes(x=x, y=y, fill="nosig_col"), color="white") +
+      geom_polygon(data=data.frame(x=c(c2SS,xlim[1], xlim[1]), y=c(csize, ylim[2], ylim[1])), aes(x=x, y=y, fill="sigmore_col"), color="gray91") +
+      geom_polygon(data=data.frame(x=c(c1SS,xlim[2], xlim[2]), y=c(csize, ylim[2], ylim[1])), aes(x=x, y=y, fill="sigless_col"), color="gray72") 
   }
   # random TBD
   
   # Pooled effect line
   if (plot.summ) {
     plot <- plot +
-      geom_vline(xintercept = meta$b, color="slategrey")
+      geom_vline(aes(xintercept = meta$b, color="summ_col"))  
   }
   
   # summary diamond
   if (summ) {
     if (pred.interval) {
       plot <- plot +
-        geom_segment(aes(x=predint1, y=ylim[2]-0.10*axisdiff+summ.pos, xend=predint2, yend=ylim[2]-0.10*axisdiff+summ.pos))
+        geom_segment(aes(x=predint1, y=ylim[2]-0.10*axisdiff+summ.pos, xend=predint2, yend=ylim[2]-0.10*axisdiff+summ.pos, color="pred_col"),
+                     show.legend=ifelse(plot.summ | plot.zero, FALSE, TRUE))   # needed to avoid crosshairs in legend for when there are vlines also present
     }
     plot <- plot +
-      geom_polygon(data=summary_diamond, aes(x=xsumm, y=ysumm),
-                   color="black", fill = "lavenderblush4")
+      geom_polygon(data=summary_diamond, aes(x=xsumm, y=ysumm,
+                   fill = "diamond_fill"), color="black")
   }
   
   # Null vertical line
   if (plot.zero) {
     plot <- plot +
-      geom_vline(xintercept = zero, color="lightgrey")
+      geom_vline(aes(xintercept = zero, color="zero_col"))
   }
   
   # Simulated trials
   if (!is.null(sim.points)) {
     plot <- plot +
-      geom_point(data=sim.points, aes(x=estimate, y=st_err),
-                 size=0.5)
+      geom_point(data=sim.points, aes(x=estimate, y=st_err, color="sim_col"),
+                 shape=20)
   }
   
-  # study points
+  # Study points
   if (points) {
     plot <- plot +
-      geom_point()
+      geom_point(aes(color="point_col"), shape=19)
+  }
+  
+  # Add legend
+  if (!is.null(legendmat.col.values)) {
+    plot <- plot +
+      scale_colour_manual(name="",
+                          values=legendmat.col.values,
+                          labels=legendmat.col$labels,
+                          guide=guide_legend(override.aes = list(linetype = legendmat.col$linetype,
+                                                                shape = legendmat.col$shape,
+                                                                color = legendmat.col$color)))
+  }
+  if (!is.null(legendmat.fill.values)) {
+      plot <- plot + 
+        scale_fill_manual(name="",
+                          values=legendmat.fill.values,
+                          labels=legendmat.fill.labels)
+  }
+  if (!legend) {
+    plot <- plot +
+      theme(legend.position = "none")   # turns off legend
+  }
+  if (legend & !is.null(legendpos)) {
+    plot <- plot +
+      theme(legend.position = legendpos)   # if user wants legend and specified a position
   }
   
   # return final plot
@@ -297,32 +387,30 @@ extfunnel <- function(SS, seSS, method, outcome,
   
 # Study points & summary diamond  PASS
 extfunnel(SS=MAdata$yi, seSS=MAdata$sei, method='fixed', outcome='OR',
-          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio")
+          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", legend=TRUE)
 
 # Study points & summary diamond with predictive interval  PASS
 extfunnel(SS=MAdata$yi, seSS=MAdata$sei, method='random', outcome='OR',
-          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", pred.interval=TRUE)
+          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", pred.interval=TRUE, legend=TRUE)
 
 # Study points & summary diamond & effect line PASS
 extfunnel(SS=MAdata$yi, seSS=MAdata$sei, method='fixed', outcome='OR',
-          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", plot.summ=TRUE)
+          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", plot.summ=TRUE, legend=TRUE)
 
 # Study points & summary diamond & significance contours  PASS
 extfunnel(SS=MAdata$yi, seSS=MAdata$sei, method='fixed', outcome='OR',
-          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", contour=TRUE)
+          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", contour=TRUE, legend=TRUE, legendpos='left')
 
 # Study points, summary diamond, significance contours & simulated trials  PASS
 extfunnel(SS=MAdata$yi, seSS=MAdata$sei, method='fixed', outcome='OR',
-          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", contour=TRUE, sim.points=sims$sim_study)
+          ylim=c(0,1), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", contour=TRUE, sim.points=sims$sim_study, legend=TRUE)
 
 # Above but zoomed in on simulated studies  PASS
 extfunnel(SS=MAdata$yi, seSS=MAdata$sei, method='fixed', outcome='OR',
           ylim=c(0.05,0.15), xlim=log(c(0.4, 2.1)), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", 
-          contour=TRUE, sim.points=sims$sim_study)
+          contour=TRUE, sim.points=sims$sim_study, legend=TRUE)   # would be ideal to remove 'current studies' from legend if they are forced off from the plot
 
-  
-  
-
-
-
+# Mirror figure 2C in Langan et al  FAIL -> big old triangle of colour missing at the bottom
+extfunnel(SS=MAdata$yi, seSS=MAdata$sei, method='fixed', outcome='MD',
+          ylim=c(0,5.5), xlab="Difference in means", contour=TRUE, plot.summ=TRUE)
 

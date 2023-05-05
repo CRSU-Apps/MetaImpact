@@ -99,13 +99,13 @@ rerunMA <- function(new, data, model, n, measure, chains, iter, warmup, prior) {
   # put together dataframe for new trial
   if (measure=='OR' | measure=='RR' | measure=='RD') {
     newtrial <- data.frame(StudyID=max(data$StudyID)+1, Study=paste("New_", format(Sys.Date(), "%Y")), T.1=data$T.1[1], T.2=data$T.2[1], R.1=new$new.events.t, R.2=new$new.events.c, N.1=n/2, N.2=n/2)
+    if (measure %in% c('OR','RR') & newtrial$R.2==0) {   # Add a continuity correction for new trial (rest of data would have been done in metasim command)
+      newtrial$R.2 <- newtrial$R.2+0.5
+      newtrial$N.2 <- newtrial$N.2+1
+    }
   } else {
     newtrial <- data.frame(StudyID=max(data$StudyID)+1, Study=paste("New_", format(Sys.Date(), "%Y")), T.1=data$T.1[1], T.2=data$T.2[1], Mean.1=new$new.mean.t, Mean.2=new$new.mean.c, 
                            SD.1=new$new.stdev.t, SD.2=new$new.stdev.c, N.1=n/2, N.2=n/2)
-  }
-  if (measure %in% c('OR','RR') & newtrial$R.2==0) {   # Add a continuity correction for new trial (rest of data would have been done in metasim command)
-    newtrial$R.2 <- newtrial$R.2+0.5
-    newtrial$N.2 <- newtrial$N.2+1
   }
   newdata <- rbind(data, newtrial)
   # re-meta-analyse
