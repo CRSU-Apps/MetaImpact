@@ -53,7 +53,7 @@ NoBayesian <- function(){
   showModal(modalDialog(
     title = "Feature not yet available",
     easyClose = FALSE,
-    p("This feature is not ready yet within the Bayesian framework. Please ", tags$strong("choose frequentist.")),
+    p("Calculating the power of new studies with set sample size(s) is not ready yet within the Bayesian framework. Please ", tags$strong("choose frequentist.")),
     br(),
     modalButton("Close warning"),
     footer = NULL
@@ -77,18 +77,10 @@ NoNMA <- function(){
   data <- reactive({                     # Read in user or default data
     file <- input$data             
     if (is.null(file)) {
-      if (input$Pairwise_NMA=='FALSE') {
-        if (input$ChooseExample=='continuousEx') {
-          data <- read.csv("./AntiVEGF_Continuous.csv")
-        } else {
-          data <- read.csv("./AntiVEGF_Binary.csv")
-        }
+      if (input$ChooseExample=='continuousEx') {
+        data <- read.csv("./AntiVEGF_Continuous_Pairwise.csv")
       } else {
-        if (input$ChooseExample=='continuousEx') {
-          data <- read.csv("./AntiVEGF_Continuous_Pairwise.csv")
-        } else {
-          data <- read.csv("./AntiVEGF_Binary_Pairwise.csv")
-        }
+        data <- read.csv("./AntiVEGF_Binary_Pairwise.csv")
       }
     } else {
     data <- read.table(file = file$datapath, sep =",", header=TRUE, stringsAsFactors = FALSE, quote="\"")
@@ -97,14 +89,14 @@ NoNMA <- function(){
     return(list(data=data, levels=levels))
   })
   
-  reference <- reactive({               # Select default reference treatment
-    file <- input$data
-    if (is.null(file)) {
-      return("laser")
-    } else {
-      return(data()$levels[1])
-    }
-  })
+# reference <- reactive({               # Select default reference treatment
+#    file <- input$data
+#    if (is.null(file)) {
+#      return("laser")
+#    } else {
+#      return(data()$levels[1])
+#    }
+#  })
   pairwise_ref <- function(trt_ctrl) {   # pairwise options
     if (trt_ctrl=='trt') {
       ref <- reactive({
@@ -128,9 +120,9 @@ NoNMA <- function(){
     return(ref())
   }
   
-  observe({                              # populating reference treatment options
-    updateSelectInput(session = session, inputId = "Reference", choices = data()$levels, selected = reference())
-  })
+#  observe({                              # populating reference treatment options
+#    updateSelectInput(session = session, inputId = "Reference", choices = data()$levels, selected = reference())
+#  })
   observe({
     updateSelectInput(session=session, inputId = "Pair_Trt", choices = data()$levels, selected = pairwise_ref(trt_ctrl='trt'))
   })
@@ -164,27 +156,19 @@ NoNMA <- function(){
   })
 
   
-### NEED TO SORT OUT/DECIDE WHAT THE 'RUN' BUTTONS DO (pairwise complete) ###  
-    
+
   
 ### Summary sentence of meta-analysis ###
   #-----------------------------------#
   
-MAText <- reactive({ #different phrases
-  if (input$Pairwise_NMA=='TRUE') {
-    paste(strong("Pairwise"), "meta-analysis")
-  } else {
-    paste(strong("NMA"))
-  }
-}) 
 FreqSummaryText <- eventReactive( input$FreqRun, {
-  paste("Results for ", strong(input$FixRand), "-effects ", MAText(), " of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
-    with reference treatment ", ifelse(input$Pairwise_NMA=='TRUE',paste(strong(input$Pair_Ctrl)),paste(strong(input$Reference))), ".", sep="")
+  paste("Results for ", strong(input$FixRand), "-effects ", strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
+    with reference treatment ", strong(input$Pair_Ctrl), ".", sep="")
 })
 output$SynthesisSummaryFreq <- renderText({FreqSummaryText()})
 BayesSummaryText <- eventReactive( input$BayesRun, {
-  paste("Results for ", strong(input$FixRand), "-effects ", MAText(), " of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
-    reference treatment ", ifelse(input$Pairwise_NMA=='TRUE', paste(strong(input$Pair_Ctrl)), paste(strong(input$Reference))), ".", sep="")
+  paste("Results for ", strong(input$FixRand), "-effects ", strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
+    reference treatment ", strong(input$Pair_Ctrl), ".", sep="")
 })
 output$SynthesisSummaryBayes <- renderText({BayesSummaryText()})
 
@@ -224,36 +208,34 @@ PairwiseModelFit_functionF <- function(MA.Model) {
 }
 
 freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise MA and obtain plots etc.
-  if (input$Pairwise_NMA==TRUE) {
-    information <- list()
-    information$MA <- FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin())
-    if (input$FixRand=='fixed') {                   # Forest plot
-      if (outcome()=='OR' | outcome()=='RR') {
-        information$Forest <- {
-          forest(information$MA$MA.Fixed, atransf=exp)
-          title("Forest plot of studies with overall estimate from fixed-effects model")}
-      } else {
-        information$Forest <- {
-          forest(information$MA$MA.Fixed)
-          title("Forest plot of studies with overall estimate from fixed-effects model")}
-      }
-      information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Fixed)
-      information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Fixed)
-    } else if (input$FixRand=='random') {
-      if (outcome()=='OR' | outcome()=='RR') {
-        information$Forest <- {
-          forest(information$MA$MA.Random, atransf=exp)
-          title("Forest plot of studies with overall estimate from random-effects model")}
-      } else {
-        information$Forest <- {
-          forest(information$MA$MA.Random)
-          title("Forest plot of studies with overall estimate from random-effects model")}
-      }
-      information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Random)
-      information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Random)
+  information <- list()
+  information$MA <- FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin())
+  if (input$FixRand=='fixed') {                   # Forest plot
+    if (outcome()=='OR' | outcome()=='RR') {
+      information$Forest <- {
+        metafor::forest(information$MA$MA.Fixed, atransf=exp)
+        title("Forest plot of studies with overall estimate from fixed-effects model")}
+    } else {
+      information$Forest <- {
+        metafor::forest(information$MA$MA.Fixed)
+        title("Forest plot of studies with overall estimate from fixed-effects model")}
     }
-    information
+    information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Fixed)
+    information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Fixed)
+  } else if (input$FixRand=='random') {
+    if (outcome()=='OR' | outcome()=='RR') {
+      information$Forest <- {
+        metafor::forest(information$MA$MA.Random, atransf=exp)
+        title("Forest plot of studies with overall estimate from random-effects model")}
+    } else {
+      information$Forest <- {
+        metafor::forest(information$MA$MA.Random)
+        title("Forest plot of studies with overall estimate from random-effects model")}
+    }
+    information$Summary <- PairwiseSummary_functionF(outcome(),information$MA$MA.Random)
+    information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Random)
   }
+  information
 })
 
 output$ForestPlotPairF <- renderPlot({      # Forest plot
@@ -275,21 +257,21 @@ output$ModelFitF <- renderUI({              # Model fit statistics
 ### Run frequentist NMA ###
   #---------------------#
 
-freqnma <- eventReactive( input$FreqRun, {                   # Run frequentist NMA 
-  if (input$Pairwise_NMA==FALSE) {
-    NoNMA()
-    #FreqNMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
-  }
-})
-output$NetworkPlotF <- renderPlot({   # Network plot
-  netgraph(freqnma()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
-           col.number.of.studies = "forestgreen", col.multiarm = "white", bg.number.of.studies = "black", offset=0.03)
-  title("Network plot of all studies")
-})
-output$ForestPlotNMAF <- renderPlot({    # Forest plot
-  FreqNMAForest(NMA=freqnma()$MAObject, model=input$FixRand, ref=input$Reference)
-  title("Forest plot of outcomes")
-})
+#freqnma <- eventReactive( input$FreqRun, {                   # Run frequentist NMA 
+#  if (input$Pairwise_NMA==FALSE) {
+#    NoNMA()
+#    #FreqNMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
+#  }
+#})
+#output$NetworkPlotF <- renderPlot({   # Network plot
+#  netgraph(freqnma()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
+#           col.number.of.studies = "forestgreen", col.multiarm = "white", bg.number.of.studies = "black", offset=0.03)
+#  title("Network plot of all studies")
+#})
+#output$ForestPlotNMAF <- renderPlot({    # Forest plot
+#  FreqNMAForest(NMA=freqnma()$MAObject, model=input$FixRand, ref=input$Reference)
+#  title("Forest plot of outcomes")
+#})
 
 ## Double zero arms are not included in analysis - need to add warning
 
@@ -306,8 +288,8 @@ LongData <- reactive({               # convert wide format to long if need be
 })
 
 observeEvent( input$BayesRun, {                           # reopen panel when a user re-runs analysis
-  NoBayesian()
-  #updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
+  #NoBayesian()
+  updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
 })  
 
 
@@ -335,40 +317,38 @@ PairwiseModelFit_functionB <- function(MA.Model) {
 }
 
 bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA and obtain plots etc.
-  NoBayesian()
-  #if (input$Pairwise_NMA==TRUE) {
-  #  information <- list()
-  #  information$MA <- BayesPair(CONBI=ContBin(), data=WideData(), trt=input$Pair_Trt, ctrl=input$Pair_Ctrl, outcome=outcome(), chains=input$chains, iter=input$iter, warmup=input$burn, model='both', prior=input$prior)
-  #  if (input$FixRand=='fixed') {                   
-  #    information$Forest <- {               
-  #      g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='fixed')
-  #      g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
-  #        theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
-  #    }
-  #    information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'fixed')
-  #    information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Fixed)
-  #    information$Trace <- {
-  #      g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
-  #      g + theme(legend.position='none', aspect.ratio = 0.45, axis.title=element_text(size=10,face="bold")) + 
-  #        labs(y="Pooled estimate", x="Iteration")
-  #    }
-  #  } else if (input$FixRand=='random') {
-  #    information$Forest <- {               
-  #      g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
-  #      g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
-  #        theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
-  #    }
-  #    information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'random')
-  #    information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
-  #    information$Trace <- {
-  #      g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
-  #      g + theme(legend.position='none', strip.placement = "outside", aspect.ratio=0.3, axis.title=element_text(size=10,face="bold")) +
-  #        labs(x="Iteration") +
-  #        facet_wrap(~parameter, strip.position='left', nrow=2, scales='free', labeller=as_labeller(c(theta = "Pooled estimate", 'tau[1]' = "Between-study SD") ) )
-  #    }
-  #  }
-  #  information
-  #}
+  #NoBayesian()
+  information <- list()
+  information$MA <- BayesPair(CONBI=ContBin(), data=WideData(), trt=input$Pair_Trt, ctrl=input$Pair_Ctrl, outcome=outcome(), chains=input$chains, iter=input$iter, warmup=input$burn, model='both', prior=input$prior)
+  if (input$FixRand=='fixed') {                   
+    information$Forest <- {               
+      g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='fixed')
+      g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
+        theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
+    }
+    information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'fixed')
+    information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Fixed)
+    information$Trace <- {
+      g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
+      g + theme(legend.position='none', aspect.ratio = 0.45, axis.title=element_text(size=10,face="bold")) + 
+        labs(y="Pooled estimate", x="Iteration")
+    }
+  } else if (input$FixRand=='random') {
+    information$Forest <- {               
+      g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
+      g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
+        theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
+    }
+    information$Summary <- PairwiseSummary_functionB(outcome(),information$MA,'random')
+    information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
+    information$Trace <- {
+      g <- stan_trace(information$MA$MA.Random$fit, pars=c("theta","tau"))
+      g + theme(legend.position='none', strip.placement = "outside", aspect.ratio=0.3, axis.title=element_text(size=10,face="bold")) +
+        labs(x="Iteration") +
+        facet_wrap(~parameter, strip.position='left', nrow=2, scales='free', labeller=as_labeller(c(theta = "Pooled estimate", 'tau[1]' = "Between-study SD") ) )
+    }
+  }
+  information
 })
 
 
@@ -394,29 +374,29 @@ output$TracePlot <- renderPlot({            # Trace plot
 ### Run Bayesian NMA ###
 #------------------#
 
-Bayes <- eventReactive( input$BayesRun & input$Pairwise_NMA=='FALSE', {                 # Run Bayesian NMA
-  NoNMA()
+#Bayes <- eventReactive( input$BayesRun & input$Pairwise_NMA=='FALSE', {                 # Run Bayesian NMA
+#  NoNMA()
   #BayesMA(data=LongData(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
-})
+#})
 
 
-output$NetworkPlotB <- renderPlot({  # Network plot
-  plot(Bayes()$Network)
-  title("Network plot of all studies")
-})
+#output$NetworkPlotB <- renderPlot({  # Network plot
+#  plot(Bayes()$Network)
+#  title("Network plot of all studies")
+#})
 
-output$ForestPlotB <- renderPlot({   # Forest plot
-  forest(Bayes()$RelEffects, digits=3)
-  title("Forest plot of outcomes")
-})
+#output$ForestPlotB <- renderPlot({   # Forest plot
+#  forest(Bayes()$RelEffects, digits=3)
+#  title("Forest plot of outcomes")
+#})
 
-output$TauB <- renderText({          # Between-study standard deviation
-  TauDesc(ResultsSum=Bayes()$ResultsSum, outcome=outcome(), model=input$FixRand)
-})
+#output$TauB <- renderText({          # Between-study standard deviation
+#  TauDesc(ResultsSum=Bayes()$ResultsSum, outcome=outcome(), model=input$FixRand)
+#})
 
-output$DICB <- renderTable({         # DIC
-  Bayes()$DIC
-}, digits=3, rownames=TRUE, colnames=FALSE)
+#output$DICB <- renderTable({         # DIC
+#  Bayes()$DIC
+#}, digits=3, rownames=TRUE, colnames=FALSE)
 
 
 
@@ -528,9 +508,9 @@ output$singleresult <- renderUI({
 ### Links ###
   #-------#
 
-observeEvent(input$link_to_tabpanel_evsynth, {
-  updateTabsetPanel(session, "MetaImpact", "Evidence Synthesis")
-})
+#observeEvent(input$link_to_tabpanel_evsynth, {
+#  updateTabsetPanel(session, "MetaImpact", "Evidence Synthesis")
+#})
 
 
 ### Interactive UI ###

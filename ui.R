@@ -26,17 +26,24 @@ shinyUI(fluidPage(navbarPage(id="MetaImpact", title="MetaImpact",
 tabPanel("Home",
          
          h4("About"),
-         p("This app is part of a Pre-Doctoral Fellowship looking into how to design a future study such that it's inclusion would make 
+         p("This app encourages researchers to design a future study such that it's inclusion would make 
            an impact on the current evidence-base."),
-         p("The app contains four pages:"),
+         p("The app contains three main sections:"),
+         p(strong("Walk-Through"), " - an interactive educational walk-through of the methods underlying MetaImpact"),
          p(strong("Data"), " - upload your data or use an example dataset"),
-         p(strong("Evidence Synthesis"), " - meta-analyse data such that an evidence base is created"),
-         p(strong("Sample Size Calculator"), " - calculate the sample size of a new study such that it has an impact on the evidence base"),
-         p(strong("Education"), " - interactive displays to help understand the maths and assumptions behind app and study design - ", tags$strong("COMING SOON", style="color:#FE2020")),
+         p(strong("Calculator"), " - meta-analyse data to create an evidence base, then calculate the sample size of a new study such that it has an impact on the resulting evidence base"),
          br(),
          
          h4("Authors"),
-         p("Pre-Doctoral Fellow: Clareece Nevill; Supervisors: Alex Sutton & Nicola Cooper; Collaborators & Research Support: Suzanne Freeman, Terry Quinn & Lucinda Billingham")),
+         p("Clareece Nevill, Terry Quinn, Nicola Cooper, Alex Sutton")),
+
+
+# Walk-Through #
+#--------------#
+
+tabPanel("Walk-Through"),
+
+
                    
 # Data Tab #
 #----------#
@@ -57,13 +64,18 @@ tabPanel("Data",
                                                                               "Binary outcome: Number of people that improved their best-corrected VA by gaining 15+ letters during a vision test" = "binaryEx"), width='100%')),
          column(7, h4("View Data"),
                 uiOutput("data"))),                      # View data
-  # Make it such that a user can still use example data even after uploading their own (maybe a tick box after uploading their own to 'use' example instead or 'remove data')
+  # Make it such that a user can still use example data even after uploading their own (maybe a tick box after uploading their own to 'use' example instead or 'remove data') -> consider Ryan's addition to MetaInsight
+
         
                    
 # Evidence Synthesis Tab #
 #------------------------#
                    
-tabPanel("Evidence Synthesis",
+tabPanel("Calculator",
+         # Meta-analysis #
+         #---------------#
+         h3("Step 1: Create evidence base via meta-analysis"),
+         br(),
          # Run analysis buttons #
          fluidRow(align = 'center',
            column(4, actionButton("FreqRun", "Run frequentist meta-analysis", class="btn-primary btn-lg"),
@@ -72,17 +84,13 @@ tabPanel("Evidence Synthesis",
            # Inputs #
            column(8, bsCollapse(id="SynthesisInputs", open="Synthesis Options",
                     bsCollapsePanel(title="Synthesis Options", style='info',
-                    switchInput('Pairwise_NMA', onLabel = "Pairwise", offLabel = "NMA", value=TRUE, onStatus='info', offStatus='info'),
                     column(6, conditionalPanel(condition = "output.ContBin=='continuous'",
                                     radioButtons("OutcomeCont", "Outcome for continuous data:", c("Mean Difference (MD)" = "MD","Standardised Mean Difference (SMD)" = "SMD"))),
                               conditionalPanel(condition = "output.ContBin=='binary'",
                                      radioButtons("OutcomeBina", "Outcome for binary data:", c("Odds Ratio (OR)" = "OR","Risk Ratio (RR)" = "RR", "Risk Difference (RD)" = "RD"))),
                               radioButtons("FixRand", "Model selection:", c("Fixed-effects model (FE)" = "fixed", "Random-effects model (RE)" = "random"))),
-                    column(6, fluidRow(conditionalPanel(condition = "input.Pairwise_NMA",
-                                               column(6, selectInput(inputId = "Pair_Trt", label = "Select Treatment", choices = NULL)),
-                                               column(6, selectInput(inputId = "Pair_Ctrl", label = "Select Comparator", choices = NULL))),
-                              conditionalPanel(condition = "!input.Pairwise_NMA",
-                                               selectInput(inputId = "Reference", label = "Select Reference Treatment", choices = NULL))),
+                    column(6, fluidRow(column(6, selectInput(inputId = "Pair_Trt", label = "Select Treatment", choices = NULL)),
+                                       column(6, selectInput(inputId = "Pair_Ctrl", label = "Select Comparator", choices = NULL))),
                               fluidRow(bsCollapsePanel(title="Bayesian options", style='info',
                                                        column(6, radioButtons("prior", "Vague prior for between study standard deviation:", c("Half-Cauchy(0,0.5)" = "half-cauchy", "Uniform(0,2)" = "uniform", "Half-Normal(0,1)" = "half-normal")),
                                                               actionButton("bayes_help", "Help", class="btn-xs", style="position: absolute; left: 0; top: 220px")),
@@ -97,11 +105,7 @@ tabPanel("Evidence Synthesis",
           fluidRow(p(htmlOutput("SynthesisSummaryFreq")),
                   p("To change the model options, please adjust synthesis options above and re-run analysis."),
                   bsCollapse(id="FreqID", open="Frequentist Analysis", bsCollapsePanel(title="Frequentist Analysis", style='success',
-                    conditionalPanel(condition = "!input.Pairwise_NMA",   # NMA results
-                      column(4, withSpinner(plotOutput("NetworkPlotF"), type=6)), #Network plot
-                      column(6,offset=2, withSpinner(plotOutput("ForestPlotNMAF"), type=6))),  # Forest plot
-                    conditionalPanel(condition = "input.Pairwise_NMA",    # Pairwise results
-                      column(5,align='center', withSpinner(htmlOutput("SummaryTableF"), type=6), #Summary table
+                    column(5,align='center', withSpinner(htmlOutput("SummaryTableF"), type=6), #Summary table
                              fluidRow(div(style="display: inline-block;", p(strong("Model fit statistics"))),
                                       div(style="display: inline-block;", dropMenu(dropdownButton(size='xs',icon=icon('info')), align='left',
                                         h6("Model fit statistics"),
@@ -109,17 +113,13 @@ tabPanel("Evidence Synthesis",
                                         p("The smaller the AIC or BIC, the 'better' the model. Values are best interpreted between models rather than alone.")))),
                              htmlOutput("ModelFitF")), 
                       column(6, align='center', offset=1, withSpinner(plotOutput("ForestPlotPairF"), type=6),    #Forest plot
-                             downloadButton('forestpairF_download', "Download forest plot"), radioButtons('forestpairF_choice', "", c('pdf','png'), inline=TRUE))))))), 
+                             downloadButton('forestpairF_download', "Download forest plot"), radioButtons('forestpairF_choice', "", c('pdf','png'), inline=TRUE)))))), 
          # Bayesian #
          conditionalPanel(condition = "input.BayesRun!=0",
           fluidRow(p(htmlOutput("SynthesisSummaryBayes")),
                   p("To change the model options, please adjust synthesis options above and re-run analysis."),
                   bsCollapse(id="BayesID", open="Bayesian Analysis", bsCollapsePanel(title="Bayesian Analysis", style='success',
-                    conditionalPanel(condition = "!input.Pairwise_NMA",     # NMA results
-                      column(4, withSpinner(plotOutput("NetworkPlotB"), type=6)),
-                      column(6,offset=2, withSpinner(plotOutput("ForestPlotB"), type=6), htmlOutput("TauB"), tableOutput("DICB"))),
-                    conditionalPanel(condition = "input.Pairwise_NMA",
-                      column(5, align='center', withSpinner(htmlOutput("SummaryTableB"), type=6),   # Summary table
+                    column(5, align='center', withSpinner(htmlOutput("SummaryTableB"), type=6),   # Summary table
                                 fluidRow(div(style="display: inline-block;", p(strong("Model assessment"))),
                                          div(style="display: inline-block;", dropMenu(dropdownButton(size='xs',icon=icon('info')), align='left',
                                                                                       h6("Model assessment"),
@@ -129,31 +129,29 @@ tabPanel("Evidence Synthesis",
                                 plotOutput("TracePlot"),                            # Trace plot
                              downloadButton('tracepair_download', "Download trace plot"), radioButtons('tracepair_choice', "", c('pdf','png'), inline=TRUE)),                           
                       column(6, align='center', offset=1, withSpinner(plotOutput("ForestPlotPairB"), type=6),   # Forest plot
-                             downloadButton('forestpairB_download', "Download forest plot"), radioButtons('forestpairB_choice', "", c('pdf','png'), inline=TRUE)))))
-                  ))),
-          # See if network plots can be ordered the same as each other
-          # All outputs will need further formatting (including sizing) plus addition of tau for frequentist, and # of studies (for NMA only).
-          # Regarding 'Run' buttons -> some formatting doesn't wait for button to be pressed again -> to be fixed (NMA only needs fixing).
-
-
-# Sample Size Calculator Tab #
-#----------------------------#
-
-tabPanel("Sample Size Calculator",
-         introjsUI(), # help pages
-         bsAlert("SampleSizeAlertUI"), #error warning about sample sizes
-         # Evidence Base Summary #
-         column(5, align='center', bsCollapse(id="EvidenceBase", open="Current Evidence Base", 
-                                   bsCollapsePanel(title="Current Evidence Base", style='primary',
-                                              h6("This panel presents the current evidence base from which the sample size calculations are based on. If you wish to change this, please go back to the ", actionLink("link_to_tabpanel_evsynth", "Evidence synthesis tab"), " and alter the synthesis options accordingly."),
+                             downloadButton('forestpairB_download', "Download forest plot"), radioButtons('forestpairB_choice', "", c('pdf','png'), inline=TRUE))))
+                  )),
+         
+         # Sample Size Calculator #
+         #------------------------#
+         conditionalPanel(condition = "input.FreqRun!=0 || input.BayesRun!=0",
+          br(),
+          h3("Step 2: Calculate power of new study of certain sample size(s)"),
+          br(),
+          introjsUI(), # help pages
+          bsAlert("SampleSizeAlertUI"), #error warning about sample sizes
+          # Evidence Base Summary #
+          column(5, align='center', bsCollapse(id="EvidenceBase", open="Current Evidence Base", 
+                                    bsCollapsePanel(title="Current Evidence Base", style='primary',
+                                              h6("This panel presents the current evidence base from which the sample size calculations are based on. If you wish to change this, please alter the synthesis options above accordingly."),
                                               withSpinner(plotOutput("EvBase"), type=6),
                                               radioButtons("EvBase_choice", "", c("Frequentist MA" = "freq", "Bayesian MA" = "bayes"), inline=TRUE),
                                               fluidRow(div(style="display: inline-block;", downloadButton('evbase_download', "Download forest plot")),
                                                        div(style="display:inline-block; width: 10px;", HTML("<br>")),
                                                        div(style="display: inline-block;", radioButtons('evbase_choice', "", c('pdf', 'png'), inline=TRUE))))),
-        # Calculator Settings #
-                                   bsCollapse(id="CalcSettings", open="Calculation Settings",
-                                   bsCollapsePanel(title="Calculation Settings", style='info',
+          # Calculator Settings #
+                                    bsCollapse(id="CalcSettings", open="Calculation Settings",
+                                    bsCollapsePanel(title="Calculation Settings", style='info',
                                               fluidRow(div(style="display: inline-block;vertical-align:top;", textInput("samplesizes", "Total sample size(s)", value = "100")),
                                                        div(style="display: inline-block;vertical-align:top;", dropMenu(dropdownButton(size='xs',icon=icon('info')), align='left',
                                                                           h6("Information"),
@@ -166,14 +164,10 @@ tabPanel("Sample Size Calculator",
                                                                           actionButton("calc_help", "Help", class="btn-xs", style="position: absolute; left: 40px;"))),
                                                        div(style="display: inline-block;vertical-align:top; width: 35px;",HTML("<br>")),
                                                        div(style="display: inline-block;vertical-align:top; width: 300px;", uiOutput("CutOff"))))),
-                                   actionButton("CalcRun", "Run Sample Size Calculations", class="btn-primary btn-lg")),
+                                    actionButton("CalcRun", "Run Sample Size Calculations", class="btn-primary btn-lg")),
         # Results #
-        column(7, align='center', uiOutput("CalculatorResults"))
-        ),
+          column(7, align='center', uiOutput("CalculatorResults"))
+          ))
 
-
-# Education Tab #
-#---------------#
-
-tabPanel("Education"))))
+)))
 
