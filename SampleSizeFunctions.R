@@ -257,7 +257,7 @@ metapowplot <- function(PowerData, ModelOpt='both', SampleSizes) {
       labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves", subtitle = "with 95% confidence intervals")
   }
   g <- g +
-    geom_line(size=1) + geom_point(shape=21) +
+    geom_line(linewidth=1) + geom_point(shape=21) +
     theme_classic() +
     scale_x_continuous(limits=c(min(SampleSizes)-5, max(SampleSizes)+5), breaks=SampleSizes, expand=c(0,0)) +
     scale_y_continuous(limits=c(0,NA), expand=c(0,0)) +

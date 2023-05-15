@@ -520,12 +520,13 @@ output$singleresult <- renderUI({
 # Interactive help boxes #
 
 steps <- reactive(data.frame(
-  category=c(rep("CalcSettings",4), rep("BayesSettings",4)),
-  element=c("#samplesizes", "#its", "#impact_type", "#cutoff", "#prior", "#chains", "#iter", "#burn"),
+  category=c(rep("CalcSettings",5), rep("BayesSettings",4)),
+  element=c("#samplesizes", "#its", "#impact_type", "#cutoff", "#plot_sims",  "#prior", "#chains", "#iter", "#burn"),
   intro=c("This is where you specify sample sizes for which you wish to estimate power. You can enter one sample size, or multiple by separating them with a semi-colon (;). Currently, it is assumed that future designed trials have two arms of equal size.",
           "Choose how many iterations (i.e. times the algorithm is run) you wish to have per simulation (sample size). If you choose a higher number of iterations, the simulations will take longer but give more precise estimates (narrower confidence intervals), and vice versa.",
           "Making an 'impact' on the current evidence base can be done in multiple ways - choose here which method you wish to focus on (1. Having a significant p-value; 2. Having a 95% confidence interval of a certain width; 3. Having the lower bound of the 95% CI above a certain value; 4. Having the upper bound of the 95% CI below a certain value).",
           "Depending on which type of impact has been chosen, please choose a specific cut-off value for which you define as 'impactful' (e.g. a p-value of less than 0.05).",
+          "Choose to plot the results from every simulated 'new study' into the extended funnel plot to visually see how the power is calculated (when viewed alongside the significance contours",
           "Choose which vague prior to use to initially model the between-study standard deviation (used for random-effects models)",
           "Choose the number of chains. A chain represents a run-through of the analysis, with each chain starting with different values to aid robustness. The results then incorporate all chains.",
           "The number of iterations to run through. A higher number of iterations is likely to lead to more robust results but does take longer.",
