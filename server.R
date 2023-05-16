@@ -28,6 +28,7 @@ library(purrr)
 source("MAFunctions.R",local = TRUE) 
 source("SampleSizeFunctions.R", local=TRUE)
 source("ForestFunctions.R", local=TRUE)
+source("LanganPlots.R", local=TRUE)
 
 
 #----------------#
@@ -64,6 +65,26 @@ NoNMA <- function(){
     title = "Feature not yet available",
     easyClose = FALSE,
     p("Synthesising evidence with an NMA is not quite ready yet. Please ", tags$strong("choose pairwise.")),
+    br(),
+    modalButton("Close warning"),
+    footer = NULL
+  ))
+}
+NoRandomContours <- function(){
+  showModal(modalDialog(
+    title = "Feature not yet available",
+    easyClose = FALSE,
+    p("Drawing the significance contours for a random-effects meta-analysis is not quite ready yet. Please either ", tags$strong("choose fixed-effects"), " or ", tags$strong("uncheck contours option.")),
+    br(),
+    modalButton("Close warning"),
+    footer = NULL
+  ))
+}
+FixedPredInt <- function(){
+  showModal(modalDialog(
+    title = "Option combination not applicable",
+    easyClose = FALSE,
+    p("Within a fixed-effects model, the between-study heterogeneity is set to zero, therefore a 95% predictive interval would be equivalent to the 95% confidence interval (represented by the width of the diamond) and is not a plottable option."),
     br(),
     modalButton("Close warning"),
     footer = NULL
@@ -503,6 +524,22 @@ output$singleresult <- renderUI({
               "<b>Random-effects</b>: ", CalcResults()$singleresult$power$Random*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Random*100, 1), "% to ", round(CalcResults()$singleresult$CI_upper$Random*100, 1), "%)"))
 })
 
+# Langan Plot #
+
+output$Langan <- renderPlot({
+  if (input$Lang_method == 'random' & {'contour' %in% input$LanganOptions}) {   # significance contours not available for random-effects
+    NoRandomContours()
+  } else if (input$Lang_method == 'fixed' & {'pred.interval' %in% input$LanganOptions}) {  # Warning how predictive intervals are not of use within fixed-effects models
+    FixedPredInt()
+  } else {
+    extfunnel(SS = freqpair()$MA$MAdata$yi, seSS = freqpair()$MA$MAdata$sei, method = input$Lang_method, outcome = outcome(),
+              sig.level = input$Lang_pvalue, legend = TRUE, points = TRUE,
+              contour = {'contour' %in% input$LanganOptions}, summ = {'summ' %in% input$LanganOptions}, pred.interval = {'pred.interval' %in% input$LanganOptions}, plot.zero = {'plot.zero' %in% input$LanganOptions}, plot.summ = {'plot.summ' %in% input$LanganOptions},
+              expxticks = {if (outcome() %in% c('OR','RR')) {c(0.25,0.5,1,2,4)}})
+    # remaining settings not in UI: contour.points, summ.pos, ylim, xlim, xticks, yticks, zero, xlab, ylabz, legendpos, sim.points
+  }
+})
+
 
 
 ### Links ###
@@ -553,25 +590,25 @@ CutOffSettings <- function(type, outcome, MAFix, MARan) {
   if (type=='pvalue') {
     label <- paste("P-value less than ...")
     initial <- 0.05
-    current <- paste("<i>Current p-values are ", strong(round(sumFix$pval,3)), " (FE) and ", strong(round(sumRan$pval,3)), " (RE)</i>")}
+    current <- paste("<i>Current p-values are ", strong(round(sumFix$pval,3)), " (FE) and ", strong(round(sumRan$pval,3)), " (RE)</i><br>")}
   else if (type=='ciwidth') {
     label <- paste("Width less than ...")
     initial <- 0.5
     if (outcome %in% c("OR","RR")) {
-      current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(exp(sumFix$ci.ub) - exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub) - exp(sumRan$ci.lb), 2)), " (RE)</i>")
-      } else {current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(sumFix$ci.ub - sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.ub - sumRan$ci.lb, 2)), " (RE)</i>")}}
+      current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(exp(sumFix$ci.ub) - exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub) - exp(sumRan$ci.lb), 2)), " (RE)</i><br>")
+      } else {current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(sumFix$ci.ub - sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.ub - sumRan$ci.lb, 2)), " (RE)</i><br>")}}
   else if (type=='lci') {
     label <- paste("Lower bound greater than ...")
     initial <- 1.1
     if (outcome %in% c("OR","RR")) {
-      current <- paste("<i>Current lower bounds are ", strong(round(exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.lb), 2)), " (RE)</i>")
-      } else {current <- paste("<i>Current lower bounds are ", strong(round(sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.lb, 2)), " (RE)</i>")}}
+      current <- paste("<i>Current lower bounds are ", strong(round(exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.lb), 2)), " (RE)</i><br>")
+      } else {current <- paste("<i>Current lower bounds are ", strong(round(sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.lb, 2)), " (RE)</i><br>")}}
   else {
     label <- paste("Upper bound less than ...")
     initial <- 0.9
     if (outcome %in% c("OR","RR")) {
-      current <- paste("<i> Current upper bounds are ", strong(round(exp(sumFix$ci.ub), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub), 2)), " (RE)</i>")
-      } else {current <- paste("<i> Current upper bounds are ", strong(round(sumFix$ci.ub, 2)), " (FE) and ", strong(round(sumRan$ci.ub, 2)), " (RE)</i>")}}
+      current <- paste("<i> Current upper bounds are ", strong(round(exp(sumFix$ci.ub), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub), 2)), " (RE)</i><br>")
+      } else {current <- paste("<i> Current upper bounds are ", strong(round(sumFix$ci.ub, 2)), " (FE) and ", strong(round(sumRan$ci.ub, 2)), " (RE)</i><br>")}}
   list(label=label, initial=initial, current=current)
 }
 

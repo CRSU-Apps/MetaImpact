@@ -67,6 +67,7 @@ FreqPair <- function(data, outcome, CONBI, model) { #inputs: data frame in wide 
   } else {
     MAdata <- escalc(measure=outcome, ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=data)
   }
+  MAdata$sei <- sqrt(MAdata$vi)  #standard error
   if (model=='fixed' | model=='both') {MA.Fixed <- rma(yi, vi, slab=Study, data=MAdata, method="FE", measure=outcome)} #fixed effects#
   if (model=='random' | model=='both') {MA.Random <- rma(yi, vi, slab=Study, data=MAdata, method="PM", measure=outcome)} #random effects #
   list(MAdata=MAdata, MA.Random=MA.Random, MA.Fixed=MA.Fixed)
