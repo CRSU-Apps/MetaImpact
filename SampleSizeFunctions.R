@@ -125,7 +125,7 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
   CI_lower <- data.frame(Fixed=NA, Random=NA)
   CI_upper <- data.frame(Fixed=NA, Random=NA)
   sim.inference <- data.frame(Fixed=rep(x=NA, times=nit), Random=rep(x=NA, times=nit))
-  sim_study <- data.frame(estimate=rep(NA, nit), st_err=rep(NA,nit))
+  sim_study <- data.frame(estimate.fixed=rep(NA, nit), st_err.fixed=rep(NA,nit), estimate.rand=rep(NA, nit), st_err.rand=rep(NA,nit))
   if (recalc=='FALSE') {
   sims <- data.frame(Fixed.p=rep(x=NA, times=nit), Fixed.lci=rep(x=NA, times=nit), Fixed.uci=rep(x=NA, times=nit), 
                      Random.p=rep(x=NA, times=nit), Random.lci=rep(x=NA, times=nit), Random.uci=rep(x=NA, times=nit))
@@ -136,9 +136,9 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
     # obtain new data, add to existing data, and re-run MA
     new <- metasim(es=NMA$MA.Fixed$beta, tausq=0, var=(NMA$MA.Fixed$se)^2, model='fixed', n=n, data=data, measure=measure)
     newMA <- rerunMA(new=new, data=data, model='fixed', n=n, measure=measure, chains=chains, iter=iter, warmup=warmup, prior=prior)
-    # Collect data about simulated data (will be same for fixed and random) (for OR, RR, on log scale)
-    sim_study$estimate[i] <- newMA$data$yi[nrow(data)+1]
-    sim_study$st_err[i] <- sqrt(newMA$data$vi[nrow(data)+1])
+    # Collect data about simulated data (for OR, RR, on log scale)
+    sim_study$estimate.fixed[i] <- newMA$data$yi[nrow(data)+1]
+    sim_study$st_err.fixed[i] <- sqrt(newMA$data$vi[nrow(data)+1])
     # Collect inference information
     sims$Fixed.p[i] <- newMA$pval
     if (measure=='OR' | measure=='RR') {
@@ -158,6 +158,9 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc=FALSE, pl
       # obtain new data, add to existing data, and re-run MA
       new <- metasim(es=NMA$MA.Random$beta, tausq=NMA$MA.Random$tau2, var=(NMA$MA.Random$se)^2, model='random', n=n, data=data, measure=measure)
       newMA <- rerunMA(new=new, data=data, model='random', n=n, measure=measure, chains=chains, iter=iter, warmup=warmup, prior=prior)
+      # Collect data about simulated data (for OR, RR, on log scale)
+      sim_study$estimate.rand[i] <- newMA$data$yi[nrow(data)+1]
+      sim_study$st_err.rand[i] <- sqrt(newMA$data$vi[nrow(data)+1])
       # Collect inference information
       sims$Random.p[i] <- newMA$pval
       if (measure=='OR' | measure=='RR') {

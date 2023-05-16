@@ -338,9 +338,15 @@ extfunnel <- function(SS, seSS, method, outcome,
   
   # Simulated trials
   if (!is.null(sim.points)) {
-    plot <- plot +
-      geom_point(data=sim.points, aes(x=estimate, y=st_err, color="sim_col"),
-                 shape=20)
+    if (method=='fixed') {
+      plot <- plot +
+        geom_point(data=sim.points, aes(x=estimate.fixed, y=st_err.fixed, color="sim_col"),
+                  shape=20)
+    } else {
+      plot <- plot +
+        geom_point(data=sim.points, aes(x=estimate.rand, y=st_err.rand, color="sim_col"),
+                   shape=20)
+    }
   }
   
   # Study points

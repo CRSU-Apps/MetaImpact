@@ -90,6 +90,40 @@ FixedPredInt <- function(){
     footer = NULL
   ))
 }
+SigContourOnly <- function(){
+  showModal(modalDialog(
+    title = "Feature not yet available",
+    easyClose = FALSE,
+    p("Currently, the contours on the extended funnel plot are only for when the desired impact of the new evidence base is related to levels of p-values."),
+    p("Therefore, if you wish to plot the simulated 'new trials' from the power calculations, please either: ", tags$ol(tags$li("ensure that the ", strong("type of impact"), " is set to ", strong("Significant p-value"), ", or"), tags$li("uncheck the ", strong("contours"), " option"))),
+    p("If you do not wish to plot the simulated 'new trials', please ", strong("uncheck"), " the plot simulated trials option."),
+    br(),
+    modalButton("Close warning"),
+    footer = NULL
+  ))
+}
+DiffSigValues <- function(){
+  showModal(modalDialog(
+    title = "Significance values don't match",
+    easyClose = FALSE,
+    p("If you wish to plot the simulated 'new trials' on top of the extended funnel plot with contours, then the significance level/cut-off value needs to match."),
+    p("Please ensure that the ", strong("Sig. level for contours"), " plot option is set to the same value as the ", strong("cut-off calculator"), " option."),
+    p("If you do not wish to plot the simulated 'new trials' with the contour option of the extended funnel plot, please ", strong("uncheck"), " the plot simulated trials and/or contour option."),
+    br(),
+    modalButton("Close warning"),
+    footer = "If this error appears after changing the impact type to 'significant p-value' due to a previous warning message, and your significance levels/cut-off values match, please ignore."
+  ))
+}
+NoPlotMultipleSampleSizes <- function(){
+  showModal(modalDialog(
+    title = "Feature not yet available",
+    easyClose = FALSE,
+    p("Plotting the simulated 'new trials' of multiple sample sizes is not yet available. Please either ", tags$strong("uncheck 'plot simulated trials'"), " option or ", tags$strong("specify one sample size.")),
+    br(),
+    modalButton("Close warning"),
+    footer = NULL
+  ))
+}
 
   
 ### Load and present Data ###
@@ -531,12 +565,19 @@ output$Langan <- renderPlot({
     NoRandomContours()
   } else if (input$Lang_method == 'fixed' & {'pred.interval' %in% input$LanganOptions}) {  # Warning how predictive intervals are not of use within fixed-effects models
     FixedPredInt()
+  } else if (input$plot_sims == TRUE & input$impact_type != 'pvalue' & {'contour' %in% input$LanganOptions}) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
+    SigContourOnly()                                            
+  } else if (input$plot_sims == TRUE & input$impact_type == 'pvalue' & {input$Lang_pvalue != input$cutoff} & {'contour' %in% input$LanganOptions}) { # the contour cut-offs/sig levels need to be the same
+    DiffSigValues()
+  } else if (input$plot_sims == TRUE & length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)))>1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
+    NoPlotMultipleSampleSizes()
   } else {
     extfunnel(SS = freqpair()$MA$MAdata$yi, seSS = freqpair()$MA$MAdata$sei, method = input$Lang_method, outcome = outcome(),
               sig.level = input$Lang_pvalue, legend = TRUE, points = TRUE,
               contour = {'contour' %in% input$LanganOptions}, summ = {'summ' %in% input$LanganOptions}, pred.interval = {'pred.interval' %in% input$LanganOptions}, plot.zero = {'plot.zero' %in% input$LanganOptions}, plot.summ = {'plot.summ' %in% input$LanganOptions},
-              expxticks = {if (outcome() %in% c('OR','RR')) {c(0.25,0.5,1,2,4)}})
-    # remaining settings not in UI: contour.points, summ.pos, ylim, xlim, xticks, yticks, zero, xlab, ylabz, legendpos, sim.points
+              expxticks = {if (outcome() %in% c('OR','RR')) {c(0.25,0.5,1,2,4)}},
+              sim.points = {if (input$plot_sims) {CalcResults()$singleresult$sim_study}})
+    # remaining settings not in UI: contour.points, summ.pos, ylim, xlim, xticks, yticks, zero, xlab, ylab, legendpos
   }
 })
 
