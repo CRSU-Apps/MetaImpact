@@ -25,7 +25,7 @@ library(purrr)
 # load user-written functions #
 #-----------------------------#
 
-source("MAFunctions.R",local = TRUE) 
+source("MAFunctions.R",local = TRUE)
 source("SampleSizeFunctions.R", local=TRUE)
 source("ForestFunctions.R", local=TRUE)
 source("LanganPlots.R", local=TRUE)
@@ -125,12 +125,173 @@ NoPlotMultipleSampleSizes <- function(){
   ))
 }
 
-  
+
+
+### Walk-through demonstration ###
+  #---------------------------#
+
+## Code for stepping through the multiple pages ##
+rv <- reactiveValues(page = 1)
+
+observe({
+  shinyjs::toggleState(id = "prevBtn", condition = rv$page > 1)
+  shinyjs::toggleState(id = "nextBtn", condition = rv$page < 8)
+  shinyjs::hide(selector = ".page")     # hides previously loaded page
+  shinyjs::show(paste0("page", rv$page))
+})
+
+navPage <- function(direction) {
+  rv$page <- rv$page + direction
+}
+
+observeEvent(input$prevBtn, navPage(-1))
+observeEvent(input$nextBtn, navPage(1))
+
+## Dataset ##
+
+WalkData <- read.csv("./AntiVEGF_Binary_Pairwise.csv")
+
+## Page 2 content ##
+
+WalkData <- SwapTrt(CONBI='binary', data=Long2Wide(WalkData), trt='RANI')
+WalkFreq <- FreqPair(data=WalkData, outcome='OR', model='both', CONBI='binary')  #conduct frequentist MA
+
+output$page2Forest <- renderPlot({
+  metafor::forest(WalkFreq$MA.Fixed, atransf=exp)
+  title("Forest plot of studies with overall estimate from fixed-effects model")
+})
+
+## Page 3 content ##
+
+# # Calculated outside of the app and read in, so that I can 'hard' refer to values etc. without the results changing each time.
+# WalkCalcResults <- {
+#   list1 <- list()
+#   list1$sample_sizes <- c(250, 500, 750, 1000)
+#   list1$singleresult1 <- metapow(NMA=WalkFreq, data=WalkData, n=list1$sample_sizes[1], nit=100, inference='pvalue', pow=0.15, measure='OR', recalc=FALSE)
+#   list1$singleresult2 <- metapow(NMA=WalkFreq, data=WalkData, n=list1$sample_sizes[2], nit=100, inference='pvalue', pow=0.15, measure='OR', recalc=FALSE)
+#   list1$singleresult3 <- metapow(NMA=WalkFreq, data=WalkData, n=list1$sample_sizes[3], nit=100, inference='pvalue', pow=0.15, measure='OR', recalc=FALSE)
+#   list1$singleresult4 <- metapow(NMA=WalkFreq, data=WalkData, n=list1$sample_sizes[4], nit=100, inference='pvalue', pow=0.15, measure='OR', recalc=FALSE)
+# list1
+# }
+# # save power data #
+# PowData <- data.frame(SampleSize = c(250, 500, 750, 1000, 250, 500, 750, 1000),
+#                       Model = c(rep("Fixed-effects",4), rep("Random-effects",4)),
+#                       Estimate = c(WalkCalcResults$singleresult1$power$Fixed, WalkCalcResults$singleresult2$power$Fixed, WalkCalcResults$singleresult3$power$Fixed, WalkCalcResults$singleresult4$power$Fixed, WalkCalcResults$singleresult1$power$Random, WalkCalcResults$singleresult2$power$Random, WalkCalcResults$singleresult3$power$Random, WalkCalcResults$singleresult4$power$Random)*100,
+#                       CI_lower = c(WalkCalcResults$singleresult1$CI_lower$Fixed, WalkCalcResults$singleresult2$CI_lower$Fixed, WalkCalcResults$singleresult3$CI_lower$Fixed, WalkCalcResults$singleresult4$CI_lower$Fixed, WalkCalcResults$singleresult1$CI_lower$Random, WalkCalcResults$singleresult2$CI_lower$Random, WalkCalcResults$singleresult3$CI_lower$Random, WalkCalcResults$singleresult4$CI_lower$Random)*100,
+#                       CI_upper = c(WalkCalcResults$singleresult1$CI_upper$Fixed, WalkCalcResults$singleresult2$CI_upper$Fixed, WalkCalcResults$singleresult3$CI_upper$Fixed, WalkCalcResults$singleresult4$CI_upper$Fixed, WalkCalcResults$singleresult1$CI_upper$Random, WalkCalcResults$singleresult2$CI_upper$Random, WalkCalcResults$singleresult3$CI_upper$Random, WalkCalcResults$singleresult4$CI_upper$Random)*100)
+# write.csv(PowData, "WalkThroughResults.csv", row.names = FALSE)
+# # save simulation data #
+# write.csv(WalkCalcResults$singleresult1$sim_study, "WalkThroughSims250.csv", row.names = FALSE)
+# write.csv(WalkCalcResults$singleresult2$sim_study, "WalkThroughSims500.csv", row.names = FALSE)
+# write.csv(WalkCalcResults$singleresult3$sim_study, "WalkThroughSims750.csv", row.names = FALSE)
+# write.csv(WalkCalcResults$singleresult4$sim_study, "WalkThroughSims1000.csv", row.names = FALSE)
+
+WalkCalcResultsData <- read.csv("WalkThroughResults.csv")
+
+output$page3powplot <- renderPlot({    
+  metapowplot(PowerData=WalkCalcResultsData, ModelOpt='fixed', SampleSizes=c(250, 500, 750, 1000))
+})
+
+output$page3powtable <- renderTable({
+  powdata <- WalkCalcResultsData[WalkCalcResultsData$Model=='Fixed-effects',c(1,3:5)]
+  names(powdata) <- c("Total Sample Size", "Power estimate (%)", "Lower 95% CI bound", "Upper 95% CI bound")
+  powdata
+}, digits=1)
+
+## Page 4 content ##
+
+WalkSims <- reactive({
+  data <- read.csv(paste("WalkThroughSims", input$WalkSizeChoice, ".csv", sep=""))
+  return(data)
+})
+
+WalkZoomValues <- data.frame(xlim = list(S250 = log(c(0.4,3)), S500 = log(c(0.5,2.2)), S750 = log(c(0.5,2.2)), S1000 = log(c(0.6,2))),
+                             ylim = list(S250 = c(0.2, 0.4), S500 = c(0.1,0.3), S750 = c(0,0.3), S1000 = c(0,0.25)))
+
+output$page4Langan <- renderPlot({
+  extfunnel(SS=WalkFreq$MAdata$yi, seSS=WalkFreq$MAdata$sei, method='fixed', outcome='OR',
+           expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", legend=TRUE,
+           contour = ifelse(input$WalkAddContours != 0, TRUE, FALSE), sig.level = 0.15,
+           sim.points = { if (input$WalkAddSims != 0) {WalkSims()}},
+           xlim = { if (input$WalkZoomSims==TRUE) {eval(parse(text=paste('WalkZoomValues$xlim.S',input$WalkSizeChoice, sep='')))}},
+           ylim = { if (input$WalkZoomSims==TRUE) {eval(parse(text=paste('WalkZoomValues$ylim.S',input$WalkSizeChoice, sep='')))}})
+})
+
+## Page 5 content ##
+
+#summary(WalkFreq$MA.Random)$tau2
+
+output$page5Forest <- renderPlot({
+  forest.rma.CN(WalkFreq$MA.Fixed, WalkFreq$MA.Random, atransf=exp)
+  title("Forest plot of studies and overall pooled estimates")
+})
+
+## Page 6 content ##
+
+
+output$page6fixpowtable <- renderTable({
+  powdata <- WalkCalcResultsData[WalkCalcResultsData$Model=='Fixed-effects',c(1,3:5)]
+  names(powdata) <- c("Total Sample Size", "Power estimate (%)", "Lower 95% CI bound", "Upper 95% CI bound")
+  powdata
+}, digits=1)
+
+output$page6fixpowplot <- renderPlot({
+  metapowplot(PowerData=WalkCalcResultsData, ModelOpt='fixed', SampleSizes=c(250, 500, 750, 1000))
+})
+
+output$page6ranpowtable <- renderTable({
+  powdata <- WalkCalcResultsData[WalkCalcResultsData$Model=='Random-effects',c(1,3:5)]
+  names(powdata) <- c("Total Sample Size", "Power estimate (%)", "Lower 95% CI bound", "Upper 95% CI bound")
+  powdata
+}, digits=1)
+
+output$page6ranpowplot <- renderPlot({
+  metapowplot(PowerData=WalkCalcResultsData, ModelOpt='random', SampleSizes=c(250, 500, 750, 1000))
+})
+
+WalkSims1000 <- read.csv("WalkThroughSims1000.csv")
+
+output$page6LanganFix <- renderPlot({
+  extfunnel(SS=WalkFreq$MAdata$yi, seSS=WalkFreq$MAdata$sei, method='fixed', outcome='OR',
+                       expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", legend=TRUE,
+                       sim.points=WalkSims1000,
+                       xlim = log(c(0.5, 2.5)), ylim=c(0, 0.25))
+})
+
+output$page6LanganRan <- renderPlot({
+  extfunnel(SS=WalkFreq$MAdata$yi, seSS=WalkFreq$MAdata$sei, method='random', outcome='OR',
+                       expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", legend=TRUE,
+                       sim.points=WalkSims1000, pred.interval=TRUE,
+                       xlim = log(c(0.5, 2.5)), ylim=c(0, 0.25))
+})
+
+## page 7 content ##
+
+output$page7ForestFreq <- renderPlot({
+  metafor::forest(WalkFreq$MA.Random, atransf=exp)
+  title("Forest plot of studies with overall estimate from fixed-effects model")
+})
+
+# Calculated outside the app and then exported for reload in
+# WalkBayes <- BayesPair(CONBI='binary', data=WalkData, trt='RANI', ctrl='BEVA', outcome='OR', model='both', prior='half-cauchy')
+# g <- BayesPairForest(WalkBayes()$MAdata, outcome='OR', model='random')
+# g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
+#   theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
+# save(BayesRandomForest, file = "BayesForestRand.rdata")
+
+load("BayesForestRand.rdata")
+
+output$page7ForestBayes <- renderPlot({
+  BayesRandomForest
+})
+
+
+
 ### Load and present Data ###
   #-----------------------#
-  
+
   data <- reactive({                     # Read in user or default data
-    file <- input$data             
+    file <- input$data
     if (is.null(file)) {
       if (input$ChooseExample=='continuousEx') {
         data <- read.csv("./AntiVEGF_Continuous_Pairwise.csv")
@@ -143,7 +304,7 @@ NoPlotMultipleSampleSizes <- function(){
     levels <- levels(as_vector(lapply(data[grep("^T", names(data), value=TRUE)], factor)))  # extract treatment names/levels
     return(list(data=data, levels=levels))
   })
-  
+
 # reference <- reactive({               # Select default reference treatment
 #    file <- input$data
 #    if (is.null(file)) {
@@ -174,7 +335,7 @@ NoPlotMultipleSampleSizes <- function(){
     }
     return(ref())
   }
-  
+
 #  observe({                              # populating reference treatment options
 #    updateSelectInput(session = session, inputId = "Reference", choices = data()$levels, selected = reference())
 #  })
@@ -184,12 +345,12 @@ NoPlotMultipleSampleSizes <- function(){
   observe({
     updateSelectInput(session=session, inputId = "Pair_Ctrl", choices = data()$levels, selected = pairwise_ref(trt_ctrl='ctrl'))
   })
-  
+
   output$data <- renderTable({           # Create a table which displays the raw data just uploaded by the user
     data()$data
   })
-  
-  
+
+
   ContBin <- reactive({           # automatically detect if continuous or binary
     if (max(grepl("^Mean", names(data()$data)))==TRUE) {
       return('continuous')
@@ -201,7 +362,7 @@ NoPlotMultipleSampleSizes <- function(){
     ContBin()
   })
   outputOptions(output, "ContBin", suspendWhenHidden=FALSE) #needed for UI options, but doesn't need displaying itself
-  
+
   outcome <- reactive({                  # different outcome variables if continuous or binary
     if (ContBin()=='continuous') {
       input$OutcomeCont
@@ -210,19 +371,19 @@ NoPlotMultipleSampleSizes <- function(){
     }
   })
 
-  
 
-  
+
+
 ### Summary sentence of meta-analysis ###
   #-----------------------------------#
-  
+
 FreqSummaryText <- eventReactive( input$FreqRun, {
-  paste("Results for ", strong(input$FixRand), "-effects ", strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ", strong("frequentist"), " methodology, 
+  paste("Results for ", strong(input$FixRand), "-effects ", strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ", strong("frequentist"), " methodology,
     with reference treatment ", strong(input$Pair_Ctrl), ".", sep="")
 })
 output$SynthesisSummaryFreq <- renderText({FreqSummaryText()})
 BayesSummaryText <- eventReactive( input$BayesRun, {
-  paste("Results for ", strong(input$FixRand), "-effects ", strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and 
+  paste("Results for ", strong(input$FixRand), "-effects ", strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ", strong("Bayesian"), " methodology, with vague prior ", strong(input$prior), " and
     reference treatment ", strong(input$Pair_Ctrl), ".", sep="")
 })
 output$SynthesisSummaryBayes <- renderText({BayesSummaryText()})
@@ -251,7 +412,7 @@ PairwiseSummary_functionF <- function(outcome, MA.Model) {
     line4<-paste("Between study standard-deviation (log-probability scale): ")
   } else {
     line2<-paste("Pooled estimate: ", round(sum$b,2), " (95% CI: ", round(sum$ci.lb,2), " to ", round(sum$ci.ub,2), "); p-value: ", round(sum$pval, 3), sep="")
-    line4<-paste("Between study standard-reviation: ")
+    line4<-paste("Between study standard-deviation: ")
   }
   line3<-paste(strong("Heterogeneity results"))
   line4<-paste(line4, round(sqrt(sum$tau2),3), "; I-squared: ", round(sum$I2,1), "%; P-value for testing heterogeneity: ", round(sum$QEp,3), sep="")
@@ -312,7 +473,7 @@ output$ModelFitF <- renderUI({              # Model fit statistics
 ### Run frequentist NMA ###
   #---------------------#
 
-#freqnma <- eventReactive( input$FreqRun, {                   # Run frequentist NMA 
+#freqnma <- eventReactive( input$FreqRun, {                   # Run frequentist NMA
 #  if (input$Pairwise_NMA==FALSE) {
 #    NoNMA()
 #    #FreqNMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
@@ -345,7 +506,7 @@ LongData <- reactive({               # convert wide format to long if need be
 observeEvent( input$BayesRun, {                           # reopen panel when a user re-runs analysis
   #NoBayesian()
   updateCollapse(session=session, id="BayesID", open="Bayesian Analysis")
-})  
+})
 
 
 PairwiseSummary_functionB <- function(outcome, MA.Model, model) {   # MA.Model has to have MAData, MA.Fixed and MA.Random
@@ -375,8 +536,8 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
   #NoBayesian()
   information <- list()
   information$MA <- BayesPair(CONBI=ContBin(), data=WideData(), trt=input$Pair_Trt, ctrl=input$Pair_Ctrl, outcome=outcome(), chains=input$chains, iter=input$iter, warmup=input$burn, model='both', prior=input$prior)
-  if (input$FixRand=='fixed') {                   
-    information$Forest <- {               
+  if (input$FixRand=='fixed') {
+    information$Forest <- {
       g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='fixed')
       g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
         theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
@@ -385,11 +546,11 @@ bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA
     information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Fixed)
     information$Trace <- {
       g <- stan_trace(information$MA$MA.Fixed$fit, pars="theta")
-      g + theme(legend.position='none', aspect.ratio = 0.45, axis.title=element_text(size=10,face="bold")) + 
+      g + theme(legend.position='none', aspect.ratio = 0.45, axis.title=element_text(size=10,face="bold")) +
         labs(y="Pooled estimate", x="Iteration")
     }
   } else if (input$FixRand=='random') {
-    information$Forest <- {               
+    information$Forest <- {
       g <- BayesPairForest(information$MA$MAdata, outcome=outcome(), model='random')
       g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
         theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
@@ -490,15 +651,15 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
 Recalc <- reactiveVal('FALSE')  # initialise
 ### Create set of constantly updated reactive values of cached inputs
 tmpInputs <- reactiveValues()  # initialised
-tmp_pairwise <- reactive({                
+tmp_pairwise <- reactive({
   if (input$EvBase_choice=='freq') {
     FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin()) # if I use freqpair(), then the forest plot on evidence synthesis tab doesn't load - minor bug for now (extra run-time and hope no-one changes frequentist settings without re-running)
   } else {
     bayespair()$MA
   }
 })
-inputCache <- reactive(list(sample=input$samplesizes, 
-                            NMA=tmp_pairwise(), 
+inputCache <- reactive(list(sample=input$samplesizes,
+                            NMA=tmp_pairwise(),
                             nit=input$its,
                             FreqBayes=input$EvBase_choice))
 source("InputCaches.R", local=TRUE)  # (non elegant) code for caching inputs - updating tmpInputs
@@ -516,7 +677,7 @@ pairwise_MA <- reactive({
   }
 })
 
-# Calculate 
+# Calculate
 CalcResults <- eventReactive( input$CalcRun, {
   list1 <- list()
   list1$sample_sizes <- as.integer(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)) # convert to vector of integers
@@ -530,7 +691,7 @@ CalcResults <- eventReactive( input$CalcRun, {
     updateProgress <- function(value = NULL, detail = NULL) { #callback function to update progress where there are multiple simulations.
       if (is.null(value)) {
         value <- progress$getValue()
-        value <- value + (progress$getMax() / length(list1$sample_sizes)) 
+        value <- value + (progress$getMax() / length(list1$sample_sizes))
       }
       progress$set(value = value, detail = detail)
     }
@@ -566,7 +727,7 @@ output$Langan <- renderPlot({
   } else if (input$Lang_method == 'fixed' & {'pred.interval' %in% input$LanganOptions}) {  # Warning how predictive intervals are not of use within fixed-effects models
     FixedPredInt()
   } else if (input$plot_sims == TRUE & input$impact_type != 'pvalue' & {'contour' %in% input$LanganOptions}) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
-    SigContourOnly()                                            
+    SigContourOnly()
   } else if (input$plot_sims == TRUE & input$impact_type == 'pvalue' & {input$Lang_pvalue != input$cutoff} & {'contour' %in% input$LanganOptions}) { # the contour cut-offs/sig levels need to be the same
     DiffSigValues()
   } else if (input$plot_sims == TRUE & length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)))>1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
@@ -612,13 +773,13 @@ steps <- reactive(data.frame(
 ))
 # Calculator settings #
 observeEvent(input$calc_help,
-             introjs(session, options = list(steps=steps() %>% filter(category=="CalcSettings"), "showBullets"="false", "showProgress"="true", 
+             introjs(session, options = list(steps=steps() %>% filter(category=="CalcSettings"), "showBullets"="false", "showProgress"="true",
                                              "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip"))   # IMPACT_TYPE NOT WORKING and don't know why...
 )
 # Bayesian settings #
 observeEvent(input$bayes_help,
-             introjs(session, options = list(steps=steps() %>% filter(category=="BayesSettings"), "showBullets"="false", "showProgress"="true", 
-                                             "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip"))  
+             introjs(session, options = list(steps=steps() %>% filter(category=="BayesSettings"), "showBullets"="false", "showProgress"="true",
+                                             "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip"))
 )
 
 
@@ -677,9 +838,9 @@ outputOptions(output, "SingMult", suspendWhenHidden=FALSE) #needed for UI option
 
 output$CalculatorResults <- renderUI({
   panel <- OneOrMultiple()   # ascertain which panel should be open based on whether one or multple sample sizes have been inputted
-  conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open=panel, multiple=TRUE,  
+  conditionalPanel(condition = "input.CalcRun!=0", bsCollapse(id="Calculator", open=panel, multiple=TRUE,
                                                             bsCollapsePanel(title="Power Plot of Results", style='success',
-                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(plotOutput('powplot'), type=6), radioButtons('powplot_options', "", c("Fixed-effects only"='fixed', "Random-effects only"='random', "Both fixed- and random-effects"='both'), selected='both', inline=TRUE), 
+                                                                            conditionalPanel(condition = "output.SingMult=='multiple'", withSpinner(plotOutput('powplot'), type=6), radioButtons('powplot_options', "", c("Fixed-effects only"='fixed', "Random-effects only"='random', "Both fixed- and random-effects"='both'), selected='both', inline=TRUE),
                                                                                              fluidRow(div(style="display: inline-block;", downloadButton('powplot_download', "Download power plot")),
                                                                                                       div(style="display:inline-block; width: 10px;", HTML("<br>")),
                                                                                                       div(style="display: inline-block;", radioButtons('powplot_choice', "", c('pdf', 'png'), inline=TRUE)))),

@@ -266,7 +266,7 @@ extfunnel <- function(SS, seSS, method, outcome,
   
   if (contour) {
     legendmat.fill.values <- c(legendmat.fill.values,"nosig_col"="white","sigless_col"="gray91","sigmore_col"="gray72")
-    legendmat.fill.labels <- c(legendmat.fill.labels,"No Sig Effect (5% level)","Sig Effect < NULL (5% level)","Sig Effect > NULL (5% level)")
+    legendmat.fill.labels <- c(legendmat.fill.labels, paste("Non Sig Effect (",sig.level*100,"% level)", sep=""), paste("Sig Effect < NULL (",sig.level*100,"% level)", sep=""), paste("Sig Effect > NULL (",sig.level*100,"% level)", sep=""))
   }
   
   # drop rows that are not included (based on inputs)
