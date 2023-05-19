@@ -51,6 +51,25 @@ output$evbase_download <- downloadHandler(
   }
 )
 
+# extended funnel plot #
+output$Langan_download <- downloadHandler(
+  filename = function() {
+    paste0('ExtFunnelPlot.', input$langan_choice)
+  }, 
+  content = function(file) {
+    plot <- extfunnel(SS = freqpair()$MA$MAdata$yi, seSS = freqpair()$MA$MAdata$sei, method = input$Lang_method, outcome = outcome(),
+                      sig.level = input$Lang_pvalue, legend = TRUE, points = TRUE,
+                      contour = {'contour' %in% input$LanganOptions}, summ = {'summ' %in% input$LanganOptions}, pred.interval = {'pred.interval' %in% input$LanganOptions}, plot.zero = {'plot.zero' %in% input$LanganOptions}, plot.summ = {'plot.summ' %in% input$LanganOptions},
+                      expxticks = {if (outcome() %in% c('OR','RR')) {c(0.25,0.5,1,2,4)}},
+                      sim.points = {if (input$plot_sims) {CalcResults()$singleresult$sim_study}})
+    if (input$langan_choice=='png') {
+      ggsave(file,plot, height=7, width=12, units="in", device="png")
+    } else {
+      ggsave(file,plot, height=7, width=12, units="in", device="pdf")
+    }
+  }
+)
+
 
 ### Pairwise Meta-Analysis ###
   #------------------------#
