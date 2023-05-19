@@ -188,8 +188,8 @@ tabPanel("Walk-Through",
 #----------#
                    
 tabPanel("Data",
-         column(5, h4("Choose Data"),                    # Insert own data or choose example data
-                p("Please upload your data as a .csv file, with the same column headers as for MetaInsight, however, treatment coding and specifying binary/continuous is not necessary. {Will formalise, and possible auto-detect more format features of the data.}"),
+         column(4, h4("Choose Data"),                    # Insert own data or choose example data
+                p("Please upload your data as a .csv file, formatted as described on the right-hand side of this page. Treatment coding (i.e. numbering rather than labels) and specifying whether the outcome is continuous or binary is not necessary."),
                 fileInput(inputId="data", label="", buttonLabel="Select", placeholder="No file selected"),
                 br(),
                 p("If you wish to explore the app without using your own data, you are welcome to choose one of the example datasets below."),
@@ -201,9 +201,40 @@ tabPanel("Data",
                 #p("To explore an example network meta-analysis, NMA options are available on the 'Evidence Synthesis' tab."),
                 radioButtons("ChooseExample", "Example Datasets Available", c("Continuous outcome: Change in VA in terms of LogMAR (negative change in LogMAR = improved vision)" = "continuousEx",
                                                                               "Binary outcome: Number of people that improved their best-corrected VA by gaining 15+ letters during a vision test" = "binaryEx"), width='100%')),
-         column(7, h4("View Data"),
-                uiOutput("data"))),                      # View data
-  # Make it such that a user can still use example data even after uploading their own (maybe a tick box after uploading their own to 'use' example instead or 'remove data') -> consider Ryan's addition to MetaInsight
+         column(4, h4("View Data"),          # View data
+                uiOutput("data")),
+         column(4, h4("Format Requirements"),
+                tabsetPanel(id='format_instructions',
+                            tabPanel("Binary Data",
+                                     p("MetaImpact can take data in wide format (every row is per study) or long format (every row is per  study arm)."),
+                                     p("The data file should contain five or eight columns columns for long or wide format respectively. Headings of columns are case sensitive."),
+                                     p("The following columns are needed:"),
+                                     p(tags$ul(tags$li("A column labelled ", tags$strong("StudyID"), " containing the study identifier, starting from 1, then 2, 3, 4... etc."))),
+                                     p(tags$ul(tags$li("A column labelled ", tags$strong("Study"), " containing the name (e.g., author,year) of the study. The study name must be unique for each study."))),
+                                     p(tags$ul(tags$li("For long format, a column labelled ", tags$strong("T"), " containing the name or label of treatment used in each arm of the study.
+                                                       For wide format, two columns labelled ", tags$strong("T.1 & T.2"), " containing the name or label of treatment given for study arm 1 and 2 respectively "))),
+                                     p(tags$ul(tags$li("For long format, a column labelled ", tags$strong("R"), " containing the number of participants with the outcome of interest in each arm of the study.
+                                                       For wide format, two columns labelled ", tags$strong("R.1 & R.2"), " containing the number of participants with the outcome of interest for study arm 1 and 2 respectively "))),
+                                     p(tags$ul(tags$li("For long format, a column labelled ", tags$strong("N"), " containing the number of participants in each arm of the study.
+                                                       For wide format, two columns labelled ", tags$strong("N.1 & N.2"), " containing the number of participants for study arm 1 and 2 respectively ")))
+                                     ),
+                            tabPanel("Continuous Data",
+                                     p("MetaImpact can take data in wide format (every row is per study) or long format (every row is per  study arm)."),
+                                     p("The data file should contain six or ten columns columns for long or wide format respectively. Headings of columns are case sensitive."),
+                                     p("The following columns are needed:"),
+                                     p(tags$ul(tags$li("A column labelled ", tags$strong("StudyID"), " containing the study identifier, starting from 1, then 2, 3, 4... etc."))),
+                                     p(tags$ul(tags$li("A column labelled ", tags$strong("Study"), " containing the name (e.g., author,year) of the study. The study name must be unique for each study."))),
+                                     p(tags$ul(tags$li("For long format, a column labelled ", tags$strong("T"), " containing the name or label of treatment used in each arm of the study.
+                                                       For wide format, two columns labelled ", tags$strong("T.1 & T.2"), " containing the name or label of treatment given for study arm 1 and 2 respectively "))),
+                                     p(tags$ul(tags$li("For long format, a column labelled ", tags$strong("Mean"), " containing the mean value of the outcome in each arm of the study.
+                                                       For wide format, two columns labelled ", tags$strong("Mean.1 & Mean.2"), " containing the the mean value of the outcome for study arm 1 and 2 respectively "))),
+                                     p(tags$ul(tags$li("For long format, a column labelled ", tags$strong("SD"), " containing the standard deviation value of the outcome in each arm of the study.
+                                                       For wide format, two columns labelled ", tags$strong("SD.1 & SD.2"), " containing the the standard deviation value of the outcome for study arm 1 and 2 respectively "))),
+                                     p(tags$ul(tags$li("For long format, a column labelled ", tags$strong("N"), " containing the number of participants in each arm of the study.
+                                                       For wide format, two columns labelled ", tags$strong("N.1 & N.2"), " containing the number of participants for study arm 1 and 2 respectively "))))
+                            ))
+         ),                      
+  # Make it such that a user can still use example data even after uploading their own (maybe a tick box after uploading their own to 'use' example instead or 'remove data')
 
         
                    
