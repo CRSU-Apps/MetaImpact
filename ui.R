@@ -10,11 +10,13 @@ library(shinyBS)
 library(shinyWidgets)
 library(shinycssloaders)
 library(rintrojs)
+library(shinydashboard)
 
 
 # load user-written functions #
 #-----------------------------#
 
+#source("R/render_footer.R",local = TRUE)
 
 
 # UI Content #
@@ -27,17 +29,39 @@ shinyUI(fluidPage(navbarPage(id="MetaImpact", title="MetaImpact",
 
 tabPanel("Home",
          
+         h2("MetaImpact V0.0.0",
+            tags$sup("Beta", style="color:#6CC0ED"), 
+            align= "left"),
+         
+         br(),
          h4("About"),
          p("This app encourages researchers to design a future study such that it's inclusion would make 
            an impact on the current evidence-base."),
+         br(),
          p("The app contains three main sections:"),
          p(strong("Walk-Through"), " - an interactive educational walk-through of the methods underlying MetaImpact"),
          p(strong("Data"), " - upload your data or use an example dataset"),
          p(strong("Calculator"), " - meta-analyse data to create an evidence base, then calculate the sample size of a new study such that it has an impact on the resulting evidence base"),
          br(),
+         p(strong("We strongly recommend new users to MetaImpact to go through the 'Walk-Through' tab first, before using the other features."), style="color:#ba0979"),
+         br(),
          
          h4("Authors"),
-         p("Clareece Nevill, Terry Quinn, Nicola Cooper, Alex Sutton")),
+         p("Clareece Nevill, Terry Quinn, Nicola Cooper, Alex Sutton"),
+         p("This app builds upon the work from the following publications:"),
+         p(tags$a(href="https://doi.org/10.1002/sim.2704", "Sutton, A.J., Cooper, N.J., Jones, D.R., Lambert, P.C., Thompson, J.R. and Abrams, K.R. (2007), 
+                  Evidence-based sample size calculations based upon updated meta-analysis. Statist. Med., 26: 2479-2500.",align="left")),
+         p(tags$a(href="https://doi.org/10.1016/j.jclinepi.2011.10.009", "Langan, D., Higgins, J.P.T, Gregory, W., Sutton, A.J.,
+          Graphical augmentations to the funnel plot assess the impact of additional evidence on a meta-analysis. J. Clin. Epi., 65 (2012): 511-519.",align="left")),
+         br(),
+         
+         h4("Extra"),
+         p("The code for MetaImpact is open-source and available on the ", tags$a(href="https://github.com/CRSU-Apps/MetaImpact", "CRSU GitHub Page.")),
+         p("If you have any questions, queries, or feedback, feel free to email Clareece Nevill at clareece.nevill@le.ac.uk"),
+         
+         br(),
+         renderFooter()
+         ),
 
 
 # Walk-Through #
