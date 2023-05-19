@@ -58,6 +58,10 @@ tabPanel("Home",
          h4("Extra"),
          p("The code for MetaImpact is open-source and available on the ", tags$a(href="https://github.com/CRSU-Apps/MetaImpact", "CRSU GitHub Page.")),
          p("If you have any questions, queries, or feedback, feel free to email Clareece Nevill at clareece.nevill@le.ac.uk"),
+         p("DOI for MetaImpact:"),
+         tags$div(
+           HTML('<a href="https://doi.org/10.5281/zenodo.7951025"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.7951025.svg" alt="DOI"></a>')
+         ),
          
          br(),
          renderFooter()
