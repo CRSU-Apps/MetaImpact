@@ -16,7 +16,6 @@ library(shinydashboard)
 # load user-written functions #
 #-----------------------------#
 
-#source("R/render_footer.R",local = TRUE)
 
 
 # UI Content #
@@ -29,7 +28,7 @@ shinyUI(fluidPage(navbarPage(id="MetaImpact", title="MetaImpact",
 
 tabPanel("Home",
          
-         h2("MetaImpact V0.0.0",
+         h2("MetaImpact V1.0.0",
             tags$sup("Beta", style="color:#6CC0ED"), 
             align= "left"),
          
@@ -64,7 +63,25 @@ tabPanel("Home",
          ),
          
          br(),
-         renderFooter()
+         tags$a(href = "https://www.nihr.ac.uk/", target = "_blank",
+                img(src = "images/funded-by-nihr-logo.png",
+                    alt = "Funded by NIHR",
+                    class = "footer-img nihr-img img-responsive center-block",
+                    width=800)),
+         includeMarkdown("md/funding_statement.md"),
+         fluidRow(
+           column(6, tags$a(href = "https://www.gla.ac.uk/", target = "_blank",
+                            img(src = "images/university-of-glasgow-logo.png", 
+                                alt = "University of Glasgow", 
+                                class = "footer-img img-responsive center-block",
+                                width=400))),
+           column(6, tags$a(href = "https://le.ac.uk/", target = "_blank",
+                            img(src = "images/university-of-leicester-logo.jpg",
+                                alt = "University of Leicester",
+                                class = "footer-img img-responsive center-block",
+                                width=400)))
+         ),
+         br()
          ),
 
 
