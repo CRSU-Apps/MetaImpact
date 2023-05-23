@@ -1,0 +1,15 @@
+.nihr-img{
+  max-height: 12vh;
+}
+
+.footer-img{
+  max-width: 25vw;
+  max-height: 15vh;
+}
+
+@media (max-width: 767px){
+  .footer-img {
+    max-width: 50vw;
+    padding-bottom: 5px;
+  }
+}
