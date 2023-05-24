@@ -47,28 +47,28 @@ library(tidyr)
 ############################################################################################################################
 
 
-### Test Data antibiotics vs. control for the common cold to alleviate symptoms by 7 days ###
-#raw_data_bin <- data.frame(StudyID=c(1,2,3,4,5,6), Study=c("Herne_1980","Hoaglund_1950","Kaiser_1996","Lexomboon_1971","McKerrow_1961","Taylor_1977"),
-#                   R.1=c(7,39,97,8,5,12), N.1=c(7+39,39+115,97+49,8+166,5+10,12+117), T.1=rep("Treatment",6),
-#                   R.2=c(10,51,94,4,8,3), N.2=c(10+12,51+104,94+48,4+83,8+10,3+56), T.2=rep("Control",6))
-#raw_data_con <- data.frame(StudyID=c(1,2,3,4,5,6,7), Study=c("Connor_2002","Geier_2004","Kinzler_1991","Lehri_2004","Halsch_2001","Volz_1997","Warnecke_1991"),
-#                       Mean.1=c(5.7,12.7,12.3,10.6,3,21,25.61), Mean.2=c(8.5,12.3,3.6,9.2,0.6,16.2,7.65), 
-#                       SD.1=c(7.6,6.7,8.7,7.3,7.5,13,12.8), SD.2=c(4.2,7.3,8.4,10,4.6,14.3,15.9),
-#                       N.1=c(17,25,29,34,20,52,20), N.2=c(18,25,29,23,30,48,20),
-#                       T.1=rep("Treatment",7), T.2=rep("Control",7))
-### Obtain study effects and standard errors #
-#MAdata_bin <- escalc(measure='OR', ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=raw_data_bin)   # gives ES (effect estimate) and seES (sampling variances) on logOR scale for binary data
-#MAdata_con <- escalc(measure="MD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=raw_data_con)
-#MAdata_bin$sei <- sqrt(MAdata_bin$vi)  # Calculate standard errors
-#MAdata_con$sei <- sqrt(MAdata_con$vi)
-#### Add simulated trials ##
-#source("SampleSizeFunctions.R")
-#source("MAFunctions.R")
-#app_MA_bin <- FreqPair(data=MAdata_bin, outcome='OR', CONBI='binary', model='both')
-#app_MA_con <- FreqPair(data=MAdata_con, outcome='MD', CONBI='continuous', model='both')
-#sims_bin <- metapow(NMA=app_MA_bin, data=raw_data_bin, n=2000, nit=300, inference='pvalue', pow=0.05, measure='OR', recalc=FALSE, plot_ext=NA)
-# result (fixed-effect) was 72% power (95% CI: 66.1% to 76.6%)
-#sims_con <- metapow(NMA=app_MA_con, data=raw_data_con, n=300, nit=300, inference='pvalue', pow=0.05, measure='MD', recalc=FALSE, plot_ext=NA)
+# ### Test Data antibiotics vs. control for the common cold to alleviate symptoms by 7 days ###
+# raw_data_bin <- data.frame(StudyID=c(1,2,3,4,5,6), Study=c("Herne_1980","Hoaglund_1950","Kaiser_1996","Lexomboon_1971","McKerrow_1961","Taylor_1977"),
+#                    R.1=c(7,39,97,8,5,12), N.1=c(7+39,39+115,97+49,8+166,5+10,12+117), T.1=rep("Treatment",6),
+#                    R.2=c(10,51,94,4,8,3), N.2=c(10+12,51+104,94+48,4+83,8+10,3+56), T.2=rep("Control",6))
+# raw_data_con <- data.frame(StudyID=c(1,2,3,4,5,6,7), Study=c("Connor_2002","Geier_2004","Kinzler_1991","Lehri_2004","Halsch_2001","Volz_1997","Warnecke_1991"),
+#                        Mean.1=c(5.7,12.7,12.3,10.6,3,21,25.61), Mean.2=c(8.5,12.3,3.6,9.2,0.6,16.2,7.65), 
+#                        SD.1=c(7.6,6.7,8.7,7.3,7.5,13,12.8), SD.2=c(4.2,7.3,8.4,10,4.6,14.3,15.9),
+#                        N.1=c(17,25,29,34,20,52,20), N.2=c(18,25,29,23,30,48,20),
+#                        T.1=rep("Treatment",7), T.2=rep("Control",7))
+# ### Obtain study effects and standard errors #
+# MAdata_bin <- escalc(measure='OR', ai=R.1, bi=N.1-R.1, ci=R.2, di=N.2-R.2, data=raw_data_bin)   # gives ES (effect estimate) and seES (sampling variances) on logOR scale for binary data
+# MAdata_con <- escalc(measure="MD", m1i=Mean.1, m2i=Mean.2, sd1i=SD.1, sd2i=SD.2, n1i=N.1, n2i=N.2, data=raw_data_con)
+# MAdata_bin$sei <- sqrt(MAdata_bin$vi)  # Calculate standard errors
+# MAdata_con$sei <- sqrt(MAdata_con$vi)
+# #### Add simulated trials ##
+# source("SampleSizeFunctions.R")
+# source("MAFunctions.R")
+# app_MA_bin <- FreqPair(data=MAdata_bin, outcome='OR', CONBI='binary', model='both')
+# app_MA_con <- FreqPair(data=MAdata_con, outcome='MD', CONBI='continuous', model='both')
+# sims_bin <- metapow(NMA=app_MA_bin, data=raw_data_bin, n=2000, nit=300, inference='pvalue', pow=0.05, measure='OR', recalc=FALSE, plot_ext=NA)
+# # result (fixed-effect) was 72% power (95% CI: 66.1% to 76.6%)
+# sims_con <- metapow(NMA=app_MA_con, data=raw_data_con, n=300, nit=300, inference='pvalue', pow=0.05, measure='MD', recalc=FALSE, plot_ext=NA)
 
 
 
@@ -206,6 +206,8 @@ extfunnel <- function(SS, seSS, method, outcome,
       if (method=='random') { 
         predint1 <- predict(meta)$pi.lb
         predint2 <- predict(meta)$pi.ub
+        # update x-axis limits if predictive interval is wider
+        xlim <- c(min(predint1-0.5, xlim[1]), max(predint2+0.5, xlim[2]))
       } else {
         print("For fixed-effects models, tau-squared is equal to 0 and therefore the PI becomes equivalent to the CI")
       }
@@ -283,7 +285,7 @@ extfunnel <- function(SS, seSS, method, outcome,
     scale_x_continuous(limits=xlim, expand=c(0,0)) +
     scale_y_reverse(limits=ylim, expand=c(0,0))
   
-  # Specify axis ticks if specified or exponential
+  # Specify axis ticks if specified or exponential (and extend if predictive interval)
   # x axis ticks for exponential effects
   if (!is.null(expxticks)) {
     plot <- plot +
@@ -416,7 +418,11 @@ extfunnel <- function(SS, seSS, method, outcome,
 #          ylim=c(0.05,0.15), xlim=log(c(0.4, 2.1)), expxticks=c(0.25,0.5,1,2,4), xlab="Odds Ratio", 
 #          contour=TRUE, sim.points=sims_bin$sim_study, legend=TRUE)   # would be ideal to remove 'current studies' from legend if they are forced off from the plot
 
-# Mirror figure 2C in Langan et al  FAIL -> yes but big old triangle of colour missing at the bottom (I think it's going to have to stay as a bug for now...its only when the 'curtain' moves across to the opposite side to standard...)
-#extfunnel(SS=MAdata_con$yi, seSS=MAdata_con$sei, method='fixed', outcome='MD',
-#          ylim=c(0,5.5), xlab="Difference in means", contour=TRUE, plot.summ=TRUE, legend=TRUE)
+# # Mirror figure 2C in Langan et al  FAIL -> yes but big old triangle of colour missing at the bottom (I think it's going to have to stay as a bug for now...its only when the 'curtain' moves across to the opposite side to standard...)
+# extfunnel(SS=MAdata_con$yi, seSS=MAdata_con$sei, method='fixed', outcome='MD',
+#           ylim=c(0,5.5), xlab="Difference in means", contour=TRUE, plot.summ=TRUE, legend=TRUE)
+# 
+# # Finding error of continuous not showing predictive interval (FIXED)
+# extfunnel(SS=MAdata_con$yi, seSS=MAdata_con$sei, method='random', outcome='MD',
+#           ylim=c(0,5.5), xlab="Difference in means", contour=FALSE, plot.summ=TRUE, legend=TRUE, pred.interval = TRUE)
 
