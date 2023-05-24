@@ -17,9 +17,10 @@ library(dplyr)
 library(ggridges)
 library(glue)
 library(forcats)
-#library(rstan)
+library(rstan)
 library(MetaStan)
 library(purrr)
+library(splines2)
 
 #-----------------------------#
 # load user-written functions #

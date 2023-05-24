@@ -11,6 +11,7 @@ library(shinyWidgets)
 library(shinycssloaders)
 library(rintrojs)
 library(shinydashboard)
+library(markdown)
 
 
 # load user-written functions #
