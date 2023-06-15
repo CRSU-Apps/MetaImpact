@@ -158,7 +158,7 @@ WalkData <- SwapTrt(CONBI='binary', data=Long2Wide(WalkData), trt='RANI')
 WalkFreq <- FreqPair(data=WalkData, outcome='OR', model='both', CONBI='binary')  #conduct frequentist MA
 
 output$page2Forest <- renderPlot({
-  metafor::forest(WalkFreq$MA.Fixed, atransf=exp)
+  metafor::forest(WalkFreq$MA.Fixed, atransf=exp, at=log(c(0.05, 0.25, 1, 4, 16)))
   title("Forest plot of studies with overall estimate from fixed-effects model")
 })
 
@@ -223,7 +223,7 @@ output$page4Langan <- renderPlot({
 #summary(WalkFreq$MA.Random)$tau2
 
 output$page5Forest <- renderPlot({
-  forest.rma.CN(WalkFreq$MA.Fixed, WalkFreq$MA.Random, atransf=exp)
+  forest.rma.CN(WalkFreq$MA.Fixed, WalkFreq$MA.Random, atransf=exp, at=log(c(0.05, 0.25, 1, 4, 16)))
   title("Forest plot of studies and overall pooled estimates")
 })
 
@@ -269,7 +269,7 @@ output$page6LanganRan <- renderPlot({
 ## page 7 content ##
 
 output$page7ForestFreq <- renderPlot({
-  metafor::forest(WalkFreq$MA.Random, atransf=exp)
+  metafor::forest(WalkFreq$MA.Random, atransf=exp, at=log(c(0.05, 0.25, 1, 4, 16)))
   title("Forest plot of studies with overall estimate from fixed-effects model")
 })
 
