@@ -133,29 +133,6 @@ output$page2Forest <- renderPlot({
 
 ## Page 3 content ##
 
-# # Calculated outside of the app and read in, so that I can 'hard' refer to values etc. without the results changing each time.
-# WalkCalcResults <- {
-#   list1 <- list()
-#   list1$sample_sizes <- c(250, 500, 750, 1000)
-#   list1$singleresult1 <- metapow(NMA=WalkFreq, data=WalkData, n=list1$sample_sizes[1], nit=100, inference='pvalue', pow=0.15, measure='OR', recalc=FALSE)
-#   list1$singleresult2 <- metapow(NMA=WalkFreq, data=WalkData, n=list1$sample_sizes[2], nit=100, inference='pvalue', pow=0.15, measure='OR', recalc=FALSE)
-#   list1$singleresult3 <- metapow(NMA=WalkFreq, data=WalkData, n=list1$sample_sizes[3], nit=100, inference='pvalue', pow=0.15, measure='OR', recalc=FALSE)
-#   list1$singleresult4 <- metapow(NMA=WalkFreq, data=WalkData, n=list1$sample_sizes[4], nit=100, inference='pvalue', pow=0.15, measure='OR', recalc=FALSE)
-# list1
-# }
-# # save power data #
-# PowData <- data.frame(SampleSize = c(250, 500, 750, 1000, 250, 500, 750, 1000),
-#                       Model = c(rep("Fixed-effects",4), rep("Random-effects",4)),
-#                       Estimate = c(WalkCalcResults$singleresult1$power$Fixed, WalkCalcResults$singleresult2$power$Fixed, WalkCalcResults$singleresult3$power$Fixed, WalkCalcResults$singleresult4$power$Fixed, WalkCalcResults$singleresult1$power$Random, WalkCalcResults$singleresult2$power$Random, WalkCalcResults$singleresult3$power$Random, WalkCalcResults$singleresult4$power$Random)*100,
-#                       CI_lower = c(WalkCalcResults$singleresult1$CI_lower$Fixed, WalkCalcResults$singleresult2$CI_lower$Fixed, WalkCalcResults$singleresult3$CI_lower$Fixed, WalkCalcResults$singleresult4$CI_lower$Fixed, WalkCalcResults$singleresult1$CI_lower$Random, WalkCalcResults$singleresult2$CI_lower$Random, WalkCalcResults$singleresult3$CI_lower$Random, WalkCalcResults$singleresult4$CI_lower$Random)*100,
-#                       CI_upper = c(WalkCalcResults$singleresult1$CI_upper$Fixed, WalkCalcResults$singleresult2$CI_upper$Fixed, WalkCalcResults$singleresult3$CI_upper$Fixed, WalkCalcResults$singleresult4$CI_upper$Fixed, WalkCalcResults$singleresult1$CI_upper$Random, WalkCalcResults$singleresult2$CI_upper$Random, WalkCalcResults$singleresult3$CI_upper$Random, WalkCalcResults$singleresult4$CI_upper$Random)*100)
-# write.csv(PowData, "WalkThroughResults.csv", row.names = FALSE)
-# # save simulation data #
-# write.csv(WalkCalcResults$singleresult1$sim_study, "WalkThroughSims250.csv", row.names = FALSE)
-# write.csv(WalkCalcResults$singleresult2$sim_study, "WalkThroughSims500.csv", row.names = FALSE)
-# write.csv(WalkCalcResults$singleresult3$sim_study, "WalkThroughSims750.csv", row.names = FALSE)
-# write.csv(WalkCalcResults$singleresult4$sim_study, "WalkThroughSims1000.csv", row.names = FALSE)
-
 WalkCalcResultsData <- read.csv("WalkThroughResults.csv")
 
 output$page3powplot <- renderPlot({    
@@ -242,12 +219,6 @@ output$page7ForestFreq <- renderPlot({
   title("Forest plot of studies with overall estimate from fixed-effects model")
 })
 
-# Calculated outside the app and then exported for reload in
-# WalkBayes <- BayesPair(CONBI='binary', data=WalkData, trt='RANI', ctrl='BEVA', outcome='OR', model='both', prior='half-cauchy')
-# g <- BayesPairForest(WalkBayes()$MAdata, outcome='OR', model='random')
-# g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
-#   theme(plot.title = element_text(hjust = 0.5, size=13, face='bold'))
-# save(BayesRandomForest, file = "BayesForestRand.rdata")
 
 load("BayesForestRand.rdata")
 
@@ -275,14 +246,6 @@ output$page7ForestBayes <- renderPlot({
     return(list(data=data, levels=levels))
   })
 
-# reference <- reactive({               # Select default reference treatment
-#    file <- input$data
-#    if (is.null(file)) {
-#      return("laser")
-#    } else {
-#      return(data()$levels[1])
-#    }
-#  })
   pairwise_ref <- function(trt_ctrl) {   # pairwise options
     if (trt_ctrl=='trt') {
       ref <- reactive({
@@ -306,9 +269,6 @@ output$page7ForestBayes <- renderPlot({
     return(ref())
   }
 
-#  observe({                              # populating reference treatment options
-#    updateSelectInput(session = session, inputId = "Reference", choices = data()$levels, selected = reference())
-#  })
   observe({
     updateSelectInput(session=session, inputId = "Pair_Trt", choices = data()$levels, selected = pairwise_ref(trt_ctrl='trt'))
   })
@@ -440,34 +400,6 @@ output$ModelFitF <- renderUI({              # Model fit statistics
 
 
 
-### Run frequentist NMA ###
-  #---------------------#
-
-#freqnma <- eventReactive( input$FreqRun, {                   # Run frequentist NMA
-#  if (input$Pairwise_NMA==FALSE) {
-#    NoNMA()
-#    #FreqNMA(data=WideData(), outcome=outcome(), CONBI=ContBin(), model=input$FixRand, ref=input$Reference)
-#  }
-#})
-#output$NetworkPlotF <- renderPlot({   # Network plot
-#  netgraph(freqnma()$MAObject, thickness = "number.of.studies", number.of.studies = TRUE, plastic=FALSE, points=TRUE, cex=1.25, cex.points=3, col.points=1, col="gray80", pos.number.of.studies=0.43,
-#           col.number.of.studies = "forestgreen", col.multiarm = "white", bg.number.of.studies = "black", offset=0.03)
-#  title("Network plot of all studies")
-#})
-#output$ForestPlotNMAF <- renderPlot({    # Forest plot
-#  FreqNMAForest(NMA=freqnma()$MAObject, model=input$FixRand, ref=input$Reference)
-#  title("Forest plot of outcomes")
-#})
-
-## Double zero arms are not included in analysis - need to add warning
-
-
-
-
-
-
-### Run Bayesian Pairwise MA ###
-  #--------------------------#
 
 LongData <- reactive({               # convert wide format to long if need be
   Wide2Long(data=data()$data)
@@ -553,36 +485,6 @@ output$ModelFitB <- renderUI({              # Model fit statistic
 output$TracePlot <- renderPlot({            # Trace plot
   bayespair()$Trace
 })
-
-
-
-
-### Run Bayesian NMA ###
-#------------------#
-
-#Bayes <- eventReactive( input$BayesRun & input$Pairwise_NMA=='FALSE', {                 # Run Bayesian NMA
-#  NoNMA()
-  #BayesMA(data=LongData(), CONBI=ContBin(), outcome=outcome(), model=input$FixRand, ref=input$Reference, prior=input$prior)
-#})
-
-
-#output$NetworkPlotB <- renderPlot({  # Network plot
-#  plot(Bayes()$Network)
-#  title("Network plot of all studies")
-#})
-
-#output$ForestPlotB <- renderPlot({   # Forest plot
-#  forest(Bayes()$RelEffects, digits=3)
-#  title("Forest plot of outcomes")
-#})
-
-#output$TauB <- renderText({          # Between-study standard deviation
-#  TauDesc(ResultsSum=Bayes()$ResultsSum, outcome=outcome(), model=input$FixRand)
-#})
-
-#output$DICB <- renderTable({         # DIC
-#  Bayes()$DIC
-#}, digits=3, rownames=TRUE, colnames=FALSE)
 
 
 
@@ -726,15 +628,6 @@ output$Langan <- renderPlot({
 })
 
 
-
-### Links ###
-  #-------#
-
-#observeEvent(input$link_to_tabpanel_evsynth, {
-#  updateTabsetPanel(session, "MetaImpact", "Evidence Synthesis")
-#})
-
-
 ### Interactive UI ###
   #----------------#
 
@@ -836,12 +729,106 @@ output$CalculatorResults <- renderUI({
 observeEvent(input$CalcRun, {
   updateRadioButtons(session, "powplot_options", selected = input$powplot_options)  # remember plot settings from before re-running calculator
 })
-#observeEvent(input$CalcRun, {   # need to add criteria that its if one/multiple hasn't changed
-#  updateCollapse(session, "Calculator", open = , close = )   # remember open/close status of tabs when re-running calculator (if within same one/multiple state)
-#})
+
+# evidence base #
+output$evbase_download <- downloadHandler(
+  filename = function() {
+    paste0("EvidenceBase.", input$evbase_choice)
+  },
+  content = function(file) {
+    if (input$evbase_choice=='pdf') {pdf(file=file)}
+    else {png(file=file)}
+    if (input$EvBase_choice=='freq') {
+      if (freqpair()$MA$MA.Fixed$measure %in% c('OR','RR')) {
+        forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random, atransf=exp)
+      } else {
+        forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
+      }
+      title("Forest plot of studies and overal pooled estimates")
+    }
+    dev.off()
+  }
+)
+
+# extended funnel plot #
+output$Langan_download <- downloadHandler(
+  filename = function() {
+    paste0('ExtFunnelPlot.', input$langan_choice)
+  }, 
+  content = function(file) {
+    plot <- extfunnel(SS = freqpair()$MA$MAdata$yi, seSS = freqpair()$MA$MAdata$sei, method = input$Lang_method, outcome = outcome(),
+                      sig.level = input$Lang_pvalue, legend = TRUE, points = TRUE,
+                      contour = {'contour' %in% input$LanganOptions}, summ = {'summ' %in% input$LanganOptions}, pred.interval = {'pred.interval' %in% input$LanganOptions}, plot.zero = {'plot.zero' %in% input$LanganOptions}, plot.summ = {'plot.summ' %in% input$LanganOptions},
+                      expxticks = {if (outcome() %in% c('OR','RR')) {c(0.25,0.5,1,2,4)}},
+                      sim.points = {if (input$plot_sims) {CalcResults()$singleresult$sim_study}})
+    if (input$langan_choice=='png') {
+      ggsave(file,plot, height=7, width=12, units="in", device="png")
+    } else {
+      ggsave(file,plot, height=7, width=12, units="in", device="pdf")
+    }
+  }
+)
 
 
+### Pairwise Meta-Analysis ###
+#------------------------#
 
+
+output$forestpairF_download <- downloadHandler(
+  filename = function() {
+    paste0("PairwiseAnalysis.", input$forestpairF_choice)
+  },
+  content = function(file) {
+    if (input$forestpairF_choice=='pdf') {pdf(file=file)}
+    else {png(file=file)}
+    if (input$FixRand=='fixed') { 
+      if (outcome()=='OR' | outcome()=='RR') {
+        forest(freqpair()$MA$MA.Fixed, atransf=exp)
+        title("Forest plot of studies with overall estimate from fixed-effects model")
+      } else {
+        forest(freqpair()$MA$MA.Fixed)
+        title("Forest plot of studies with overall estimate from fixed-effects model")
+      }
+    } else {
+      if (outcome()=='OR' | outcome()=='RR') {
+        forest(freqpair()$MA$MA.Random, atransf=exp)
+        title("Forest plot of studies with overall estimate from random-effects model")
+      } else {
+        forest(freqpair()$MA$MA.Random)
+        title("Forest plot of studies with overall estimate from random-effects model")
+      }
+    }
+    dev.off()
+  }
+)
+
+output$forestpairB_download <- downloadHandler(
+  filename = function() {
+    paste0("PairwiseAnalysis.", input$forestpairB_choice)
+  },
+  content = function(file) {
+    plot <- bayespair()$Forest
+    if (input$forestpairB_choice=='png') {
+      ggsave(file, plot, height=7, width=12, units="in", device="png")
+    } else {
+      ggsave(file, plot, height=7, width=12, units="in", device="pdf")
+    }
+  }
+)
+
+output$tracepair_download <- downloadHandler(
+  filename = function() {
+    paste0("PairwiseTrace.", input$tracepair_choice)
+  },
+  content = function(file) {
+    plot <- bayespair()$Trace
+    if (input$forestpairB_choice=='png') {
+      ggsave(file, plot, height=7, width=12, units="in", device="png")
+    } else {
+      ggsave(file, plot, height=7, width=12, units="in", device="pdf")
+    }
+  }
+)
 
   
 }
