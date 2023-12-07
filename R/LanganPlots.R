@@ -8,15 +8,6 @@
 # Clareece Nevill May 2023 #
 #--------------------------#
 
-# Packages required #
-library(metafor)
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-#library(furrr)
-#library(tibble)
-#library(magrittr)
-
 ############################### Description of possible arguments ##########################################################
 #SS - effect estimates of the current studies													#
 #seSS - standard errors of the current studies													#

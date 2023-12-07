@@ -1,35 +1,4 @@
-# MetaImpact Server #
-#-------------------#
-
-#----------------#
-# load libraries #
-#----------------#
-library(netmeta)
-library(sjlabelled)
-library(gemtc)
-library(tidyverse)
-library(metafor)
-library(ggplot2)
-library(tidyr)
-library(stringr)
-library(tidybayes)
-library(dplyr)
-library(ggridges)
-library(glue)
-library(forcats)
-library(rstan)
-library(MetaStan)
-library(purrr)
-library(splines2)
-
-#-----------------------------#
-# load user-written functions #
-#-----------------------------#
-
-source("MAFunctions.R",local = TRUE)
-source("SampleSizeFunctions.R", local=TRUE)
-source("ForestFunctions.R", local=TRUE)
-source("LanganPlots.R", local=TRUE)
+# MetaImpact Server
 
 
 #----------------#
@@ -649,7 +618,7 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
 })
 
 # Function for checking if recalc option needs to be TRUE or FALSE (TRUE if only the impact type and/or cut-off have changed)
-Recalc <- reactiveVal('FALSE')  # initialise
+Recalc <- reactiveVal(FALSE)  # initialise
 ### Create set of constantly updated reactive values of cached inputs
 tmpInputs <- reactiveValues()  # initialised
 tmp_pairwise <- reactive({
@@ -663,12 +632,25 @@ inputCache <- reactive(list(sample=input$samplesizes,
                             NMA=tmp_pairwise(),
                             nit=input$its,
                             FreqBayes=input$EvBase_choice))
-source("InputCaches.R", local=TRUE)  # (non elegant) code for caching inputs - updating tmpInputs
+# Caching of inputs inbetween each time the calculator is run
+observe({
+  tmpInputs[[as.character(input$CalcRun + 1)]] <- inputCache()
+})
+
 # compare previous input settings to decide on recalc option
 observeEvent(input$CalcRun, {
-  if (input$CalcRun>1) {
-    eval(parse(text = paste0("if (setequal(tmpInputs[['", input$CalcRun, "']]$sample,tmpInputs[['", input$CalcRun-1, "']]$sample) & setequal(tmpInputs[['", input$CalcRun, "']]$NMA,tmpInputs[['", input$CalcRun-1, "']]$NMA) & setequal(tmpInputs[['", input$CalcRun, "']]$nit,tmpInputs[['", input$CalcRun-1, "']]$nit) & setequal(tmpInputs[['", input$CalcRun, "']]$FreqBayes,tmpInputs[['", input$CalcRun-1, "']]$FreqBayes)) {Recalc('TRUE')} else {Recalc('FALSE')}", sep=""))) #compare previous two sets of inputs
-}})
+  this_run = as.character(input$CalcRun)
+  last_run = as.character(input$CalcRun - 1)
+  #compare previous two sets of inputs
+  if (setequal(tmpInputs[[this_run]]$sample,tmpInputs[[last_run]]$sample) &&
+      setequal(tmpInputs[[this_run]]$NMA,tmpInputs[[last_run]]$NMA) &&
+      setequal(tmpInputs[[this_run]]$nit,tmpInputs[[last_run]]$nit) &&
+      setequal(tmpInputs[[this_run]]$FreqBayes,tmpInputs[[last_run]]$FreqBayes)) {
+    Recalc(TRUE)
+  } else {
+    Recalc(FALSE)
+  }
+})
 
 pairwise_MA <- reactive({
   if (input$EvBase_choice=='freq') {
@@ -696,9 +678,9 @@ CalcResults <- eventReactive( input$CalcRun, {
       }
       progress$set(value = value, detail = detail)
     }
-    list1$data <- metapow_multiple(SampleSizes=list1$sample_sizes, NMA=pairwise_MA(), data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()), updateProgress=updateProgress, chains=input$chains, iter=input$iter, warmup=input$burn, prior=input$prior)
+    list1$data <- metapow_multiple(SampleSizes=list1$sample_sizes, NMA=pairwise_MA(), data=WideData(), nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=Recalc(), updateProgress=updateProgress, chains=input$chains, iter=input$iter, warmup=input$burn, prior=input$prior)
   } else if (length(list1$sample_sizes)==1) {
-    list1$singleresult <- metapow(NMA=pairwise_MA(), data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=as.logical(Recalc()), chains=input$chains, iter=input$iter, warmup=input$burn, prior=input$prior)
+    list1$singleresult <- metapow(NMA=pairwise_MA(), data=WideData(), n=list1$sample_sizes, nit=input$its, inference=input$impact_type, pow=input$cutoff, measure=outcome(), recalc=Recalc(), chains=input$chains, iter=input$iter, warmup=input$burn, prior=input$prior)
   }
   list1
 }})
@@ -723,15 +705,15 @@ output$singleresult <- renderUI({
 # Langan Plot #
 
 output$Langan <- renderPlot({
-  if (input$Lang_method == 'random' & {'contour' %in% input$LanganOptions}) {   # significance contours not available for random-effects
+  if (input$Lang_method == 'random' && 'contour' %in% input$LanganOptions) {   # significance contours not available for random-effects
     NoRandomContours()
-  } else if (input$Lang_method == 'fixed' & {'pred.interval' %in% input$LanganOptions}) {  # Warning how predictive intervals are not of use within fixed-effects models
+  } else if (input$Lang_method == 'fixed' && 'pred.interval' %in% input$LanganOptions) {  # Warning how predictive intervals are not of use within fixed-effects models
     FixedPredInt()
-  } else if (input$plot_sims == TRUE & input$impact_type != 'pvalue' & {'contour' %in% input$LanganOptions}) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
+  } else if (input$plot_sims && input$impact_type != 'pvalue' &&'contour' %in% input$LanganOptions) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
     SigContourOnly()
-  } else if (input$plot_sims == TRUE & input$impact_type == 'pvalue' & {input$Lang_pvalue != input$cutoff} & {'contour' %in% input$LanganOptions}) { # the contour cut-offs/sig levels need to be the same
+  } else if (input$plot_sims && input$impact_type == 'pvalue' && input$Lang_pvalue != input$cutoff && 'contour' %in% input$LanganOptions) { # the contour cut-offs/sig levels need to be the same
     DiffSigValues()
-  } else if (input$plot_sims == TRUE & length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)))>1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
+  } else if (input$plot_sims && length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names=FALSE)))>1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
     NoPlotMultipleSampleSizes()
   } else {
     extfunnel(SS = freqpair()$MA$MAdata$yi, seSS = freqpair()$MA$MAdata$sei, method = input$Lang_method, outcome = outcome(),
