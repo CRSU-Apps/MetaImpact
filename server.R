@@ -620,7 +620,7 @@ observeEvent( input$CalcRun, {                           # reopen panel when a u
 # Function for checking if recalc option needs to be TRUE or FALSE (TRUE if only the impact type and/or cut-off have changed)
 Recalc <- reactiveVal(FALSE)  # initialise
 ### Create set of constantly updated reactive values of cached inputs
-tmpInputs <- reactiveValues()  # initialised
+tmpInputs <- reactiveVal()  # initialised
 tmp_pairwise <- reactive({
   if (input$EvBase_choice=='freq') {
     FreqPair(data=WideData(), outcome=outcome(), model='both', CONBI=ContBin()) # if I use freqpair(), then the forest plot on evidence synthesis tab doesn't load - minor bug for now (extra run-time and hope no-one changes frequentist settings without re-running)
@@ -628,28 +628,28 @@ tmp_pairwise <- reactive({
     bayespair()$MA
   }
 })
-inputCache <- reactive(list(sample=input$samplesizes,
-                            NMA=tmp_pairwise(),
-                            nit=input$its,
-                            FreqBayes=input$EvBase_choice))
-# Caching of inputs inbetween each time the calculator is run
-observe({
-  tmpInputs[[as.character(input$CalcRun + 1)]] <- inputCache()
+inputCache <- reactive({
+  list(
+    sample=input$samplesizes,
+    NMA=tmp_pairwise(),
+    nit=input$its,
+    FreqBayes=input$EvBase_choice
+  )
 })
 
 # compare previous input settings to decide on recalc option
 observeEvent(input$CalcRun, {
-  this_run = as.character(input$CalcRun)
-  last_run = as.character(input$CalcRun - 1)
   #compare previous two sets of inputs
-  if (setequal(tmpInputs[[this_run]]$sample,tmpInputs[[last_run]]$sample) &&
-      setequal(tmpInputs[[this_run]]$NMA,tmpInputs[[last_run]]$NMA) &&
-      setequal(tmpInputs[[this_run]]$nit,tmpInputs[[last_run]]$nit) &&
-      setequal(tmpInputs[[this_run]]$FreqBayes,tmpInputs[[last_run]]$FreqBayes)) {
+  if (!is.null(tmpInputs()) &&
+      setequal(inputCache()$sample, tmpInputs()$sample) &&
+      setequal(inputCache()$NMA, tmpInputs()$NMA) &&
+      setequal(inputCache()$nit, tmpInputs()$nit) &&
+      setequal(inputCache()$FreqBayes, tmpInputs()$FreqBayes)) {
     Recalc(TRUE)
   } else {
     Recalc(FALSE)
   }
+  tmpInputs(inputCache())
 })
 
 pairwise_MA <- reactive({
