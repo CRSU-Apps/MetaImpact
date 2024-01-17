@@ -3,7 +3,7 @@
 fluidPage(
   useShinyjs(),
   includeCSS(path = "www/app.css"),
-  introjsUI(),
+  rintrojs::introjsUI(),
   navbarPage(
     id = "MetaImpact",
     title = "MetaImpact",
