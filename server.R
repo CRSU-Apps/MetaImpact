@@ -698,15 +698,15 @@ function(input, output, session) {
   # Langan Plot #
   
   output$Langan <- renderPlot({
-    if (input$Lang_method == 'random' & 'contour' %in% input$LanganOptions) {   # significance contours not available for random-effects
+    if (input$Lang_method == 'random' && 'contour' %in% input$LanganOptions) {   # significance contours not available for random-effects
       NoRandomContours()
-    } else if (input$Lang_method == 'fixed' & 'pred.interval' %in% input$LanganOptions) {  # Warning how predictive intervals are not of use within fixed-effects models
+    } else if (input$Lang_method == 'fixed' && 'pred.interval' %in% input$LanganOptions) {  # Warning how predictive intervals are not of use within fixed-effects models
       FixedPredInt()
-    } else if (input$plot_sims & input$impact_type != 'pvalue' & 'contour' %in% input$LanganOptions) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
+    } else if (input$plot_sims && input$impact_type != 'pvalue' && 'contour' %in% input$LanganOptions) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
       SigContourOnly()
-    } else if (input$plot_sims & input$impact_type == 'pvalue' & input$Lang_pvalue != input$cutoff & 'contour' %in% input$LanganOptions) { # the contour cut-offs/sig levels need to be the same
+    } else if (input$plot_sims && input$impact_type == 'pvalue' && !is.null(input$cutoff) && input$Lang_pvalue != input$cutoff && 'contour' %in% input$LanganOptions) { # the contour cut-offs/sig levels need to be the same
       DiffSigValues()
-    } else if (input$plot_sims & length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names = FALSE))) > 1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
+    } else if (input$plot_sims && length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names = FALSE))) > 1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
       NoPlotMultipleSampleSizes()
     } else {
       extfunnel(
