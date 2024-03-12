@@ -56,20 +56,22 @@ fluidPage(
       ),
       br(),
       h4("Authors"),
-      p("Clareece Nevill, Terry Quinn, Nicola Cooper, Alex Sutton"),
+      p("Clareece Nevill, Janion Nevill, Terry Quinn, Nicola Cooper, Alex Sutton"),
       p("This app builds upon the work from the following publications:"),
       p(
         tags$a(
           align = "left",
-          href = "https://doi.org/10.1002/sim.2704", "Sutton, A.J., Cooper, N.J., Jones, D.R., Lambert, P.C., Thompson, J.R. and Abrams, K.R. (2007), 
-                  Evidence-based sample size calculations based upon updated meta-analysis. Statist. Med., 26: 2479-2500."
+          href = "https://doi.org/10.1002/sim.2704",
+          "Sutton, A.J., Cooper, N.J., Jones, D.R., Lambert, P.C., Thompson, J.R. and Abrams, K.R. (2007), 
+            Evidence-based sample size calculations based upon updated meta-analysis. Statist. Med., 26: 2479-2500."
         )
       ),
       p(
         tags$a(
           align = "left",
-          href = "https://doi.org/10.1016/j.jclinepi.2011.10.009", "Langan, D., Higgins, J.P.T, Gregory, W., Sutton, A.J.,
-          Graphical augmentations to the funnel plot assess the impact of additional evidence on a meta-analysis. J. Clin. Epi., 65 (2012): 511-519."
+          href = "https://doi.org/10.1016/j.jclinepi.2011.10.009",
+          "Langan, D., Higgins, J.P.T, Gregory, W., Sutton, A.J., 
+            Graphical augmentations to the funnel plot assess the impact of additional evidence on a meta-analysis. J. Clin. Epi., 65 (2012): 511-519."
         )
       ),
       br(),

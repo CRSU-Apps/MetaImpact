@@ -46,8 +46,8 @@ DataPageUi <- function(id) {
         inputId = ns("ChooseExample"),
         label = "Example Datasets Available",
         choices = c(
-          "Continuous outcome: Change in VA in terms of LogMAR (negative change in LogMAR = improved vision)" = "continuousEx",
-          "Binary outcome: Number of people that improved their best-corrected VA by gaining 15+ letters during a vision test" = "binaryEx"
+          "Binary outcome: Number of people that improved their best-corrected VA by gaining 15+ letters during a vision test" = "binaryEx",
+          "Continuous outcome: Change in VA in terms of LogMAR (negative change in LogMAR = improved vision)" = "continuousEx"
         ),
         width = '100%'
       )
