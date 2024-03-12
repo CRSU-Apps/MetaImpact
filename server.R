@@ -123,7 +123,9 @@ function(input, output, session) {
   
   ## Dataset ##
   
-  WalkData <- read.csv("./AntiVEGF_Binary_Pairwise.csv")
+  WalkData <- rio::import("data/AntiVEGF_Binary_Pairwise_Long.csv") %>%
+    CleanData() %>%
+    WrangleUploadData()
   
   ## Page 2 content ##
   
@@ -137,7 +139,7 @@ function(input, output, session) {
   
   ## Page 3 content ##
   
-  WalkCalcResultsData <- read.csv("WalkThroughResults.csv")
+  WalkCalcResultsData <- rio::import("WalkThroughResults.csv")
   
   output$page3powplot <- renderPlot({
     metapowplot(PowerData = WalkCalcResultsData, ModelOpt = 'fixed', SampleSizes = c(250, 500, 750, 1000))
@@ -152,7 +154,7 @@ function(input, output, session) {
   ## Page 4 content ##
   
   WalkSims <- reactive({
-    data <- read.csv(paste0("WalkThroughSims", input$WalkSizeChoice, ".csv"))
+    data <- rio::import(paste0("WalkThroughSims", input$WalkSizeChoice, ".csv"))
     return(data)
   })
   
@@ -237,7 +239,7 @@ function(input, output, session) {
     metapowplot(PowerData = WalkCalcResultsData, ModelOpt = 'random', SampleSizes = c(250, 500, 750, 1000))
   })
   
-  WalkSims1000 <- read.csv("WalkThroughSims1000.csv")
+  WalkSims1000 <- rio::import("WalkThroughSims1000.csv")
   
   output$page6LanganFix <- renderPlot({
     extfunnel(
@@ -289,20 +291,7 @@ function(input, output, session) {
   ### Load and present Data ###
     #-----------------------#
   
-    data <- reactive({                     # Read in user or default data
-      file <- input$data
-      if (is.null(file)) {
-        if (input$ChooseExample == 'continuousEx') {
-          data <- read.csv("./AntiVEGF_Continuous_Pairwise.csv")
-        } else {
-          data <- read.csv("./AntiVEGF_Binary_Pairwise.csv")
-        }
-      } else {
-      data <- read.table(file = file$datapath, sep = ", ", header = TRUE, stringsAsFactors = FALSE, quote = "\"")
-      }
-      levels <- levels(as_vector(lapply(data[grep("^T", names(data), value = TRUE)], factor)))  # extract treatment names/levels
-      return(list(data = data, levels = levels))
-    })
+  data <- DataPageServer(id = "data")
   
     pairwise_ref <- function(trt_ctrl) {   # pairwise options
       if (trt_ctrl == 'trt') {
@@ -709,15 +698,15 @@ function(input, output, session) {
   # Langan Plot #
   
   output$Langan <- renderPlot({
-    if (input$Lang_method == 'random' & 'contour' %in% input$LanganOptions) {   # significance contours not available for random-effects
+    if (input$Lang_method == 'random' && 'contour' %in% input$LanganOptions) {   # significance contours not available for random-effects
       NoRandomContours()
-    } else if (input$Lang_method == 'fixed' & 'pred.interval' %in% input$LanganOptions) {  # Warning how predictive intervals are not of use within fixed-effects models
+    } else if (input$Lang_method == 'fixed' && 'pred.interval' %in% input$LanganOptions) {  # Warning how predictive intervals are not of use within fixed-effects models
       FixedPredInt()
-    } else if (input$plot_sims & input$impact_type != 'pvalue' & 'contour' %in% input$LanganOptions) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
+    } else if (input$plot_sims && input$impact_type != 'pvalue' && 'contour' %in% input$LanganOptions) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
       SigContourOnly()
-    } else if (input$plot_sims & input$impact_type == 'pvalue' & input$Lang_pvalue != input$cutoff & 'contour' %in% input$LanganOptions) { # the contour cut-offs/sig levels need to be the same
+    } else if (input$plot_sims && input$impact_type == 'pvalue' && !is.null(input$cutoff) && input$Lang_pvalue != input$cutoff && 'contour' %in% input$LanganOptions) { # the contour cut-offs/sig levels need to be the same
       DiffSigValues()
-    } else if (input$plot_sims & length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names = FALSE))) > 1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
+    } else if (input$plot_sims && length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names = FALSE))) > 1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
       NoPlotMultipleSampleSizes()
     } else {
       extfunnel(
