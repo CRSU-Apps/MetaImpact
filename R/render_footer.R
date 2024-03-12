@@ -19,7 +19,7 @@ renderFooter <- function() {
       div(
         tags$strong("Funding and Support Acknowledgement:"),
         tags$p(
-          "MetaPairwise is part of the Complex Reviews Synthesis Unit (CRSU) suite of evidence synthesis apps.",
+          "MetaImpact is part of the Complex Reviews Synthesis Unit (CRSU) suite of evidence synthesis apps.",
           "The development of these apps is currently funded (majority) and overseen by the Evidence Synthesis Group @ CRSU (NIHR153934).",
           "Further details of other funders and support, current and past, can be found ",
           tags$a("on our GitHub page", href = "https://github.com/CRSU-Apps/.github/wiki/Detailed-Funding-Statement", target = "_blank"),
