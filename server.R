@@ -1029,7 +1029,7 @@ function(input, output, session) {
     },
     content = function(file) {
       plot <- bayespair()$Trace
-      if (input$forestpairB_choice == 'png') {
+      if (input$tracepair_choice == 'png') {
         ggsave(file, plot, height = 7, width = 12, units = "in", device = "png")
       } else {
         ggsave(file, plot, height = 7, width = 12, units = "in", device = "pdf")
