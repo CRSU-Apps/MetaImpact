@@ -40,7 +40,7 @@ jobs:
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 110 --slave /usr/bin/g++ g++ /usr/bin/g++-11 --slave /usr/bin/gcov gcov /usr/bin/gcov-11
       - name: Install package system dependencies
         run: |
-          sudo apt install libcurl4-openssl-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libglpk-dev -y
+          sudo apt install libcurl4-openssl-dev jags libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libglpk-dev -y
       # Checkout the repo
       - uses: actions/checkout@v4
       # Setup R (4.3.0)
