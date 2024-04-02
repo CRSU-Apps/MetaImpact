@@ -26,9 +26,9 @@ jobs:
       - name: Set deployment type
         run: |
           if [[ ${{github.event.inputs.release}} = "test" ]]; then
-            echo "appName=MetaInsight_TEST" >> $GITHUB_ENV
+            echo "appName=MetaImpact_TEST" >> $GITHUB_ENV
           else
-            echo "appName=MetaInsight" >> $GITHUB_ENV
+            echo "appName=MetaImpact" >> $GITHUB_ENV
           fi
       - name: Print deployment type
         run: |
