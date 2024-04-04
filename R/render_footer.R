@@ -21,6 +21,8 @@ renderFooter <- function() {
         tags$p(
           "MetaImpact is part of the Complex Reviews Synthesis Unit (CRSU) suite of evidence synthesis apps.",
           "The development of these apps is currently funded (majority) and overseen by the Evidence Synthesis Group @ CRSU (NIHR153934).",
+          "The CRSU Evidence Synthesis Group is one of the groups funded by the National Institute for Health and Care Research ",
+          tags$a("(NIHR) Evidence Synthesis Programme.", href = "https://www.nihr.ac.uk/explore-nihr/funding-programmes/evidence-synthesis.htm"),
           "Further details of other funders and support, current and past, can be found ",
           tags$a("on our GitHub page", href = "https://github.com/CRSU-Apps/.github/wiki/Detailed-Funding-Statement", target = "_blank"),
           ". The views expressed are those of the author(s) and not necessarily those of the NIHR or the Department of Health and Social Care."

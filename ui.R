@@ -13,7 +13,7 @@ fluidPage(
       title = "Home",
       h2(
         "MetaImpact V1.0.0",
-        tags$sup("Beta", style = "color:#6CC0ED"), 
+        tags$sup("Beta 2", style = "color:#6CC0ED"), 
         align = "left"
       ),
       br(),
