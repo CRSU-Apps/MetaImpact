@@ -207,12 +207,13 @@ function(input, output, session) {
   #summary(WalkFreq$MA.Random)$tau2
   
   output$page5Forest <- renderPlot({
-    forest.rma.CN(
+    forest.rma(
       WalkFreq$MA.Fixed,
-      WalkFreq$MA.Random,
       atransf = exp,
+      ylim = -2.5
       at = log(c(0.05, 0.25, 1, 4, 16))
     )
+    addpoly(WalkFreq$MA.Random)
     title("Forest plot of studies and overall pooled estimates")
   })
   
@@ -587,9 +588,11 @@ function(input, output, session) {
       NoBayesian()
     } else {
       if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
-        forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random, atransf = exp)
+        forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
+        addpoly(freqpair()$MA$MA.Random)
       } else {
-        forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
+        forest.rma(freqpair()$MA$MA.Fixed, ylim = -2.5)
+        addpoly(freqpair()$MA$MA.Random)
       }
       title("Forest plot of studies and overall pooled estimates")
     }
@@ -925,9 +928,11 @@ function(input, output, session) {
       }
       if (input$EvBase_choice == 'freq') {
         if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
-          forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random, atransf = exp)
+          forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
+          addpoly(freqpair()$MA$MA.Random)
         } else {
-          forest.rma.CN(freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
+          forest.rma(freqpair()$MA$MA.Fixedz, ylim = -2.5)
+          addpoly(freqpair()$MA$MA.Random)
         }
         title("Forest plot of studies and overal pooled estimates")
       }
