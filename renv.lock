@@ -1473,7 +1473,7 @@
     },
     "metafor": {
       "Package": "metafor",
-      "Version": "4.4-0",
+      "Version": "4.6-0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
