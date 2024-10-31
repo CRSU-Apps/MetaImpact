@@ -1,4 +1,4 @@
-#' Module UI for the home page.
+#' Module UI for the walk-through page.
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
@@ -334,7 +334,7 @@ walk_through_page_ui <- function(id) {
   )
 }
 
-#' Module server for the home page.
+#' Module server for the walk-through page.
 #' 
 #' @param id ID of the module
 walk_through_page_server <- function(id) {

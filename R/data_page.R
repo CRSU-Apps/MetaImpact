@@ -11,7 +11,7 @@
 #' @param id ID of the module.
 #'
 #' @return Div containing page
-DataPageUi <- function(id) {
+data_page_ui <- function(id) {
   ns = NS(id)
   div(
     column(
@@ -90,7 +90,7 @@ DataPageUi <- function(id) {
 #' @return Reactive containing list of:
 #' - data = loaded data frame.
 #' - levels = factors of the data
-DataPageServer <- function(id) {
+data_page_server <- function(id) {
   moduleServer(
     id,
     function(input, output, session) {
