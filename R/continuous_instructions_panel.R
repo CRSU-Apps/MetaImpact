@@ -4,7 +4,7 @@
 #' @param id ID of the module.
 #'
 #' @return Div containing panel.
-ContinuousInstructionsPanelUi <- function(id) {
+continuous_instructions_panel_ui <- function(id) {
   ns <- NS(id)
   
   div(
@@ -58,7 +58,7 @@ ContinuousInstructionsPanelUi <- function(id) {
 #' Server for the continuous instructions panel.
 #'
 #' @param id ID of the module.
-ContinuousInstructionsPanelServer <- function(id) {
+continuous_instructions_panel_server <- function(id) {
   moduleServer(
     id,
     function(input, output, session) {

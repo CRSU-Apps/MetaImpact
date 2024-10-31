@@ -71,12 +71,12 @@ data_page_ui <- function(id) {
         
         tabPanel(
           title = "Binary Data",
-          BinaryInstructionsPanelUi(id = ns("binary_instructions"))
+          binary_instructions_panel_ui(id = ns("binary_instructions"))
         ),
     
         tabPanel(
           title = "Continuous Data",
-          ContinuousInstructionsPanelUi(id = ns("continuous_instructions"))
+          continuous_instructions_panel_ui(id = ns("continuous_instructions"))
         )
       )
     )
@@ -94,8 +94,8 @@ data_page_server <- function(id) {
   moduleServer(
     id,
     function(input, output, session) {
-      BinaryInstructionsPanelServer(id = "binary_instructions")
-      ContinuousInstructionsPanelServer(id = "continuous_instructions")
+      binary_instructions_panel_server(id = "binary_instructions")
+      continuous_instructions_panel_server(id = "continuous_instructions")
       
       # Read in user or default data
       loaded_data <- reactive({
