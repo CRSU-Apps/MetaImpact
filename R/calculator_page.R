@@ -20,88 +20,7 @@ calculator_page_ui <- function(id) {
       # Inputs
       column(
         width = 8,
-        bsCollapse(
-          id = ns("SynthesisInputs"),
-          open = "Synthesis Options",
-          bsCollapsePanel(
-            title = "Synthesis Options",
-            style = 'info',
-            column(
-              width = 6,
-              conditionalPanel(
-                ns = NS(id),
-                condition = "output.ContBin == 'continuous'",
-                radioButtons(
-                  inputId = ns("OutcomeCont"),
-                  label = "Outcome for continuous data:",
-                  choices = c(
-                    "Mean Difference (MD)" = "MD",
-                    "Standardised Mean Difference (SMD)" = "SMD"
-                  )
-                )
-              ),
-              conditionalPanel(
-                ns = NS(id),
-                condition = "output.ContBin == 'binary'",
-                radioButtons(
-                  inputId = ns("OutcomeBina"),
-                  label = "Outcome for binary data:",
-                  choices = c(
-                    "Odds Ratio (OR)" = "OR",
-                    "Risk Ratio (RR)" = "RR",
-                    "Risk Difference (RD)" = "RD"
-                  )
-                )
-              ),
-              radioButtons(
-                inputId = ns("FixRand"),
-                label = "Model selection:",
-                choices = c(
-                  "Fixed-effects model (FE)" = "fixed",
-                  "Random-effects model (RE)" = "random"
-                )
-              )
-            ),
-            column(
-              width = 6,
-              fluidRow(
-                column(
-                  width = 6,
-                  selectInput(inputId = ns("Pair_Trt"), label = "Select Treatment", choices = NULL)
-                ),
-                column(
-                  width = 6,
-                  selectInput(inputId = ns("Pair_Ctrl"), label = "Select Comparator", choices = NULL)
-                )
-              ),
-              fluidRow(
-                bsCollapsePanel(
-                  title = "Bayesian options",
-                  style = 'info',
-                  column(
-                    width = 6,
-                    radioButtons(
-                      inputId = ns("prior"),
-                      label = "Vague prior for between study standard deviation:",
-                      choices = c(
-                        "Half-Cauchy(0,0.5)" = "half-cauchy",
-                        "Uniform(0,2)" = "uniform",
-                        "Half-Normal(0,1)" = "half-normal"
-                      )
-                    ),
-                    actionButton(inputId = ns("bayes_help"), label = "Help", class = "btn-xs", style = "position: absolute; left: 0; top: 220px")
-                  ),
-                  column(
-                    width = 6,
-                    numericInput(inputId = ns("chains"), label = "Number of chains:", value = 2, min = 1),
-                    numericInput(inputId = ns("iter"), label = "Number of iterations:", value = 4000, min = 1),
-                    numericInput(inputId = ns("burn"), label = "Burn-in:", value = 400, min = 1)
-                  )
-                )
-              )
-            )
-          )
-        )
+        synthesis_options_panel_ui(id = ns("synthesis_options"))
       )
     ),
     # Outputs
@@ -550,65 +469,21 @@ calculator_page_server <- function(id, data) {
         footer = NULL
       ))
     }
+
     
-    ## Preset options
+    ## Load Synthesis Options ##
     
-    pairwise_ref <- function(trt_ctrl) {   # pairwise options
-      if (trt_ctrl == 'trt') {
-        ref <- reactive({
-          file <- input$data
-          if (is.null(file)) {
-            return("BEVA")
-          } else {
-            return(data()$levels[1])
-          }
-        })
-      } else {
-        ref <- reactive({
-          file <- input$data
-          if (is.null(file)) {
-            return("RANI")
-          } else {
-            return(data()$levels[2])
-          }
-        })
-      }
-      return(ref())
-    }
+    synthOptionsReactives <- synthesis_options_panel_server("synthesis_options", data = data)
     
-    observe({
-      updateSelectInput(session = session, inputId = "Pair_Trt", choices = data()$levels, selected = pairwise_ref(trt_ctrl = 'trt'))
-    })
-    observe({
-      updateSelectInput(session = session, inputId = "Pair_Ctrl", choices = data()$levels, selected = pairwise_ref(trt_ctrl = 'ctrl'))
-    })
-    
-    output$data <- renderTable({           # Create a table which displays the raw data just uploaded by the user
-      data()$data
-    })
-    
-    
-    ContBin <- reactive({           # automatically detect if continuous or binary
-      if (max(grepl("^Mean", names(data()$data)))) {
-        return('continuous')
-      } else if (max(grepl("^R", names(data()$data)))) {
-        return ('binary')
-      }
-    })
-    output$ContBin <- renderText({
-      ContBin()
-    })
-    outputOptions(output, "ContBin", suspendWhenHidden = FALSE) #needed for UI options, but doesn't need displaying itself
-    
-    outcome <- reactive({                  # different outcome variables if continuous or binary
-      if (ContBin() == 'continuous') {
-        input$OutcomeCont
-      } else {
-        input$OutcomeBina
-      }
-    })
-    
-    
+    Pair_Ref <- synthOptionsReactives$Pair_ref
+    Pair_Trt <- synthOptionsReactives$Pair_trt
+    FixRand <- synthOptionsReactives$FixRand
+    ContBin <- synthOptionsReactives$ContBin
+    outcome <- synthOptionsReactives$outcome
+    prior <- synthOptionsReactives$prior
+    chains <- synthOptionsReactives$chains
+    iter <- synthOptionsReactives$iter
+    burn <- synthOptionsReactives$burn
     
     
     ### Summary sentence of meta-analysis ###
@@ -616,18 +491,18 @@ calculator_page_server <- function(id, data) {
     
     FreqSummaryText <- eventReactive( input$FreqRun, {
       paste0(
-        "Results for ", strong(input$FixRand), "-effects ",
+        "Results for ", strong(FixRand()), "-effects ",
         strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ",
-        strong("frequentist"), " methodology, with reference treatment ", strong(input$Pair_Ctrl), "."
+        strong("frequentist"), " methodology, with reference treatment ", strong(Pair_Ref()), "."
       )
     })
     output$SynthesisSummaryFreq <- renderText({FreqSummaryText()})
     BayesSummaryText <- eventReactive( input$BayesRun, {
       paste0(
-        "Results for ", strong(input$FixRand), "-effects ",
+        "Results for ", strong(FixRand()), "-effects ",
         strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ",
-        strong("Bayesian"), " methodology, with vague prior ", strong(input$prior),
-        " and reference treatment ", strong(input$Pair_Ctrl), "."
+        strong("Bayesian"), " methodology, with vague prior ", strong(prior()),
+        " and reference treatment ", strong(Pair_Ref()), "."
       )
     })
     output$SynthesisSummaryBayes <- renderText({ BayesSummaryText() })
@@ -637,7 +512,7 @@ calculator_page_server <- function(id, data) {
     #-----------------------------#
     
     WideData <- reactive({               # convert long format to wide if need be (and ensure trt and ctrl are the right way round)
-      SwapTrt(CONBI = ContBin(), data = Long2Wide(data = data()$data), trt = input$Pair_Trt)
+      SwapTrt(CONBI = ContBin(), data = Long2Wide(data = data()$data), trt = Pair_Trt())
     })
     
     observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
@@ -686,7 +561,7 @@ calculator_page_server <- function(id, data) {
     freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise MA and obtain plots etc.
       information <- list()
       information$MA <- FreqPair(data = WideData(), outcome = outcome(), model = 'both', CONBI = ContBin())
-      if (input$FixRand == 'fixed') {                   # Forest plot
+      if (FixRand() == 'fixed') {                   # Forest plot
         if (outcome() == 'OR' | outcome() == 'RR') {
           information$Forest <- {
             metafor::forest(information$MA$MA.Fixed, atransf = exp)
@@ -700,7 +575,7 @@ calculator_page_server <- function(id, data) {
         }
         information$Summary <- PairwiseSummary_functionF(outcome(), information$MA$MA.Fixed)
         information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Fixed)
-      } else if (input$FixRand == 'random') {
+      } else if (FixRand() == 'random') {
         if (outcome() == 'OR' | outcome() == 'RR') {
           information$Forest <- {
             metafor::forest(information$MA$MA.Random, atransf = exp)
@@ -781,16 +656,16 @@ calculator_page_server <- function(id, data) {
       information$MA <- BayesPair(
         CONBI = ContBin(),
         data = WideData(),
-        trt = input$Pair_Trt,
-        ctrl = input$Pair_Ctrl,
+        trt = Pair_Trt(),
+        ctrl = Pair_Ref(),
         outcome = outcome(),
-        chains = input$chains,
-        iter = input$iter,
-        warmup = input$burn,
+        chains = chains(),
+        iter = iter(),
+        warmup = burn(),
         model = 'both',
-        prior = input$prior
+        prior = prior()
       )
-      if (input$FixRand == 'fixed') {
+      if (FixRand() == 'fixed') {
         information$Forest <- {
           g <- BayesPairForest(information$MA$MAdata, outcome = outcome(), model = 'fixed')
           g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
@@ -803,7 +678,7 @@ calculator_page_server <- function(id, data) {
           g + theme(legend.position = 'none', aspect.ratio = 0.45, axis.title = element_text(size = 10, face = "bold")) +
             labs(y = "Pooled estimate", x = "Iteration")
         }
-      } else if (input$FixRand == 'random') {
+      } else if (FixRand() == 'random') {
         information$Forest <- {
           g <- BayesPairForest(information$MA$MAdata, outcome = outcome(), model = 'random')
           g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
@@ -932,9 +807,9 @@ calculator_page_server <- function(id, data) {
             }
             progress$set(value = value, detail = detail)
           }
-          list1$data <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = input$its, inference = input$impact_type, pow = input$cutoff, measure = outcome(), recalc = Recalc(), updateProgress = updateProgress, chains = input$chains, iter = input$iter, warmup = input$burn, prior = input$prior)
+          list1$data <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = input$its, inference = input$impact_type, pow = input$cutoff, measure = outcome(), recalc = Recalc(), updateProgress = updateProgress, chains = chains(), iter = iter(), warmup = burn(), prior = prior())
         } else if (length(list1$sample_sizes) == 1) {
-          list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = input$its, inference = input$impact_type, pow = input$cutoff, measure = outcome(), recalc = Recalc(), chains = input$chains, iter = input$iter, warmup = input$burn, prior = input$prior)
+          list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = input$its, inference = input$impact_type, pow = input$cutoff, measure = outcome(), recalc = Recalc(), chains = chains(), iter = iter(), warmup = burn(), prior = prior())
         }
         list1
       }
@@ -1005,18 +880,15 @@ calculator_page_server <- function(id, data) {
     # Interactive help boxes #
     
     steps <- reactive(data.frame(
-      category = c(rep("CalcSettings", 5), rep("BayesSettings", 4)),
-      element = c("#samplesizes", "#its", "#impact_type", "#cutoff", "#plot_sims",  "#prior", "#chains", "#iter", "#burn"),
+      category = c(rep("CalcSettings", 5)),
+      element = c("#samplesizes", "#its", "#impact_type", "#cutoff", "#plot_sims"),
       intro = c("This is where you specify sample sizes for which you wish to estimate power. You can enter one sample size, or multiple by separating them with a semi-colon (;). Currently, it is assumed that future designed trials have two arms of equal size.",
                 "Choose how many iterations (i.e. times the algorithm is run) you wish to have per simulation (sample size). If you choose a higher number of iterations, the simulations will take longer but give more precise estimates (narrower confidence intervals), and vice versa.",
                 "Making an 'impact' on the current evidence base can be done in multiple ways - choose here which method you wish to focus on (1. Having a significant p-value; 2. Having a 95% confidence interval of a certain width; 3. Having the lower bound of the 95% CI above a certain value; 4. Having the upper bound of the 95% CI below a certain value).",
                 "Depending on which type of impact has been chosen, please choose a specific cut-off value for which you define as 'impactful' (e.g. a p-value of less than 0.05).",
-                "Choose to plot the results from every simulated 'new study' into the extended funnel plot to visually see how the power is calculated (when viewed alongside the significance contours",
-                "Choose which vague prior to use to initially model the between-study standard deviation (used for random-effects models)",
-                "Choose the number of chains. A chain represents a run-through of the analysis, with each chain starting with different values to aid robustness. The results then incorporate all chains.",
-                "The number of iterations to run through. A higher number of iterations is likely to lead to more robust results but does take longer.",
-                "The number of iterations to 'burn' (i.e. not include in the results) at the start. In early iterations, estimated parameters are unlikely to have converged and thus are likely to give spurious results.")
+                "Choose to plot the results from every simulated 'new study' into the extended funnel plot to visually see how the power is calculated (when viewed alongside the significance contours")
     ))
+    
     # Calculator settings #
     observeEvent(
       input$calc_help,
@@ -1033,22 +905,7 @@ calculator_page_server <- function(id, data) {
         )
       )   # IMPACT_TYPE NOT WORKING and don't know why...
     )
-    # Bayesian settings #
-    observeEvent(
-      input$bayes_help,
-      introjs(
-        session,
-        options = list(
-          steps = steps() %>% filter(category == "BayesSettings"),
-          showBullets = FALSE,
-          showProgress = TRUE,
-          showStepNumbers = FALSE,
-          nextLabel = "Next",
-          prevLabel = "Prev",
-          skipLabel = "Skip"
-        )
-      )
-    )
+
     
     # Cut-off information #
     
@@ -1254,7 +1111,7 @@ calculator_page_server <- function(id, data) {
         } else {
           png(file = file)
         }
-        if (input$FixRand == 'fixed') {
+        if (FixRand() == 'fixed') {
           if (outcome() == 'OR' | outcome() == 'RR') {
             forest(freqpair()$MA$MA.Fixed, atransf = exp)
             title("Forest plot of studies with overall estimate from fixed-effects model")
