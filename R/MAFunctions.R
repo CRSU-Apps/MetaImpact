@@ -78,6 +78,50 @@ FreqPair <- function(data, outcome, CONBI, model) { #inputs: data frame in wide 
 }
 ## DOESN'T WORK UNLESS MODEL == 'BOTH'
 
+### Summary of analysis ###
+
+PairwiseSummary_functionF <- function(outcome, MA.Model) {
+  sum <- summary(MA.Model)
+  line0 <- strong("Results")
+  line1 <- paste0("Number of studies: ", sum$k)
+  if (outcome == "OR") {
+    line2 <- paste0(
+      "Pooled estimate: ", round(exp(sum$b), 2),
+      " (95% CI: ", round(exp(sum$ci.lb), 2), " to ", round(exp(sum$ci.ub), 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation (log-odds scale): "
+  } else if (outcome == "RR") {
+    line2 <- paste0(
+      "Pooled estimate: ", round(exp(sum$b), 2),
+      " (95% CI: ", round(exp(sum$ci.lb), 2), " to ", round(exp(sum$ci.ub), 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation (log-probability scale): "
+  } else {
+    line2 <- paste(
+      "Pooled estimate: ", round(sum$b, 2),
+      " (95% CI: ", round(sum$ci.lb, 2), " to ", round(sum$ci.ub, 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation: "
+  }
+  line3 <- strong("Heterogeneity results")
+  line4 <- paste0(
+    line4, round(sqrt(sum$tau2), 3), ";",
+    " I-squared: ", round(sum$I2, 1), "%;",
+    " P-value for testing heterogeneity: ", round(sum$QEp, 3)
+  )
+  HTML(paste(line0, line1, line2, line3, line4, sep = "<br/>"))
+}
+
+### Model fit summary ###
+
+PairwiseModelFit_functionF <- function(MA.Model) {
+  sum <- summary(MA.Model)
+  HTML(paste0("AIC: ", round(sum$fit.stats[3, 1], 2), "; BIC: ", round(sum$fit.stats[4, 1], 2)))
+}
+
 ### Frequentist NMA ###
 
 FreqNMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group

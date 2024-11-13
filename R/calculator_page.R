@@ -28,54 +28,7 @@ calculator_page_ui <- function(id) {
     conditionalPanel(
       ns = NS(id),
       condition = "input.FreqRun != 0",
-      fluidRow(
-        p(htmlOutput(outputId = ns("SynthesisSummaryFreq"))),
-        p("To change the model options, please adjust synthesis options above and re-run analysis."),
-        bsCollapse(
-          id = ns("FreqID"),
-          open = "Frequentist Analysis",
-          bsCollapsePanel(
-            title = "Frequentist Analysis",
-            style = 'success',
-            column(
-              width = 5,
-              align = 'center',
-              withSpinner(
-                type = 6,
-                htmlOutput(outputId = ns("SummaryTableF"))
-              ),
-              fluidRow(
-                div(
-                  style = "display: inline-block;",
-                  p(strong("Model fit statistics"))
-                ),
-                div(
-                  style = "display: inline-block;",
-                  dropMenu(
-                    dropdownButton(size = 'xs', icon = icon('info')),
-                    align = 'left',
-                    h6("Model fit statistics"),
-                    p("Akaike information criterion (AIC) and Bayesian information criterion (BIC) measure 'model performance' whilst taking into account model complexity."),
-                    p("The smaller the AIC or BIC, the 'better' the model. Values are best interpreted between models rather than alone.")
-                  )
-                )
-              ),
-              htmlOutput(outputId = ns("ModelFitF"))
-            ),
-            column(
-              width = 6,
-              align = 'center',
-              offset = 1,
-              withSpinner(
-                type = 6,
-                plotOutput(outputId = ns("ForestPlotPairF"))
-              ),
-              downloadButton(outputId = ns('forestpairF_download'), label = "Download forest plot"),
-              radioButtons(inputId = ns('forestpairF_choice'), label = NULL, choices = c('pdf','png'), inline = TRUE)
-            )
-          )
-        )
-      )
+      frequentist_analysis_panel_ui(id = ns("frequentist_analysis"))
     ),
     # Bayesian
     conditionalPanel(
@@ -486,17 +439,21 @@ calculator_page_server <- function(id, data) {
     burn <- synthOptionsReactives$burn
     
     
+    ## Frequentist Meta-Analysis ##
+    
+    freqpair <- frequentist_analysis_panel_server("frequentist_analysis", action_button=reactive({input$FreqRun}), 
+                                                  data = data, FixRand = FixRand, 
+                                                  outcome = outcome, Pair_Ref = Pair_Ref, 
+                                                  ContBin = ContBin, Pair_Trt = Pair_Trt)
+    
+    observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
+      updateCollapse(session = session, id = "FreqID", open = "Frequentist Analysis")
+    })
+    
+    
     ### Summary sentence of meta-analysis ###
     #-----------------------------------#
-    
-    FreqSummaryText <- eventReactive( input$FreqRun, {
-      paste0(
-        "Results for ", strong(FixRand()), "-effects ",
-        strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ",
-        strong("frequentist"), " methodology, with reference treatment ", strong(Pair_Ref()), "."
-      )
-    })
-    output$SynthesisSummaryFreq <- renderText({FreqSummaryText()})
+
     BayesSummaryText <- eventReactive( input$BayesRun, {
       paste0(
         "Results for ", strong(FixRand()), "-effects ",
@@ -508,102 +465,7 @@ calculator_page_server <- function(id, data) {
     output$SynthesisSummaryBayes <- renderText({ BayesSummaryText() })
     
     
-    ### Run frequentist Pairwise MA ###
-    #-----------------------------#
     
-    WideData <- reactive({               # convert long format to wide if need be (and ensure trt and ctrl are the right way round)
-      SwapTrt(CONBI = ContBin(), data = Long2Wide(data = data()$data), trt = Pair_Trt())
-    })
-    
-    observeEvent( input$FreqRun, {      # reopen panel when a user re-runs analysis
-      updateCollapse(session = session, id = "FreqID", open = "Frequentist Analysis")
-    })
-    
-    PairwiseSummary_functionF <- function(outcome, MA.Model) {
-      sum <- summary(MA.Model)
-      line0 <- strong("Results")
-      line1 <- paste0("Number of studies: ", sum$k)
-      if (outcome == "OR") {
-        line2 <- paste0(
-          "Pooled estimate: ", round(exp(sum$b), 2),
-          " (95% CI: ", round(exp(sum$ci.lb), 2), " to ", round(exp(sum$ci.ub), 2), ");",
-          " p-value: ", round(sum$pval, 3)
-        )
-        line4 <- "Between study standard-deviation (log-odds scale): "
-      } else if (outcome == "RR") {
-        line2 <- paste0(
-          "Pooled estimate: ", round(exp(sum$b), 2),
-          " (95% CI: ", round(exp(sum$ci.lb), 2), " to ", round(exp(sum$ci.ub), 2), ");",
-          " p-value: ", round(sum$pval, 3)
-        )
-        line4 <- "Between study standard-deviation (log-probability scale): "
-      } else {
-        line2 <- paste(
-          "Pooled estimate: ", round(sum$b, 2),
-          " (95% CI: ", round(sum$ci.lb, 2), " to ", round(sum$ci.ub, 2), ");",
-          " p-value: ", round(sum$pval, 3)
-        )
-        line4 <- "Between study standard-deviation: "
-      }
-      line3 <- strong("Heterogeneity results")
-      line4 <- paste0(
-        line4, round(sqrt(sum$tau2), 3), ";",
-        " I-squared: ", round(sum$I2, 1), "%;",
-        " P-value for testing heterogeneity: ", round(sum$QEp, 3)
-      )
-      HTML(paste(line0, line1, line2, line3, line4, sep = "<br/>"))
-    }
-    PairwiseModelFit_functionF <- function(MA.Model) {
-      sum <- summary(MA.Model)
-      HTML(paste0("AIC: ", round(sum$fit.stats[3, 1], 2), "; BIC: ", round(sum$fit.stats[4, 1], 2)))
-    }
-    
-    freqpair <- eventReactive( input$FreqRun, {         # run frequentist pairwise MA and obtain plots etc.
-      information <- list()
-      information$MA <- FreqPair(data = WideData(), outcome = outcome(), model = 'both', CONBI = ContBin())
-      if (FixRand() == 'fixed') {                   # Forest plot
-        if (outcome() == 'OR' | outcome() == 'RR') {
-          information$Forest <- {
-            metafor::forest(information$MA$MA.Fixed, atransf = exp)
-            title("Forest plot of studies with overall estimate from fixed-effects model")
-          }
-        } else {
-          information$Forest <- {
-            metafor::forest(information$MA$MA.Fixed)
-            title("Forest plot of studies with overall estimate from fixed-effects model")
-          }
-        }
-        information$Summary <- PairwiseSummary_functionF(outcome(), information$MA$MA.Fixed)
-        information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Fixed)
-      } else if (FixRand() == 'random') {
-        if (outcome() == 'OR' | outcome() == 'RR') {
-          information$Forest <- {
-            metafor::forest(information$MA$MA.Random, atransf = exp)
-            title("Forest plot of studies with overall estimate from random-effects model")
-          }
-        } else {
-          information$Forest <- {
-            metafor::forest(information$MA$MA.Random)
-            title("Forest plot of studies with overall estimate from random-effects model")
-          }
-        }
-        information$Summary <- PairwiseSummary_functionF(outcome(), information$MA$MA.Random)
-        information$ModelFit <- PairwiseModelFit_functionF(information$MA$MA.Random)
-      }
-      information
-    })
-    
-    output$ForestPlotPairF <- renderPlot({      # Forest plot
-      freqpair()$Forest
-    })
-    
-    output$SummaryTableF <- renderUI({          # Summary table
-      freqpair()$Summary
-    })
-    
-    output$ModelFitF <- renderUI({              # Model fit statistics
-      freqpair()$ModelFit
-    })
     
     LongData <- reactive({               # convert wide format to long if need be
       Wide2Long(data = data()$data)
@@ -1101,36 +963,7 @@ calculator_page_server <- function(id, data) {
     #------------------------#
     
     
-    output$forestpairF_download <- downloadHandler(
-      filename = function() {
-        paste0("PairwiseAnalysis.", input$forestpairF_choice)
-      },
-      content = function(file) {
-        if (input$forestpairF_choice == 'pdf') {
-          pdf(file = file)
-        } else {
-          png(file = file)
-        }
-        if (FixRand() == 'fixed') {
-          if (outcome() == 'OR' | outcome() == 'RR') {
-            forest(freqpair()$MA$MA.Fixed, atransf = exp)
-            title("Forest plot of studies with overall estimate from fixed-effects model")
-          } else {
-            forest(freqpair()$MA$MA.Fixed)
-            title("Forest plot of studies with overall estimate from fixed-effects model")
-          }
-        } else {
-          if (outcome() == 'OR' | outcome() == 'RR') {
-            forest(freqpair()$MA$MA.Random, atransf = exp)
-            title("Forest plot of studies with overall estimate from random-effects model")
-          } else {
-            forest(freqpair()$MA$MA.Random)
-            title("Forest plot of studies with overall estimate from random-effects model")
-          }
-        }
-        dev.off()
-      }
-    )
+
     
     output$forestpairB_download <- downloadHandler(
       filename = function() {
