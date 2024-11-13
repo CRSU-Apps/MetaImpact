@@ -34,57 +34,7 @@ calculator_page_ui <- function(id) {
     conditionalPanel(
       ns = NS(id),
       condition = "input.BayesRun != 0",
-      fluidRow(
-        p(htmlOutput(outputId = ns("SynthesisSummaryBayes"))),
-        p("To change the model options, please adjust synthesis options above and re-run analysis."),
-        bsCollapse(
-          id = ns("BayesID"),
-          open = "Bayesian Analysis",
-          bsCollapsePanel(
-            title = "Bayesian Analysis",
-            style = 'success',
-            column(
-              width = 5,
-              align = 'center',
-              withSpinner(
-                type = 6,
-                htmlOutput(outputId = ns("SummaryTableB"))
-              ),
-              fluidRow(
-                div(
-                  style = "display: inline-block;",
-                  p(strong("Model assessment"))
-                ),
-                div(
-                  style = "display: inline-block;",
-                  dropMenu(
-                    dropdownButton(size = 'xs', icon = icon('info')),
-                    align = 'left',
-                    h6("Model assessment"),
-                    p("For Bayesian models it is key that the model has converged (i.e. that the MCMC algorithm found the optimal solution)"),
-                    p("If a model has converged, Rhat should be smaller than 1.01 and the trace plot (parameter estimates over all iterations) should be 'spiky' and show no signs of distinct pattens. Also note that for ORs and RRs, the parameter estimate has been log-transformed.")
-                  )
-                )
-              ),
-              htmlOutput(outputId = ns("ModelFitB")),
-              plotOutput(outputId = ns("TracePlot")),
-              downloadButton(outputId = ns('tracepair_download'), label = "Download trace plot"),
-              radioButtons(inputId = ns('tracepair_choice'), label = "", choices = c('pdf','png'), inline = TRUE)
-            ),
-            column(
-              width = 6,
-              align = 'center',
-              offset = 1,
-              withSpinner(
-                type = 6,
-                plotOutput(outputId = ns("ForestPlotPairB"))
-              ),
-              downloadButton(outputId = ns('forestpairB_download'), label = "Download forest plot"),
-              radioButtons(inputId = ns('forestpairB_choice'), label = NULL, choices = c('pdf','png'), inline = TRUE)
-            )
-          )
-        )
-      )
+      bayesian_analysis_panel_ui(id = ns("bayesian_analysis"))
     ),
     
     # Consider impact of new study
@@ -451,129 +401,24 @@ calculator_page_server <- function(id, data) {
     })
     
     
-    ### Summary sentence of meta-analysis ###
-    #-----------------------------------#
-
-    BayesSummaryText <- eventReactive( input$BayesRun, {
-      paste0(
-        "Results for ", strong(FixRand()), "-effects ",
-        strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ",
-        strong("Bayesian"), " methodology, with vague prior ", strong(prior()),
-        " and reference treatment ", strong(Pair_Ref()), "."
-      )
-    })
-    output$SynthesisSummaryBayes <- renderText({ BayesSummaryText() })
+    ## Bayesian Meta-Analysis ##
     
+    bayespair <- bayesian_analysis_panel_server("bayesian_analysis", action_button=reactive({input$BayesRun}),
+                                                data = data, FixRand = FixRand, 
+                                                outcome = outcome, Pair_Ref = Pair_Ref, 
+                                                ContBin = ContBin, Pair_Trt = Pair_Trt,
+                                                prior = prior, chains = chains, 
+                                                iter = iter, burn = burn)
     
-    
-    
-    LongData <- reactive({               # convert wide format to long if need be
-      Wide2Long(data = data()$data)
-    })
-    
-    observeEvent( input$BayesRun, {                           # reopen panel when a user re-runs analysis
-      #NoBayesian()
+    observeEvent( input$BayesRun, {      # reopen panel when a user re-runs analysis
       updateCollapse(session = session, id = "BayesID", open = "Bayesian Analysis")
     })
     
     
-    PairwiseSummary_functionB <- function(outcome, MA.Model, model) {   # MA.Model has to have MAData, MA.Fixed and MA.Random
-      line0 <- strong("Results")
-      line1 <- paste0("Number of studies: ", nrow(MA.Model$MA.Fixed$data_wide)) # same for fixed or random
-      if (model == 'random') {
-        line2 <- paste0(
-          "Pooled estimate: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'est'], 2),
-          " (95% CI: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'lci'], 2),
-          " to ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'uci'], 2), ")"
-        ) # already exponentiated where needed within BayesPair function
-        if (outcome == 'OR') {
-          line3 <- "Between study standard-deviation (log-odds scale): "
-        } else if (outcome == 'RR') {
-          line3 <- "Between study standard-deviation (log-probability scale): "
-        } else {
-          line3 <- "Between study standard-deviation: "
-        }
-        line3 <- paste0(
-          line3, round(MA.Model$MA.Random$fit_sum['tau[1]', 1], 3),
-          " (95% CI: ", round(MA.Model$MA.Random$fit_sum['tau[1]', 4], 3),
-          " to ", round(MA.Model$MA.Random$fit_sum['tau[1]', 8], 3), ")"
-        )
-      } else {
-        line2 <- paste0(
-          "Pooled estimate: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'est'], 2),
-          " (95% CI: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'lci'], 2),
-          " to ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'uci'], 2), ")"
-        ) # already exponentiated where needed within BayesPair function
-        line3 <- "For fixed models, between study standard-deviation is set to 0."
-      }
-      HTML(paste(line0, line1, line2, line3, sep = "<br/>"))
-    }
-    PairwiseModelFit_functionB <- function(MA.Model) {
-      HTML(paste("Rhat: ", round(MA.Model$Rhat.max, 2)))
-    }
-    
-    bayespair <- eventReactive( input$BayesRun, {         # run Bayesian pairwise MA and obtain plots etc.
-      #NoBayesian()
-      information <- list()
-      information$MA <- BayesPair(
-        CONBI = ContBin(),
-        data = WideData(),
-        trt = Pair_Trt(),
-        ctrl = Pair_Ref(),
-        outcome = outcome(),
-        chains = chains(),
-        iter = iter(),
-        warmup = burn(),
-        model = 'both',
-        prior = prior()
-      )
-      if (FixRand() == 'fixed') {
-        information$Forest <- {
-          g <- BayesPairForest(information$MA$MAdata, outcome = outcome(), model = 'fixed')
-          g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model") +
-            theme(plot.title = element_text(hjust = 0.5, size = 13, face = 'bold'))
-        }
-        information$Summary <- PairwiseSummary_functionB(outcome(), information$MA, 'fixed')
-        information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Fixed)
-        information$Trace <- {
-          g <- stan_trace(information$MA$MA.Fixed$fit, pars = "theta")
-          g + theme(legend.position = 'none', aspect.ratio = 0.45, axis.title = element_text(size = 10, face = "bold")) +
-            labs(y = "Pooled estimate", x = "Iteration")
-        }
-      } else if (FixRand() == 'random') {
-        information$Forest <- {
-          g <- BayesPairForest(information$MA$MAdata, outcome = outcome(), model = 'random')
-          g + ggtitle("Forest plot of studies with overall estimate from random-effects model") +
-            theme(plot.title = element_text(hjust = 0.5, size = 13, face = 'bold'))
-        }
-        information$Summary <- PairwiseSummary_functionB(outcome(), information$MA, 'random')
-        information$ModelFit <- PairwiseModelFit_functionB(information$MA$MA.Random)
-        information$Trace <- {
-          g <- stan_trace(information$MA$MA.Random$fit, pars = c("theta", "tau"))
-          g + theme(legend.position = 'none', strip.placement = "outside", aspect.ratio = 0.3, axis.title = element_text(size = 10, face = "bold")) +
-            labs(x = "Iteration") +
-            facet_wrap(~parameter, strip.position = 'left', nrow = 2, scales = 'free', labeller = as_labeller(c(theta = "Pooled estimate", 'tau[1]' = "Between-study SD") ) )
-        }
-      }
-      information
-    })
     
     
-    output$ForestPlotPairB <- renderPlot({      # Forest plot
-      bayespair()$Forest
-    })
     
-    output$SummaryTableB <- renderUI({          # Summary table
-      bayespair()$Summary
-    })
     
-    output$ModelFitB <- renderUI({              # Model fit statistic
-      bayespair()$ModelFit
-    })
-    
-    output$TracePlot <- renderPlot({            # Trace plot
-      bayespair()$Trace
-    })
     
     ### Pairwise Sample Size Calculations ###
     #-----------------------------------#
@@ -951,41 +796,6 @@ calculator_page_server <- function(id, data) {
           }
         )
         if (input$langan_choice == 'png') {
-          ggsave(file, plot, height = 7, width = 12, units = "in", device = "png")
-        } else {
-          ggsave(file, plot, height = 7, width = 12, units = "in", device = "pdf")
-        }
-      }
-    )
-    
-    
-    ### Pairwise Meta-Analysis ###
-    #------------------------#
-    
-    
-
-    
-    output$forestpairB_download <- downloadHandler(
-      filename = function() {
-        paste0("PairwiseAnalysis.", input$forestpairB_choice)
-      },
-      content = function(file) {
-        plot <- bayespair()$Forest
-        if (input$forestpairB_choice == 'png') {
-          ggsave(file, plot, height = 7, width = 12, units = "in", device = "png")
-        } else {
-          ggsave(file, plot, height = 7, width = 12, units = "in", device = "pdf")
-        }
-      }
-    )
-    
-    output$tracepair_download <- downloadHandler(
-      filename = function() {
-        paste0("PairwiseTrace.", input$tracepair_choice)
-      },
-      content = function(file) {
-        plot <- bayespair()$Trace
-        if (input$tracepair_choice == 'png') {
           ggsave(file, plot, height = 7, width = 12, units = "in", device = "png")
         } else {
           ggsave(file, plot, height = 7, width = 12, units = "in", device = "pdf")
