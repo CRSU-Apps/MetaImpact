@@ -72,7 +72,7 @@ frequentist_analysis_panel_server <- function(id, action_button, data, FixRand, 
   moduleServer(id, function(input, output, session) {
     
     # Summary Sentence #
-    SummaryText <- eventReactive( action_button, {
+    SummaryText <- eventReactive( action_button(), {
       paste0(
         "Results for ", strong(FixRand()), "-effects ",
         strong("Pairwise"), " meta-analysis of ", strong(outcome()), "s using ",
@@ -87,7 +87,7 @@ frequentist_analysis_panel_server <- function(id, action_button, data, FixRand, 
     })
     
     # Conduct meta-analysis and obtain plots #
-    freqpair <- eventReactive( action_button, {
+    freqpair <- eventReactive( action_button(), {
       information <- list()
       information$MA <- FreqPair(data = WideData(), outcome = outcome(), model = 'both', CONBI = ContBin())
       if (FixRand() == 'fixed') {                   # Forest plot
