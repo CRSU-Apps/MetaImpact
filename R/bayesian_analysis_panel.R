@@ -64,7 +64,7 @@ bayesian_analysis_panel_ui <- function(id) {
 #' 
 #' @param id ID of the module
 #' @param action_button Action button from calculator module for running Bayesian analysis elements
-#' @param data Data loaded by the user or default data loaded from data_page module (reactive)
+#' @param data Data loaded by the user or default data loaded from data_page module - converted to wide format (reactive)
 #' @param FixRand Whether the model is fixed- or random-effects (reactive)
 #' @param outcome The outcome type of the data (reactive)
 #' @param Pair_Ref The reference treatment (reactive)
@@ -74,7 +74,7 @@ bayesian_analysis_panel_ui <- function(id) {
 #' @param chains Input for selected number of chains (reactive)
 #' @param iter Input for selected number of iterations (reactive)
 #' @param burn Input for selected number of iterations to burn-in (reactive)
-#' @return reactive object 'freqpair' which contains all the results from conducting frequentist analysis
+#' @return reactive object 'bayespair' which contains all the results from conducting Bayesian analysis
 bayesian_analysis_panel_server <- function(id, action_button, data, FixRand, outcome, Pair_Ref, ContBin, Pair_Trt, prior, chains, iter, burn) {     
   moduleServer(id, function(input, output, session) {
     
@@ -89,15 +89,10 @@ bayesian_analysis_panel_server <- function(id, action_button, data, FixRand, out
     })
     output$SynthesisSummary <- renderText({ SummaryText() })
     
-    # Meta-analysis prep #
-    WideData <- reactive({               # convert long format to wide if need be (and ensure trt and ctrl are the right way round)
-      SwapTrt(CONBI = ContBin(), data = Long2Wide(data = data()$data), trt = Pair_Trt())
-    })
-    
     # Conduct meta-analysis and obtain plots #
     bayespair <- eventReactive( action_button(), {         # run Bayesian pairwise MA and obtain plots etc.
       information <- list()
-      information$MA <- BayesPair(CONBI = ContBin(), data = WideData(), trt = Pair_Trt(),
+      information$MA <- BayesPair(CONBI = ContBin(), data = data(), trt = Pair_Trt(),
         ctrl = Pair_Ref(), outcome = outcome(), chains = chains(), iter = iter(),
         warmup = burn(), model = 'both', prior = prior())
       if (FixRand() == 'fixed') {

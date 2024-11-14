@@ -24,13 +24,13 @@ calculator_page_ui <- function(id) {
       )
     ),
     # Outputs
-    # Frequentist
+    # Frequentist Base
     conditionalPanel(
       ns = NS(id),
       condition = "input.FreqRun != 0",
       frequentist_analysis_panel_ui(id = ns("frequentist_analysis"))
     ),
-    # Bayesian
+    # Bayesian Base
     conditionalPanel(
       ns = NS(id),
       condition = "input.BayesRun != 0",
@@ -41,149 +41,7 @@ calculator_page_ui <- function(id) {
     conditionalPanel(
       ns = NS(id),
       condition = "input.FreqRun != 0 || input.BayesRun != 0",
-      br(),
-      h3("Step 2: Consider what a new study may look like and it's potential impact"),
-      br(),
-      # Evidence Base Summary
-      column(
-        width = 5,
-        align = 'center',
-        bsCollapse(
-          id = ns("EvidenceBase"),
-          open = "Current Evidence Base",
-          bsCollapsePanel(
-            title = "Current Evidence Base",
-            style = 'primary',
-            h6("This panel presents the current evidence base from which the sample size calculations are based on. If you wish to change this, please alter the synthesis options above accordingly."),
-            withSpinner(
-              type = 6,
-              plotOutput(outputId = ns("EvBase"))
-            ),
-            radioButtons(
-              inputId = ns("EvBase_choice"),
-              label = NULL,
-              choices = c(
-                "Frequentist MA" = "freq",
-                "Bayesian MA" = "bayes"
-              ),
-              inline = TRUE
-            ),
-            fluidRow(
-              div(
-                style = "display: inline-block;",
-                downloadButton(outputId = ns('evbase_download'), label = "Download forest plot")
-              ),
-              div(
-                style = "display:inline-block; width: 10px;",
-                br()
-              ),
-              div(
-                style = "display: inline-block;",
-                radioButtons(inputId = ns('evbase_choice'), label = NULL, choices = c('pdf', 'png'), inline = TRUE)
-              )
-            )
-          )
-        )
-      ),
-      column(
-        width = 7,
-        align = 'center',
-        bsCollapse(
-          id = ns("LanganPlot"),
-          open = "Extended Funnel Plot",
-          bsCollapsePanel(
-            title = "Extended Funnel Plot",
-            style = 'success',
-            h6("This panel presents a funnel plot of the current evidence base. Options to extend the plot (below) encourage the user to consider where a new study may lie and it's potential impact."),
-            withSpinner(
-              type = 6,
-              plotOutput(outputId = ns("Langan"))
-            ),
-            conditionalPanel(
-              ns = NS(id),
-              condition = "input.LanganOptions.includes('contour')",
-              div(
-                style = "position: absolute; right: 40px;",
-                dropMenu(
-                  dropdownButton(
-                    label = "Significance contours look strange?",
-                    circle = FALSE,
-                    size = 'xs'
-                  ),
-                  align = 'left',
-                  arrow = FALSE,
-                  h6("Limitations with the significance contours"),
-                  p("There exist two known 'artefacts' from the methods used to currently draw the significance contours. We apologise for this and will be working on solving these issues."),
-                  p(strong("Contours 'drop' at edges")),
-                  img(src = "www/PlotLim_edging.png", width = 200, align = "center"),
-                  p("The contours may appear to suddenly 'drop' to the bottom of the plot at the far edges. The contours should naturally follow the rest of the curve trajectory. "),
-                  p(strong("White triangle")),
-                  img(src = "www/PlotLim_triangle.png", width = 200, align = "center"),
-                  p("Most contour plots create a 'set of curtains' appearance. However, for some analyses, both contours may curve to the same side of the plot. In such cases, a white triangle may then be present within a shaded area. This triangle should match the colouring above/around it.")
-                )
-              )
-            ),
-            br(),
-            checkboxGroupInput(
-              inputId = ns("LanganOptions"),
-              label = NULL,
-              choices = c(
-                "Null Line" = "plot.zero",
-                "Pooled Effect Line" = "plot.summ",
-                "Pooled Summary Diamond" = "summ",
-                "Predictive Interval" = "pred.interval",
-                "Significance Contours" = "contour"
-              ),
-              selected = c('plot.summ', 'summ'),
-              inline = TRUE
-            ),
-            fluidRow(
-              div(
-                style = "display: inline-block;",
-                radioButtons(
-                  inputId = ns('Lang_method'),
-                  label = "Fixed or Random Effects",
-                  choices = c(
-                    'Fixed' = 'fixed',
-                    'Random' = 'random'
-                  ),
-                  inline = TRUE
-                )
-              ),
-              div(
-                style = "display:inline-block; width: 10px;",
-              ),
-              div(
-                style = "display: inline-block;",
-                numericInput(inputId = ns('Lang_pvalue'), label = "Sig. level for contours", value = 0.05, min = 0, max = 1)
-              ),
-              div(
-                style = "display: inline-block;vertical-align:top;",
-                dropMenu(
-                  dropdownButton(size = 'xs',icon = icon('info')),
-                  align = 'left',
-                  h6("Information"),
-                  p("The Significance Contours will be calculated based on a desired outcome that the new evidence base has the following significance level (p-value).")
-                )
-              ),
-              div(
-                style = "display:inline-block; width: 10px;"
-              ),
-              div(
-                style = "display: inline-block;",
-                downloadButton(outputId = ns('Langan_download'), label = "Download Funnel plot")
-              ),
-              div(
-                style = "display:inline-block; width: 10px;"
-              ),
-              div(
-                style = "display: inline-block;",
-                radioButtons(inputId = ns('langan_choice'), label = NULL, choices = c('pdf', 'png'), inline = TRUE)
-              )
-            )
-          )
-        )
-      )
+      consider_new_study_panel_ui(id = ns("new_study"))
     ),
     
     # Sample Size Calculator
@@ -278,102 +136,6 @@ calculator_page_server <- function(id, data) {
     
     ns <- session$ns
     
-    #------------------#
-    # Warning messages #
-    #------------------#
-    BadSampleSizes <- function() {
-      showModal(modalDialog(
-        title = "Unsuitable Sample Sizes",
-        easyClose = FALSE,
-        p("The total sample size is assuming two arms of equal size. Therefore, please enter ", tags$strong("even integers.")),
-        br(),
-        modalButton("Close warning"),
-        footer = NULL
-      ))
-    }
-    
-    NoBayesian <- function() {
-      showModal(modalDialog(
-        title = "Feature not yet available",
-        easyClose = FALSE,
-        p("Calculating the power of new studies with set sample size(s) is not ready yet within the Bayesian framework. Please ", tags$strong("choose frequentist.")),
-        br(),
-        modalButton("Close warning"),
-        footer = NULL
-      ))
-    }
-    
-    NoNMA <- function() {
-      showModal(modalDialog(
-        title = "Feature not yet available",
-        easyClose = FALSE,
-        p("Synthesising evidence with an NMA is not quite ready yet. Please ", tags$strong("choose pairwise.")),
-        br(),
-        modalButton("Close warning"),
-        footer = NULL
-      ))
-    }
-    
-    NoRandomContours <- function() {
-      showModal(modalDialog(
-        title = "Feature not yet available",
-        easyClose = FALSE,
-        p("Drawing the significance contours for a random-effects meta-analysis is not quite ready yet. Please either ", tags$strong("choose fixed-effects"), " or ", tags$strong("uncheck contours option.")),
-        br(),
-        modalButton("Close warning"),
-        footer = NULL
-      ))
-    }
-    
-    FixedPredInt <- function() {
-      showModal(modalDialog(
-        title = "Option combination not applicable",
-        easyClose = FALSE,
-        p("Within a fixed-effects model, the between-study heterogeneity is set to zero, therefore a 95% predictive interval would be equivalent to the 95% confidence interval (represented by the width of the diamond) and is not a plottable option."),
-        br(),
-        modalButton("Close warning"),
-        footer = NULL
-      ))
-    }
-    
-    SigContourOnly <- function() {
-      showModal(modalDialog(
-        title = "Feature not yet available",
-        easyClose = FALSE,
-        p("Currently, the contours on the extended funnel plot are only for when the desired impact of the new evidence base is related to levels of p-values."),
-        p("Therefore, if you wish to plot the simulated 'new trials' from the power calculations, please either: ", tags$ol(tags$li("ensure that the ", strong("type of impact"), " is set to ", strong("Significant p-value"), ", or"), tags$li("uncheck the ", strong("contours"), " option"))),
-        p("If you do not wish to plot the simulated 'new trials', please ", strong("uncheck"), " the plot simulated trials option."),
-        br(),
-        modalButton("Close warning"),
-        footer = NULL
-      ))
-    }
-    
-    DiffSigValues <- function() {
-      showModal(modalDialog(
-        title = "Significance values don't match",
-        easyClose = FALSE,
-        p("If you wish to plot the simulated 'new trials' on top of the extended funnel plot with contours, then the significance level/cut-off value needs to match."),
-        p("Please ensure that the ", strong("Sig. level for contours"), " plot option is set to the same value as the ", strong("cut-off calculator"), " option."),
-        p("If you do not wish to plot the simulated 'new trials' with the contour option of the extended funnel plot, please ", strong("uncheck"), " the plot simulated trials and/or contour option."),
-        br(),
-        modalButton("Close warning"),
-        footer = "If this error appears after changing the impact type to 'significant p-value' due to a previous warning message, and your significance levels/cut-off values match, please ignore."
-      ))
-    }
-    
-    NoPlotMultipleSampleSizes <- function() {
-      showModal(modalDialog(
-        title = "Feature not yet available",
-        easyClose = FALSE,
-        p("Plotting the simulated 'new trials' of multiple sample sizes is not yet available. Please either ", tags$strong("uncheck 'plot simulated trials'"), " option or ", tags$strong("specify one sample size.")),
-        br(),
-        modalButton("Close warning"),
-        footer = NULL
-      ))
-    }
-
-    
     ## Load Synthesis Options ##
     
     synthOptionsReactives <- synthesis_options_panel_server("synthesis_options", data = data)
@@ -388,11 +150,15 @@ calculator_page_server <- function(id, data) {
     iter <- synthOptionsReactives$iter
     burn <- synthOptionsReactives$burn
     
+    # Meta-analysis prep #
+    WideData <- reactive({               # convert long format to wide (and ensure trt and ctrl are the right way round)
+      SwapTrt(CONBI = ContBin(), data = Long2Wide(data = data()$data), trt = Pair_Trt())
+    })
     
     ## Frequentist Meta-Analysis ##
     
     freqpair <- frequentist_analysis_panel_server("frequentist_analysis", action_button=reactive({input$FreqRun}), 
-                                                  data = data, FixRand = FixRand, 
+                                                  data = WideData, FixRand = FixRand, 
                                                   outcome = outcome, Pair_Ref = Pair_Ref, 
                                                   ContBin = ContBin, Pair_Trt = Pair_Trt)
     
@@ -403,8 +169,8 @@ calculator_page_server <- function(id, data) {
     
     ## Bayesian Meta-Analysis ##
     
-    bayespair <- bayesian_analysis_panel_server("bayesian_analysis", action_button=reactive({input$BayesRun}),
-                                                data = data, FixRand = FixRand, 
+    bayespair <- bayesian_analysis_panel_server("bayesian_analysis", action_button = reactive({input$BayesRun}),
+                                                data = WideData, FixRand = FixRand, 
                                                 outcome = outcome, Pair_Ref = Pair_Ref, 
                                                 ContBin = ContBin, Pair_Trt = Pair_Trt,
                                                 prior = prior, chains = chains, 
@@ -415,29 +181,17 @@ calculator_page_server <- function(id, data) {
     })
     
     
+    ## Considering new study & choose evidence base ##
+    
+    EvBase_choice <- consider_new_study_panel_server("new_study", freqpair = freqpair, plot_sims_btn = reactive({input$plot_sims}), 
+                                                    impact_type_btn = reactive({input$impact_type}), 
+                                                    cutoff_btn = reactive({input$cutoff}), sample_sizes_btn = reactive({input$samplesizes}), 
+                                                    outcome = outcome, CalcResults = CalcResults)
     
     
     
+  
     
-    
-    ### Pairwise Sample Size Calculations ###
-    #-----------------------------------#
-    
-    # Forest plot of current evidence base
-    output$EvBase <- renderPlot({
-      if (input$EvBase_choice!= 'freq') {
-        NoBayesian()
-      } else {
-        if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
-          forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
-          addpoly(freqpair()$MA$MA.Random)
-        } else {
-          forest.rma(freqpair()$MA$MA.Fixed, ylim = -2.5)
-          addpoly(freqpair()$MA$MA.Random)
-        }
-        title("Forest plot of studies and overall pooled estimates")
-      }
-    })
     
     # Settings for UI
     OneOrMultiple <- eventReactive( input$CalcRun, {         # function to be used in update Collapse below
@@ -458,7 +212,7 @@ calculator_page_server <- function(id, data) {
     ### Create set of constantly updated reactive values of cached inputs
     tmpInputs <- reactiveVal()  # initialised
     tmp_pairwise <- reactive({
-      if (input$EvBase_choice == 'freq') {
+      if (EvBase_choice() == 'freq') {
         FreqPair(data = WideData(), outcome = outcome(), model = 'both', CONBI = ContBin()) # if I use freqpair(), then the forest plot on evidence synthesis tab doesn't load - minor bug for now (extra run-time and hope no-one changes frequentist settings without re-running)
       } else {
         bayespair()$MA
@@ -469,7 +223,7 @@ calculator_page_server <- function(id, data) {
         sample = input$samplesizes,
         NMA = tmp_pairwise(),
         nit = input$its,
-        FreqBayes = input$EvBase_choice
+        FreqBayes = EvBase_choice()
       )
     })
     
@@ -489,7 +243,7 @@ calculator_page_server <- function(id, data) {
     })
     
     pairwise_MA <- reactive({
-      if (input$EvBase_choice == 'freq') {
+      if (EvBase_choice() == 'freq') {
         freqpair()$MA
       } else {
         bayespair()$MA
@@ -539,47 +293,7 @@ calculator_page_server <- function(id, data) {
                   "<b>Random-effects</b>: ", CalcResults()$singleresult$power$Random*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Random*100, 1), "% to ", round(CalcResults()$singleresult$CI_upper$Random*100, 1), "%)"))
     })
     
-    # Langan Plot #
     
-    output$Langan <- renderPlot({
-      if (input$Lang_method == 'random' && 'contour' %in% input$LanganOptions) {   # significance contours not available for random-effects
-        NoRandomContours()
-      } else if (input$Lang_method == 'fixed' && 'pred.interval' %in% input$LanganOptions) {  # Warning how predictive intervals are not of use within fixed-effects models
-        FixedPredInt()
-      } else if (input$plot_sims && input$impact_type != 'pvalue' && 'contour' %in% input$LanganOptions) { # the significance contours only relate to p-value impact, whereas the power calculator has other options
-        SigContourOnly()
-      } else if (input$plot_sims && input$impact_type == 'pvalue' && !is.null(input$cutoff) && input$Lang_pvalue != input$cutoff && 'contour' %in% input$LanganOptions) { # the contour cut-offs/sig levels need to be the same
-        DiffSigValues()
-      } else if (input$plot_sims && length(as.integer(unlist(str_split(input$samplesizes, ";"), use.names = FALSE))) > 1) {   # haven't added functionlity to Langan plot yet so plot multiple sets of sample sizes
-        NoPlotMultipleSampleSizes()
-      } else {
-        extfunnel(
-          SS = freqpair()$MA$MAdata$yi,
-          seSS = freqpair()$MA$MAdata$sei,
-          method = input$Lang_method,
-          outcome = outcome(),
-          sig.level = input$Lang_pvalue,
-          legend = TRUE,
-          points = TRUE,
-          contour = {'contour' %in% input$LanganOptions},
-          summ = {'summ' %in% input$LanganOptions},
-          pred.interval = {'pred.interval' %in% input$LanganOptions},
-          plot.zero = {'plot.zero' %in% input$LanganOptions},
-          plot.summ = {'plot.summ' %in% input$LanganOptions},
-          expxticks = {
-            if (outcome() %in% c('OR', 'RR')) {
-              c(0.25, 0.5, 1, 2, 4)
-            }
-          },
-          sim.points = {
-            if (input$plot_sims) {
-              CalcResults()$singleresult$sim_study
-            }
-          }
-        )
-        # remaining settings not in UI: contour.points, summ.pos, ylim, xlim, xticks, yticks, zero, xlab, ylab, legendpos
-      }
-    })
     
     ### Interactive UI ###
     #----------------#
@@ -739,69 +453,6 @@ calculator_page_server <- function(id, data) {
     observeEvent(input$CalcRun, {
       updateRadioButtons(session, "powplot_options", selected = input$powplot_options)  # remember plot settings from before re-running calculator
     })
-    
-    # evidence base #
-    output$evbase_download <- downloadHandler(
-      filename = function() {
-        paste0("EvidenceBase.", input$evbase_choice)
-      },
-      content = function(file) {
-        if (input$evbase_choice == 'pdf') {
-          pdf(file = file)
-        } else {
-          png(file = file)
-        }
-        if (input$EvBase_choice == 'freq') {
-          if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
-            forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
-            addpoly(freqpair()$MA$MA.Random)
-          } else {
-            forest.rma(freqpair()$MA$MA.Fixedz, ylim = -2.5)
-            addpoly(freqpair()$MA$MA.Random)
-          }
-          title("Forest plot of studies and overal pooled estimates")
-        }
-        dev.off()
-      }
-    )
-    
-    # extended funnel plot #
-    output$Langan_download <- downloadHandler(
-      filename = function() {
-        paste0('ExtFunnelPlot.', input$langan_choice)
-      },
-      content = function(file) {
-        plot <- extfunnel(
-          SS = freqpair()$MA$MAdata$yi,
-          seSS = freqpair()$MA$MAdata$sei,
-          method = input$Lang_method,
-          outcome = outcome(),
-          sig.level = input$Lang_pvalue,
-          legend = TRUE,
-          points = TRUE,
-          contour = {'contour' %in% input$LanganOptions},
-          summ = {'summ' %in% input$LanganOptions},
-          pred.interval = {'pred.interval' %in% input$LanganOptions},
-          plot.zero = {'plot.zero' %in% input$LanganOptions},
-          plot.summ = {'plot.summ' %in% input$LanganOptions},
-          expxticks = {
-            if (outcome() %in% c('OR', 'RR')) {
-              c(0.25, 0.5, 1, 2, 4)
-            }
-          },
-          sim.points = {
-            if (input$plot_sims) {
-              CalcResults()$singleresult$sim_study
-            }
-          }
-        )
-        if (input$langan_choice == 'png') {
-          ggsave(file, plot, height = 7, width = 12, units = "in", device = "png")
-        } else {
-          ggsave(file, plot, height = 7, width = 12, units = "in", device = "pdf")
-        }
-      }
-    )
     
   })
 }

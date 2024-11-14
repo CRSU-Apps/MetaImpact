@@ -81,15 +81,10 @@ frequentist_analysis_panel_server <- function(id, action_button, data, FixRand, 
     })
     output$SynthesisSummary <- renderText({SummaryText()})
     
-    # Meta analysis prep #
-    WideData <- reactive({               # convert long format to wide if need be (and ensure trt and ctrl are the right way round)
-      SwapTrt(CONBI = ContBin(), data = Long2Wide(data = data()$data), trt = Pair_Trt())
-    })
-    
     # Conduct meta-analysis and obtain plots #
     freqpair <- eventReactive( action_button(), {
       information <- list()
-      information$MA <- FreqPair(data = WideData(), outcome = outcome(), model = 'both', CONBI = ContBin())
+      information$MA <- FreqPair(data = data(), outcome = outcome(), model = 'both', CONBI = ContBin())
       if (FixRand() == 'fixed') {                   # Forest plot
         if (outcome() == 'OR' | outcome() == 'RR') {
           information$Forest <- {
