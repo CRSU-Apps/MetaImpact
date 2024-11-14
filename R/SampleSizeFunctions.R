@@ -280,3 +280,40 @@ metapowplot <- function(PowerData, ModelOpt = 'both', SampleSizes) {
 #test$plot
 #test <- metapowplot(SampleSizes = c(1000, 2000, 3000, 4000, 5000, 6000), regraph = TRUE, ModelOpt = 'random') #testing regraph option
 #test$plot
+
+# Function to display information to help user choose a cut-off value #
+
+CutOffSettings <- function(type, outcome, MAFix, MARan) {
+  sumFix <- summary(MAFix)
+  sumRan <- summary(MARan)
+  if (type == 'pvalue') {
+    label <- paste("P-value less than ...")
+    initial <- 0.05
+    current <- paste("<i>Current p-values are ", strong(round(sumFix$pval, 3)), " (FE) and ", strong(round(sumRan$pval, 3)), " (RE)</i><br>")
+  } else if (type == 'ciwidth') {
+    label <- paste("Width less than ...")
+    initial <- 0.5
+    if (outcome %in% c("OR", "RR")) {
+      current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(exp(sumFix$ci.ub) - exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub) - exp(sumRan$ci.lb), 2)), " (RE)</i><br>")
+    } else {
+      current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(sumFix$ci.ub - sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.ub - sumRan$ci.lb, 2)), " (RE)</i><br>")
+    }
+  } else if (type == 'lci') {
+    label <- paste("Lower bound greater than ...")
+    initial <- 1.1
+    if (outcome %in% c("OR", "RR")) {
+      current <- paste("<i>Current lower bounds are ", strong(round(exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.lb), 2)), " (RE)</i><br>")
+    } else {
+      current <- paste("<i>Current lower bounds are ", strong(round(sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.lb, 2)), " (RE)</i><br>")
+    }
+  } else {
+    label <- paste("Upper bound less than ...")
+    initial <- 0.9
+    if (outcome %in% c("OR", "RR")) {
+      current <- paste("<i> Current upper bounds are ", strong(round(exp(sumFix$ci.ub), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub), 2)), " (RE)</i><br>")
+    } else {
+      current <- paste("<i> Current upper bounds are ", strong(round(sumFix$ci.ub, 2)), " (FE) and ", strong(round(sumRan$ci.ub, 2)), " (RE)</i><br>")
+    }
+  }
+  list(label = label, initial = initial, current = current)
+}

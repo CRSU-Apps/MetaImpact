@@ -58,68 +58,7 @@ calculator_page_ui <- function(id) {
       br(),
       bsAlert(anchorId = ns("SampleSizeAlertUI")), #error warning about sample sizes
       # Calculator Settings
-      column(
-        width = 5,
-        align = 'center',
-        bsCollapse(
-          id = ns("CalcSettings"),
-          open = "Power Calculation Settings",
-          bsCollapsePanel(
-            title = "Power Calculation Settings",
-            style = 'info',
-            fluidRow(
-              div(
-                style = "display: inline-block;vertical-align:top;",
-                textInput(inputId = ns("samplesizes"), label = "Total sample size(s)", value = "100")
-              ),
-              div(
-                style = "display: inline-block;vertical-align:top;",
-                dropMenu(
-                  dropdownButton(size = 'xs', icon = icon('info')),
-                  align = 'left',
-                  h6("Information"),
-                  p("Studies are assumed to have two arms of equal sizes."),
-                  p("If entering multiple sample sizes, please separate them with a semi-colon (e.g. 100; 200; 300).")
-                )
-              ),
-              div(
-                style = "display: inline-block;vertical-align:top; width: 15px;"
-              ),
-              div(
-                style = "display: inline-block;vertical-align:top;",
-                numericInput(inputId = ns("its"), label = "Number of iterations", value = 100, min = 1)
-              )
-            ),
-            fluidRow(
-              div(
-                style = "display: inline-block;vertical-align:top;",
-                tagList(
-                  selectInput(
-                    inputId = ns("impact_type"),
-                    label = "Type of impact on evidence base",
-                    choices = c(
-                      "Significant p-value" = "pvalue",
-                      "95% confidence interval of certain width" = "ciwidth",
-                      "Lower bound of 95% confidence interval of certain value" = "lci",
-                      "Upper bound 95% confidence interval of certain value" = "uci"
-                    )
-                  ),
-                  checkboxInput(inputId = ns("plot_sims"), label = "Plot simulated trials onto extended funnel plot?", value = FALSE),
-                  actionButton(inputId = ns("calc_help"), label = "Help", class = "btn-xs", style = "position: absolute; left: 40px;")
-                )
-              ),
-              div(
-                style = "display: inline-block;vertical-align:top; width: 35px;"
-              ),
-              div(
-                style = "display: inline-block;vertical-align:top; width: 300px;",
-                uiOutput(outputId = ns("CutOff"))
-              )
-            )
-          )
-        ),
-        actionButton(inputId = ns("CalcRun"), label = "Run Sample Size Calculations", class = "btn-primary btn-lg")
-      ),
+      calculator_options_panel_ui(id = ns("calculator_options")),
       # Results
       column(
         width = 7,
@@ -192,63 +131,43 @@ calculator_page_server <- function(id, data) {
     
     ## Langan plot ##
     
-    langan_plot_panel_server("langan", freqpair = freqpair, plot_sims_btn = reactive({input$plot_sims}), 
-                             impact_type_btn = reactive({input$impact_type}), cutoff_btn = reactive({input$cutoff}), 
-                             sample_sizes_btn = reactive({input$samplesizes}), outcome = outcome, CalcResults = CalcResults)
+    langan_plot_panel_server("langan", freqpair = freqpair, plot_sims_btn = plot_sims, 
+                             impact_type_btn = impact_type, cutoff_btn = cutoff, 
+                             sample_sizes_btn = samplesizes, outcome = outcome, CalcResults = CalcResults)
     
     
+    ## Load Calculator Options ##
+    
+    calcOptionsReactives <- calculator_options_panel_server("calculator_options", EvBase_choice = EvBase_choice, 
+                                                            data = WideData, outcome = outcome, ContBin = ContBin,
+                                                            freqpair = freqpair)
+    
+    samplesizes <-  calcOptionsReactives$samplesizes
+    its <- calcOptionsReactives$its
+    impact_type <- calcOptionsReactives$impact_type
+    plot_sims <- calcOptionsReactives$plot_sims
+    CalcRun <- calcOptionsReactives$CalcRun
+    cutoff <- calcOptionsReactives$cutoff
+    Recalc <- calcOptionsReactives$Recalc
     
   
     
     
     # Settings for UI
-    OneOrMultiple <- eventReactive( input$CalcRun, {         # function to be used in update Collapse below
-      if (grepl(';', input$samplesizes)) {
+    OneOrMultiple <- eventReactive( CalcRun(), {         # function to be used in update Collapse below
+      if (grepl(';', samplesizes())) {
         return('Power Plot of Results')
       }
-      if (!grepl(';', input$samplesizes)) {
+      if (!grepl(';', samplesizes())) {
         return('Table of power results')
       }
     })
     
-    observeEvent( input$CalcRun, {                           # reopen panel when a user re-runs calculator
+    observeEvent( CalcRun(), {                           # reopen panel when a user re-runs calculator
       updateCollapse(session = session, id = "Calculator", open = OneOrMultiple())
     })
     
-    # Function for checking if recalc option needs to be TRUE or FALSE (TRUE if only the impact type and/or cut-off have changed)
-    Recalc <- reactiveVal(FALSE)  # initialise
-    ### Create set of constantly updated reactive values of cached inputs
-    tmpInputs <- reactiveVal()  # initialised
-    tmp_pairwise <- reactive({
-      if (EvBase_choice() == 'freq') {
-        FreqPair(data = WideData(), outcome = outcome(), model = 'both', CONBI = ContBin()) # if I use freqpair(), then the forest plot on evidence synthesis tab doesn't load - minor bug for now (extra run-time and hope no-one changes frequentist settings without re-running)
-      } else {
-        bayespair()$MA
-      }
-    })
-    inputCache <- reactive({
-      list(
-        sample = input$samplesizes,
-        NMA = tmp_pairwise(),
-        nit = input$its,
-        FreqBayes = EvBase_choice()
-      )
-    })
-    
-    # compare previous input settings to decide on recalc option
-    observeEvent(input$CalcRun, {
-      #compare previous two sets of inputs
-      if (!is.null(tmpInputs()) &&
-          setequal(inputCache()$sample, tmpInputs()$sample) &&
-          setequal(inputCache()$NMA, tmpInputs()$NMA) &&
-          setequal(inputCache()$nit, tmpInputs()$nit) &&
-          setequal(inputCache()$FreqBayes, tmpInputs()$FreqBayes)) {
-        Recalc(TRUE)
-      } else {
-        Recalc(FALSE)
-      }
-      tmpInputs(inputCache())
-    })
+
     
     pairwise_MA <- reactive({
       if (EvBase_choice() == 'freq') {
@@ -259,10 +178,10 @@ calculator_page_server <- function(id, data) {
     })
     
     # Calculate
-    CalcResults <- eventReactive( input$CalcRun, {
+    CalcResults <- eventReactive( CalcRun(), {
       list1 <- list()
-      list1$sample_sizes <- as.integer(unlist(str_split(input$samplesizes, ";"), use.names = FALSE)) # convert to vector of integers
-      if (grepl(".", input$samplesizes, fixed = TRUE) | grepl(".", toString(list1$sample_sizes/2), fixed = TRUE)) {     # If any decimals or odds have been entered
+      list1$sample_sizes <- as.integer(unlist(str_split(samplesizes(), ";"), use.names = FALSE)) # convert to vector of integers
+      if (grepl(".", samplesizes(), fixed = TRUE) | grepl(".", toString(list1$sample_sizes/2), fixed = TRUE)) {     # If any decimals or odds have been entered
         BadSampleSizes()
       } else {
         progress <- shiny::Progress$new() # Create a Progress object
@@ -276,9 +195,9 @@ calculator_page_server <- function(id, data) {
             }
             progress$set(value = value, detail = detail)
           }
-          list1$data <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = input$its, inference = input$impact_type, pow = input$cutoff, measure = outcome(), recalc = Recalc(), updateProgress = updateProgress, chains = chains(), iter = iter(), warmup = burn(), prior = prior())
+          list1$data <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), updateProgress = updateProgress, chains = chains(), iter = iter(), warmup = burn(), prior = prior())
         } else if (length(list1$sample_sizes) == 1) {
-          list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = input$its, inference = input$impact_type, pow = input$cutoff, measure = outcome(), recalc = Recalc(), chains = chains(), iter = iter(), warmup = burn(), prior = prior())
+          list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), chains = chains(), iter = iter(), warmup = burn(), prior = prior())
         }
         list1
       }
@@ -306,85 +225,12 @@ calculator_page_server <- function(id, data) {
     ### Interactive UI ###
     #----------------#
     
-    # Interactive help boxes #
-    
-    steps <- reactive(data.frame(
-      category = c(rep("CalcSettings", 5)),
-      element = c("#samplesizes", "#its", "#impact_type", "#cutoff", "#plot_sims"),
-      intro = c("This is where you specify sample sizes for which you wish to estimate power. You can enter one sample size, or multiple by separating them with a semi-colon (;). Currently, it is assumed that future designed trials have two arms of equal size.",
-                "Choose how many iterations (i.e. times the algorithm is run) you wish to have per simulation (sample size). If you choose a higher number of iterations, the simulations will take longer but give more precise estimates (narrower confidence intervals), and vice versa.",
-                "Making an 'impact' on the current evidence base can be done in multiple ways - choose here which method you wish to focus on (1. Having a significant p-value; 2. Having a 95% confidence interval of a certain width; 3. Having the lower bound of the 95% CI above a certain value; 4. Having the upper bound of the 95% CI below a certain value).",
-                "Depending on which type of impact has been chosen, please choose a specific cut-off value for which you define as 'impactful' (e.g. a p-value of less than 0.05).",
-                "Choose to plot the results from every simulated 'new study' into the extended funnel plot to visually see how the power is calculated (when viewed alongside the significance contours")
-    ))
-    
-    # Calculator settings #
-    observeEvent(
-      input$calc_help,
-      introjs(
-        session,
-        options = list(
-          steps = steps() %>% filter(category == "CalcSettings"),
-          showBullets = FALSE,
-          showProgress = TRUE,
-          showStepNumbers = FALSE,
-          nextLabel = "Next",
-          prevLabel = "Prev",
-          skipLabel = "Skip"
-        )
-      )   # IMPACT_TYPE NOT WORKING and don't know why...
-    )
-
-    
-    # Cut-off information #
-    
-    CutOffSettings <- function(type, outcome, MAFix, MARan) {
-      sumFix <- summary(MAFix)
-      sumRan <- summary(MARan)
-      if (type == 'pvalue') {
-        label <- paste("P-value less than ...")
-        initial <- 0.05
-        current <- paste("<i>Current p-values are ", strong(round(sumFix$pval, 3)), " (FE) and ", strong(round(sumRan$pval, 3)), " (RE)</i><br>")
-      } else if (type == 'ciwidth') {
-        label <- paste("Width less than ...")
-        initial <- 0.5
-        if (outcome %in% c("OR", "RR")) {
-          current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(exp(sumFix$ci.ub) - exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub) - exp(sumRan$ci.lb), 2)), " (RE)</i><br>")
-        } else {
-          current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(sumFix$ci.ub - sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.ub - sumRan$ci.lb, 2)), " (RE)</i><br>")
-        }
-      } else if (type == 'lci') {
-        label <- paste("Lower bound greater than ...")
-        initial <- 1.1
-        if (outcome %in% c("OR", "RR")) {
-          current <- paste("<i>Current lower bounds are ", strong(round(exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.lb), 2)), " (RE)</i><br>")
-        } else {
-          current <- paste("<i>Current lower bounds are ", strong(round(sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.lb, 2)), " (RE)</i><br>")
-        }
-      } else {
-        label <- paste("Upper bound less than ...")
-        initial <- 0.9
-        if (outcome %in% c("OR", "RR")) {
-          current <- paste("<i> Current upper bounds are ", strong(round(exp(sumFix$ci.ub), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub), 2)), " (RE)</i><br>")
-        } else {
-          current <- paste("<i> Current upper bounds are ", strong(round(sumFix$ci.ub, 2)), " (FE) and ", strong(round(sumRan$ci.ub, 2)), " (RE)</i><br>")
-        }
-      }
-      list(label = label, initial = initial, current = current)
-    }
-    
-    output$CutOff <- renderUI({
-      cutsettings <- CutOffSettings(input$impact_type, outcome(), freqpair()$MA$MA.Fixed, freqpair()$MA$MA.Random)
-      tagList(
-        numericInput(ns('cutoff'), label = paste(cutsettings$label), value = cutsettings$initial),
-        HTML(cutsettings$current)
-      )
-    })
+  
     
     # Calculator Results #
     
-    SingMult <- eventReactive( input$CalcRun, {           # single or multiple sample sizes
-      if (grepl(';', input$samplesizes)) {
+    SingMult <- eventReactive( CalcRun(), {           # single or multiple sample sizes
+      if (grepl(';', samplesizes())) {
         return('multiple')
       } else {
         return ('single')
@@ -458,7 +304,7 @@ calculator_page_server <- function(id, data) {
         )
       )
     })
-    observeEvent(input$CalcRun, {
+    observeEvent(CalcRun(), {
       updateRadioButtons(session, "powplot_options", selected = input$powplot_options)  # remember plot settings from before re-running calculator
     })
     
