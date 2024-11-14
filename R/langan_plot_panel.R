@@ -1,54 +1,10 @@
-#' Module UI for 'consider new study' panel.
+#' Module UI for 'Langan plot' panel.
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
-consider_new_study_panel_ui <- function(id) {
+langan_plot_panel_ui <- function(id) {
   ns <- NS(id)
   div(
-    br(),
-    h3("Step 2: Consider what a new study may look like and it's potential impact"),
-    br(),
-    # Evidence Base Summary
-    column(
-      width = 5,
-      align = 'center',
-      bsCollapse(
-        id = ns("EvidenceBase"),
-        open = "Current Evidence Base",
-        bsCollapsePanel(
-          title = "Current Evidence Base",
-          style = 'primary',
-          h6("This panel presents the current evidence base from which the sample size calculations are based on. If you wish to change this, please alter the synthesis options above accordingly."),
-          withSpinner(
-            type = 6,
-            plotOutput(outputId = ns("EvBase"))
-          ),
-          radioButtons(
-            inputId = ns("EvBase_choice"),
-            label = NULL,
-            choices = c(
-              "Frequentist MA" = "freq",
-              "Bayesian MA" = "bayes"
-            ),
-            inline = TRUE
-          ),
-          fluidRow(
-            div(
-              style = "display: inline-block;",
-              downloadButton(outputId = ns('evbase_download'), label = "Download forest plot")
-            ),
-            div(
-              style = "display:inline-block; width: 10px;",
-              br()
-            ),
-            div(
-              style = "display: inline-block;",
-              radioButtons(inputId = ns('evbase_choice'), label = NULL, choices = c('pdf', 'png'), inline = TRUE)
-            )
-          )
-        )
-      )
-    ),
     column(
       width = 7,
       align = 'center',
@@ -151,7 +107,7 @@ consider_new_study_panel_ui <- function(id) {
   )
 }
 
-#' Module server for 'consider new study' panel.
+#' Module server for 'Langan plot' panel.
 #' 
 #' @param id ID of the module
 #' @param freqpair Reactive object of frequentist analysis
@@ -162,24 +118,8 @@ consider_new_study_panel_ui <- function(id) {
 #' @param outcome The outcome type of the data (reactive)
 #' @param CalcResults Reactive object of the calculator results (needed to obtain simulation results for plotting on Langan)
 #' @return Input for choice of evidence base
-consider_new_study_panel_server <- function(id, freqpair, plot_sims_btn, impact_type_btn, cutoff_btn, sample_sizes_btn, outcome, CalcResults) {     
+langan_plot_panel_server <- function(id, freqpair, plot_sims_btn, impact_type_btn, cutoff_btn, sample_sizes_btn, outcome, CalcResults) {     
   moduleServer(id, function(input, output, session) {
-    
-    # Forest plot of current evidence base #
-    output$EvBase <- renderPlot({
-      if (input$EvBase_choice == 'bayes') {
-        NoBayesian()
-      } else if (input$EvBase_choice == 'freq') {
-        if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
-          forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
-          addpoly(freqpair()$MA$MA.Random)
-        } else {
-          forest.rma(freqpair()$MA$MA.Fixed, ylim = -2.5)
-          addpoly(freqpair()$MA$MA.Random)
-        }
-        title("Forest plot of studies and overall pooled estimates")
-      }
-    })
     
     # Langan Plot #
     output$Langan <- renderPlot({
@@ -222,33 +162,7 @@ consider_new_study_panel_server <- function(id, freqpair, plot_sims_btn, impact_
       }
     })
     
-    # Downloads #
-    # evidence base #
-    output$evbase_download <- downloadHandler(
-      filename = function() {
-        paste0("EvidenceBase.", input$evbase_choice)
-      },
-      content = function(file) {
-        if (input$evbase_choice == 'pdf') {
-          pdf(file = file)
-        } else {
-          png(file = file)
-        }
-        if (input$EvBase_choice == 'freq') {
-          if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
-            forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
-            addpoly(freqpair()$MA$MA.Random)
-          } else {
-            forest.rma(freqpair()$MA$MA.Fixedz, ylim = -2.5)
-            addpoly(freqpair()$MA$MA.Random)
-          }
-          title("Forest plot of studies and overal pooled estimates")
-        }
-        dev.off()
-      }
-    )
-    
-    # extended funnel plot #
+    # Download #
     output$Langan_download <- downloadHandler(
       filename = function() {
         paste0('ExtFunnelPlot.', input$langan_choice)
@@ -285,8 +199,6 @@ consider_new_study_panel_server <- function(id, freqpair, plot_sims_btn, impact_
         }
       }
     )
-    
-    return(reactive({ input$EvBase_choice }))
     
   })
 }

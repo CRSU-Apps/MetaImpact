@@ -41,7 +41,11 @@ calculator_page_ui <- function(id) {
     conditionalPanel(
       ns = NS(id),
       condition = "input.FreqRun != 0 || input.BayesRun != 0",
-      consider_new_study_panel_ui(id = ns("new_study"))
+      br(),
+      h3("Step 2: Consider what a new study may look like and it's potential impact"),
+      br(),
+      evidence_base_panel_ui(id = ns("evidence_base")),
+      langan_plot_panel_ui(id = ns("langan"))
     ),
     
     # Sample Size Calculator
@@ -181,12 +185,16 @@ calculator_page_server <- function(id, data) {
     })
     
     
-    ## Considering new study & choose evidence base ##
+    ## Show Evidence Base ##
     
-    EvBase_choice <- consider_new_study_panel_server("new_study", freqpair = freqpair, plot_sims_btn = reactive({input$plot_sims}), 
-                                                    impact_type_btn = reactive({input$impact_type}), 
-                                                    cutoff_btn = reactive({input$cutoff}), sample_sizes_btn = reactive({input$samplesizes}), 
-                                                    outcome = outcome, CalcResults = CalcResults)
+    EvBase_choice <- evidence_base_panel_server("evidence_base", freqpair = freqpair)
+    
+    
+    ## Langan plot ##
+    
+    langan_plot_panel_server("langan", freqpair = freqpair, plot_sims_btn = reactive({input$plot_sims}), 
+                             impact_type_btn = reactive({input$impact_type}), cutoff_btn = reactive({input$cutoff}), 
+                             sample_sizes_btn = reactive({input$samplesizes}), outcome = outcome, CalcResults = CalcResults)
     
     
     
