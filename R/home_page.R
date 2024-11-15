@@ -13,7 +13,24 @@ home_page_ui <- function(id) {
     br(),
     fluidRow(
       column(
-        width = 7,
+        width = 3,
+        img(src = "images/MetaImpact.png", 
+            style = "vertical-align: middle; width: -webkit-fill-available; max-height: 300px; max-width: 300px; margin: auto;"),
+        hr(),
+        p(tags$strong("Latest Updates:")),
+        p(tags$strong("Minor update (4th April 2024 v1.0.0-beta-2):")),
+        tags$ul(
+          tags$li("Updated funding statement"),
+          tags$li("Minor formatting improvements")
+        ),
+        p(tags$strong("Major update (16th June 2023 v1.0.0-beta):")),
+        tags$ul(
+          tags$li("Initial release")
+        )
+      ),
+      column(
+        width = 3,
+        offset = 1,
         h4("About"),
         p("This app encourages researchers to design a future study such that it's inclusion would make 
             an impact on the current evidence-base."),
