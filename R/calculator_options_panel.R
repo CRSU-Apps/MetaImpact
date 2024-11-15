@@ -120,8 +120,7 @@ calculator_options_panel_server <- function(id, EvBase_choice, data, outcome, Co
     # Interactive help boxes #
     
     steps <- reactive(data.frame(
-      category = c(rep("CalcSettings", 5)),
-      element = c("#samplesizes", "#its", "#impact_type", "#cutoff", "#plot_sims"),
+      element = paste0("#", ns(c("samplesizes", "its", "impact_type + .selectize-control", "cutoff", "plot_sims"))),
       intro = c("This is where you specify sample sizes for which you wish to estimate power. You can enter one sample size, or multiple by separating them with a semi-colon (;). Currently, it is assumed that future designed trials have two arms of equal size.",
                 "Choose how many iterations (i.e. times the algorithm is run) you wish to have per simulation (sample size). If you choose a higher number of iterations, the simulations will take longer but give more precise estimates (narrower confidence intervals), and vice versa.",
                 "Making an 'impact' on the current evidence base can be done in multiple ways - choose here which method you wish to focus on (1. Having a significant p-value; 2. Having a 95% confidence interval of a certain width; 3. Having the lower bound of the 95% CI above a certain value; 4. Having the upper bound of the 95% CI below a certain value).",
@@ -130,19 +129,20 @@ calculator_options_panel_server <- function(id, EvBase_choice, data, outcome, Co
     ))
     
     observeEvent(
-      input$calc_help,
-      introjs(
-        session,
-        options = list(
-          steps = steps() %>% filter(category == "CalcSettings"),
-          showBullets = FALSE,
-          showProgress = TRUE,
-          showStepNumbers = FALSE,
-          nextLabel = "Next",
-          prevLabel = "Prev",
-          skipLabel = "Skip"
-        )
-      )   # IMPACT_TYPE NOT WORKING and don't know why...
+      input$calc_help, {
+        rintrojs::introjs(
+          session,
+          options = list(
+            steps = steps(),
+            showBullets = FALSE,
+            showProgress = TRUE,
+            showStepNumbers = FALSE,
+            nextLabel = "Next",
+            prevLabel = "Prev",
+            skipLabel = "Skip"
+          )
+        )   # IMPACT_TYPE NOT WORKING and don't know why...
+      }
     )
     
     # Cut-off settings #

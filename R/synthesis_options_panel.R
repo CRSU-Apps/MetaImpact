@@ -143,7 +143,7 @@ synthesis_options_panel_server <- function(id, data) {
     
     steps <- reactive(data.frame(
       category = c(rep("BayesSettings", 4)),
-      element = c("#prior", "#chains", "#iter", "#burn"),
+      element = paste0("#", session$ns(c("prior", "chains", "iter", "burn"))),
       intro = c("Choose which vague prior to use to initially model the between-study standard deviation (used for random-effects models)",
                 "Choose the number of chains. A chain represents a run-through of the analysis, with each chain starting with different values to aid robustness. The results then incorporate all chains.",
                 "The number of iterations to run through. A higher number of iterations is likely to lead to more robust results but does take longer.",
@@ -152,19 +152,20 @@ synthesis_options_panel_server <- function(id, data) {
     
     # Bayesian settings #
     observeEvent(
-      input$bayes_help,
-      introjs(
-        session,
-        options = list(
-          steps = steps() %>% filter(category == "BayesSettings"),
-          showBullets = FALSE,
-          showProgress = TRUE,
-          showStepNumbers = FALSE,
-          nextLabel = "Next",
-          prevLabel = "Prev",
-          skipLabel = "Skip"
+      input$bayes_help, {
+        rintrojs::introjs(
+          session,
+          options = list(
+            steps = steps(),
+            showBullets = FALSE,
+            showProgress = TRUE,
+            showStepNumbers = FALSE,
+            nextLabel = "Next",
+            prevLabel = "Prev",
+            skipLabel = "Skip"
+          )
         )
-      )
+      }
     )
     
     return(
