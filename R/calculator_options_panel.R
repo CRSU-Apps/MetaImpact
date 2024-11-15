@@ -5,67 +5,62 @@
 calculator_options_panel_ui <- function(id) {
   ns <- NS(id)
   div(
-    column(
-      width = 5,
-      align = 'center',
-      bsCollapse(
-        id = ns("CalcSettings"),
-        open = "Power Calculation Settings",
-        bsCollapsePanel(
-          title = "Power Calculation Settings",
-          style = 'info',
-          fluidRow(
-            div(
-              style = "display: inline-block;vertical-align:top;",
-              textInput(inputId = ns("samplesizes"), label = "Total sample size(s)", value = "100")
-            ),
-            div(
-              style = "display: inline-block;vertical-align:top;",
-              dropMenu(
-                dropdownButton(size = 'xs', icon = icon('info')),
-                align = 'left',
-                h6("Information"),
-                p("Studies are assumed to have two arms of equal sizes."),
-                p("If entering multiple sample sizes, please separate them with a semi-colon (e.g. 100; 200; 300).")
-              )
-            ),
-            div(
-              style = "display: inline-block;vertical-align:top; width: 15px;"
-            ),
-            div(
-              style = "display: inline-block;vertical-align:top;",
-              numericInput(inputId = ns("its"), label = "Number of iterations", value = 100, min = 1)
+    bsCollapse(
+      id = ns("CalcSettings"),
+      open = "Power Calculation Settings",
+      bsCollapsePanel(
+        title = "Power Calculation Settings",
+        style = 'info',
+        fluidRow(
+          div(
+            style = "display: inline-block;vertical-align:top;",
+            textInput(inputId = ns("samplesizes"), label = "Total sample size(s)", value = "100")
+          ),
+          div(
+            style = "display: inline-block;vertical-align:top;",
+            dropMenu(
+              dropdownButton(size = 'xs', icon = icon('info')),
+              align = 'left',
+              h6("Information"),
+              p("Studies are assumed to have two arms of equal sizes."),
+              p("If entering multiple sample sizes, please separate them with a semi-colon (e.g. 100; 200; 300).")
             )
           ),
-          fluidRow(
-            div(
-              style = "display: inline-block;vertical-align:top;",
-              tagList(
-                selectInput(
-                  inputId = ns("impact_type"),
-                  label = "Type of impact on evidence base",
-                  choices = c(
-                    "Significant p-value" = "pvalue",
-                    "95% confidence interval of certain width" = "ciwidth",
-                    "Lower bound of 95% confidence interval of certain value" = "lci",
-                    "Upper bound 95% confidence interval of certain value" = "uci"
-                  )
-                ),
-                checkboxInput(inputId = ns("plot_sims"), label = "Plot simulated trials onto extended funnel plot?", value = FALSE),
-                actionButton(inputId = ns("calc_help"), label = "Help", class = "btn-xs", style = "position: absolute; left: 40px;")
-              )
-            ),
-            div(
-              style = "display: inline-block;vertical-align:top; width: 35px;"
-            ),
-            div(
-              style = "display: inline-block;vertical-align:top; width: 300px;",
-              uiOutput(outputId = ns("CutOff"))
+          div(
+            style = "display: inline-block;vertical-align:top; width: 15px;"
+          ),
+          div(
+            style = "display: inline-block;vertical-align:top;",
+            numericInput(inputId = ns("its"), label = "Number of iterations", value = 100, min = 1)
+          )
+        ),
+        fluidRow(
+          div(
+            style = "display: inline-block;vertical-align:top;",
+            tagList(
+              selectInput(
+                inputId = ns("impact_type"),
+                label = "Type of impact on evidence base",
+                choices = c(
+                  "Significant p-value" = "pvalue",
+                  "95% confidence interval of certain width" = "ciwidth",
+                  "Lower bound of 95% confidence interval of certain value" = "lci",
+                  "Upper bound 95% confidence interval of certain value" = "uci"
+                )
+              ),
+              checkboxInput(inputId = ns("plot_sims"), label = "Plot simulated trials onto extended funnel plot?", value = FALSE),
+              actionButton(inputId = ns("calc_help"), label = "Help", class = "btn-xs", style = "position: absolute; left: 40px;")
             )
+          ),
+          div(
+            style = "display: inline-block;vertical-align:top; width: 35px;"
+          ),
+          div(
+            style = "display: inline-block;vertical-align:top; width: 300px;",
+            uiOutput(outputId = ns("CutOff"))
           )
         )
-      ),
-      actionButton(inputId = ns("CalcRun"), label = "Run Sample Size Calculations", class = "btn-primary btn-lg")
+      )
     )
   )
 }
@@ -78,8 +73,9 @@ calculator_options_panel_ui <- function(id) {
 #' @param outcome The outcome type of the data (reactive)
 #' @param ContBin Indicator of whether data is continuous or binary (reactive)
 #' @param freqpair Reactive object containing information from frequentist analysis
+#' @param calc_button Action button to run calculations
 #' @return list of user selected options and other reactives needed for calculator
-calculator_options_panel_server <- function(id, EvBase_choice, data, outcome, ContBin, freqpair) {     
+calculator_options_panel_server <- function(id, EvBase_choice, data, outcome, ContBin, freqpair, calc_button) {     
   moduleServer(id, function(input, output, session) {
     
     ns <- session$ns
@@ -106,7 +102,7 @@ calculator_options_panel_server <- function(id, EvBase_choice, data, outcome, Co
     })
     
     # compare previous input settings to decide on recalc option
-    observeEvent(input$CalcRun, {
+    observeEvent(calc_button(), {
       #compare previous two sets of inputs
       if (!is.null(tmpInputs()) &&
           setequal(inputCache()$sample, tmpInputs()$sample) &&
@@ -166,7 +162,6 @@ calculator_options_panel_server <- function(id, EvBase_choice, data, outcome, Co
         its = reactive({ input$its }),
         impact_type = reactive({ input$impact_type }),
         plot_sims = reactive({ input$plot_sims }),
-        CalcRun = reactive({ input$CalcRun }),
         cutoff = reactive({ input$cutoff }),
         Recalc = Recalc
       )

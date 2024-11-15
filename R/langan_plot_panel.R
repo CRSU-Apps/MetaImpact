@@ -20,7 +20,7 @@ langan_plot_panel_ui <- function(id) {
             plotOutput(outputId = ns("Langan"))
           ),
           conditionalPanel(
-            ns = NS(id),
+            ns = ns,
             condition = "input.LanganOptions.includes('contour')",
             div(
               style = "position: absolute; right: 40px;",

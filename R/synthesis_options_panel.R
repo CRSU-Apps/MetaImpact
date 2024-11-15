@@ -14,7 +14,7 @@ synthesis_options_panel_ui <- function(id) {
         column(
           width = 6,
           conditionalPanel(
-            ns = NS(id),
+            ns = ns,
             condition = "output.ContBin == 'continuous'",
             radioButtons(
               inputId = ns("OutcomeCont"),
@@ -26,7 +26,7 @@ synthesis_options_panel_ui <- function(id) {
             )
           ),
           conditionalPanel(
-            ns = NS(id),
+            ns = ns,
             condition = "output.ContBin == 'binary'",
             radioButtons(
               inputId = ns("OutcomeBina"),
