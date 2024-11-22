@@ -123,7 +123,7 @@ bayesian_analysis_panel_server <- function(id, action_button, data, FixRand, out
             facet_wrap(~parameter, strip.position = 'left', nrow = 2, scales = 'free', labeller = as_labeller(c(theta = "Pooled estimate", 'tau[1]' = "Between-study SD") ) )
         }
       }
-      information
+      return(information)
     })
     
     # Assign plots #

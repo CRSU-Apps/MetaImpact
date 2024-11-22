@@ -133,9 +133,9 @@ synthesis_options_panel_server <- function(id, data) {
     
     outcome <- reactive({                  # different outcome variables if continuous or binary
       if (ContBin() == 'continuous') {
-        input$OutcomeCont
+        return(input$OutcomeCont)
       } else {
-        input$OutcomeBina
+        return(input$OutcomeBina)
       }
     })
     

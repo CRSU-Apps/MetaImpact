@@ -37,7 +37,6 @@ calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwi
     
     # Run calculator and obtain results #
     CalcResults <- eventReactive( calc_button(), {
-      print("running calculator")
       list1 <- list()
       list1$sample_sizes <- as.integer(unlist(str_split(samplesizes(), ";"), use.names = FALSE)) # convert to vector of integers
       if (grepl(".", samplesizes(), fixed = TRUE) | grepl(".", toString(list1$sample_sizes/2), fixed = TRUE)) {     # If any decimals or odds have been entered
@@ -54,35 +53,33 @@ calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwi
             }
             progress$set(value = value, detail = detail)
           }
-          print("running multiple")
           list1$data <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), updateProgress = updateProgress, chains = chains(), iter = iter(), warmup = burn(), prior = prior())
         } else if (length(list1$sample_sizes) == 1) {
-          print("running single")
           list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), chains = chains(), iter = iter(), warmup = burn(), prior = prior())
         }
-        calc_res <<- list1
+        calc_res <- list1
         return(calc_res)
       }
     })
-    # Bayesian takes a while doing 'something' before starting to run simulations (which also means when using recalc option, it takes longer than I think it should?)
     
     # Assign plots #
     output$powplot <- renderPlot({    # only if multiple sample sizes entered
-      print("creating power plot")
       metapowplot(PowerData = CalcResults()$data, ModelOpt = input$powplot_options, SampleSizes = CalcResults()$sample_sizes)
     })
     
     output$powtable <- renderTable({
-      print("creating power table")
       powdata <- CalcResults()$data
       names(powdata) <- c("Total Sample Size", "Model", "Power estimate (%)", "Lower 95% CI bound", "Upper 95% CI bound")
       powdata
     }, digits = 1)
     
     output$singleresult <- renderUI({
-      print("creating single power result")
-      HTML(paste0("<b>Fixed-effects</b>: ", CalcResults()$singleresult$power$Fixed*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Fixed*100, 1), "% to ", round(CalcResults()$singleresult$CI_upper$Fixed*100, 1), "%)<br>",
-                  "<b>Random-effects</b>: ", CalcResults()$singleresult$power$Random*100, "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Random*100, 1), "% to ", round(CalcResults()$singleresult$CI_upper$Random*100, 1), "%)"))
+      HTML(paste0("<b>Fixed-effects</b>: ", CalcResults()$singleresult$power$Fixed*100, 
+                  "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Fixed*100, 1), 
+                  "% to ", round(CalcResults()$singleresult$CI_upper$Fixed*100, 1), "%)<br>",
+                  "<b>Random-effects</b>: ", CalcResults()$singleresult$power$Random*100, 
+                  "% power (95% CI: ", round(CalcResults()$singleresult$CI_lower$Random*100, 1), 
+                  "% to ", round(CalcResults()$singleresult$CI_upper$Random*100, 1), "%)"))
     })
     
 
@@ -105,8 +102,7 @@ calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwi
     OneOrMultiple <- eventReactive( calc_button(), {         # function to be used in update Collapse below
       if (grepl(';', samplesizes())) {
         return('Power Plot of Results')
-      }
-      if (!grepl(';', samplesizes())) {
+      } else {
         return('Table of power results')
       }
     })

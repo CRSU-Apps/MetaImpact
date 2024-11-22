@@ -83,16 +83,14 @@ evidence_base_panel_server <- function(id, freqpair) {
         } else {
           png(file = file)
         }
-        if (input$EvBase_choice == 'freq') {
-          if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
-            forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
-            addpoly(freqpair()$MA$MA.Random)
-          } else {
-            forest.rma(freqpair()$MA$MA.Fixedz, ylim = -2.5)
-            addpoly(freqpair()$MA$MA.Random)
-          }
-          title("Forest plot of studies and overal pooled estimates")
+        if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
+          forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
+          addpoly(freqpair()$MA$MA.Random)
+        } else {
+          forest.rma(freqpair()$MA$MA.Fixedz, ylim = -2.5)
+          addpoly(freqpair()$MA$MA.Random)
         }
+        title("Forest plot of studies and overal pooled estimates")
         dev.off()
       }
     )

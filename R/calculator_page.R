@@ -80,7 +80,7 @@ calculator_page_server <- function(id, data) {
     
     ## Load Synthesis Options ##
     
-    synthOptionsReactives <- synthesis_options_panel_server("synthesis_options", data = data)
+    synthOptionsReactives <- synthesis_options_panel_server(id = "synthesis_options", data = data)
     
     Pair_Ref <- synthOptionsReactives$Pair_ref
     Pair_Trt <- synthOptionsReactives$Pair_trt
@@ -99,7 +99,7 @@ calculator_page_server <- function(id, data) {
     
     ## Frequentist Meta-Analysis ##
     
-    freqpair <- frequentist_analysis_panel_server("frequentist_analysis", action_button=reactive({input$FreqRun}), 
+    freqpair <- frequentist_analysis_panel_server(id = "frequentist_analysis", action_button=reactive({input$FreqRun}), 
                                                   data = WideData, FixRand = FixRand, 
                                                   outcome = outcome, Pair_Ref = Pair_Ref, 
                                                   ContBin = ContBin, Pair_Trt = Pair_Trt)
@@ -111,7 +111,7 @@ calculator_page_server <- function(id, data) {
     
     ## Bayesian Meta-Analysis ##
     
-    bayespair <- bayesian_analysis_panel_server("bayesian_analysis", action_button = reactive({input$BayesRun}),
+    bayespair <- bayesian_analysis_panel_server(id = "bayesian_analysis", action_button = reactive({input$BayesRun}),
                                                 data = WideData, FixRand = FixRand, 
                                                 outcome = outcome, Pair_Ref = Pair_Ref, 
                                                 ContBin = ContBin, Pair_Trt = Pair_Trt,
@@ -125,19 +125,19 @@ calculator_page_server <- function(id, data) {
     
     ## Show Evidence Base ##
     
-    EvBase_choice <- evidence_base_panel_server("evidence_base", freqpair = freqpair)
+    EvBase_choice <- evidence_base_panel_server(id = "evidence_base", freqpair = freqpair)
     
     
     ## Langan plot ##
     
-    langan_plot_panel_server("langan", freqpair = freqpair, plot_sims_btn = plot_sims, 
+    langan_plot_panel_server(id = "langan", freqpair = freqpair, plot_sims_btn = plot_sims, 
                              impact_type_btn = impact_type, cutoff_btn = cutoff, 
                              sample_sizes_btn = samplesizes, outcome = outcome, CalcResults = CalcResults)
     
     
     ## Load Calculator Options ##
     
-    calcOptionsReactives <- calculator_options_panel_server("calculator_options", EvBase_choice = EvBase_choice, 
+    calcOptionsReactives <- calculator_options_panel_server(id = "calculator_options", EvBase_choice = EvBase_choice, 
                                                             data = WideData, outcome = outcome, ContBin = ContBin,
                                                             freqpair = freqpair, calc_button = reactive({ input$CalcRun }))
     
@@ -153,14 +153,14 @@ calculator_page_server <- function(id, data) {
     # Load correct meta-analysis object depending on user selection
     pairwise_MA <- reactive({
       if (EvBase_choice() == 'freq') {
-        freqpair()$MA
+        return(freqpair()$MA)
       } else {
-        bayespair()$MA
+        return(bayespair()$MA)
       }
     })
     
     # Run calculator
-    CalcResults <- calculator_results_panel_server("results", calc_button = reactive({ input$CalcRun }), samplesizes = samplesizes, 
+    CalcResults <- calculator_results_panel_server(id = "results", calc_button = reactive({ input$CalcRun }), samplesizes = samplesizes, 
                                                    pairwise_MA = pairwise_MA, WideData = WideData, its = its, 
                                                    impact_type = impact_type, cutoff = cutoff, outcome = outcome, 
                                                    Recalc = Recalc, chains = chains, iter = iter, 

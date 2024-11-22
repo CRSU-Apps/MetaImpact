@@ -87,9 +87,9 @@ calculator_options_panel_server <- function(id, EvBase_choice, data, outcome, Co
     tmpInputs <- reactiveVal()  # initialised
     tmp_pairwise <- reactive({
       if (EvBase_choice() == 'freq') {
-        FreqPair(data = data(), outcome = outcome(), model = 'both', CONBI = ContBin()) # if I use freqpair(), then the forest plot on evidence synthesis tab doesn't load - minor bug for now (extra run-time and hope no-one changes frequentist settings without re-running in-between changing calculator settings)
+        return(FreqPair(data = data(), outcome = outcome(), model = 'both', CONBI = ContBin())) # if I use freqpair(), then the forest plot on evidence synthesis tab doesn't load - minor bug for now (extra run-time and hope no-one changes frequentist settings without re-running in-between changing calculator settings)
       } else {
-        bayespair()$MA
+        return(bayespair()$MA)
       }
     })
     inputCache <- reactive({
@@ -141,7 +141,7 @@ calculator_options_panel_server <- function(id, EvBase_choice, data, outcome, Co
             prevLabel = "Prev",
             skipLabel = "Skip"
           )
-        )   # IMPACT_TYPE NOT WORKING and don't know why...
+        )
       }
     )
     
