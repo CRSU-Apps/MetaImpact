@@ -2,7 +2,7 @@
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
-page_four_ui <- function(id) {
+walkthrough_page_four_ui <- function(id) {
   ns <- NS(id)
   div(
     h2("Visually understanding the power calculation"),
@@ -69,7 +69,7 @@ page_four_ui <- function(id) {
 #' 
 #' @param id ID of the module
 #' @param WalkFreq Frequentist MA results for walk-through
-page_four_server <- function(id, WalkFreq) {
+walkthrough_page_four_server <- function(id, WalkFreq) {
   moduleServer(id, function(input, output, session) {
     
     # Create example simulation data and add to Langan plot

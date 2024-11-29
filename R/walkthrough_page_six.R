@@ -2,7 +2,7 @@
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
-page_six_ui <- function(id) {
+walkthrough_page_six_ui <- function(id) {
   ns <- NS(id)
   div(
     h2("How does the random-effects model affect the sample size calculations?"),
@@ -103,7 +103,7 @@ page_six_ui <- function(id) {
 #' @param id ID of the module
 #' @param WalkCalcResultsData dataset of power results from the walk-through
 #' @param WalkFreq Frequentist MA results for walk-through
-page_six_server <- function(id, WalkCalcResultsData, WalkFreq) {
+walkthrough_page_six_server <- function(id, WalkCalcResultsData, WalkFreq) {
   moduleServer(id, function(input, output, session) {
     
     # Create power results for fixed and random effects

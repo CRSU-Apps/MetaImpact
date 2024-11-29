@@ -2,7 +2,7 @@
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
-page_two_ui <- function(id) {
+walkthrough_page_two_ui <- function(id) {
   ns <- NS(id)
   div(
     h2("Fixed-effects meta-analysis (frequentist framework)"),
@@ -21,7 +21,7 @@ page_two_ui <- function(id) {
 #' @param id ID of the module
 #' @param WalkData Data for the walk-through
 #' @return WalkFreq - the frequentist analysis for walk-through
-page_two_server <- function(id, WalkData) {
+walkthrough_page_two_server <- function(id, WalkData) {
   moduleServer(id, function(input, output, session) {
     
     # Create example forest plot

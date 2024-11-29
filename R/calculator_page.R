@@ -15,7 +15,9 @@ calculator_page_ui <- function(id) {
         width = 4,
         actionButton(inputId = ns("FreqRun"), label = "Run frequentist meta-analysis", class = "btn-primary btn-lg"),
         div(style = "height:20px"),
-        actionButton(inputId = ns("BayesRun"), label = "Run Bayesian meta-analysis", class = "btn-primary btn-lg")
+        div(title = "Running MetaImpact with a Bayesian meta-analysis is not yet available. Please run a frequentist model.",
+            actionButton(inputId = ns("BayesRun"), label = "Run Bayesian meta-analysis", class = "btn-primary btn-lg")
+        )
       ),
       # Inputs
       column(
@@ -77,6 +79,10 @@ calculator_page_ui <- function(id) {
 #' @param data Data loaded by the user or default data loaded from data_page module
 calculator_page_server <- function(id, data) {     
   moduleServer(id, function(input, output, session) {
+    
+    # Disable Bayesian buttons whilst functionality is not complete #
+    
+    shinyjs::disable(id = "BayesRun")
     
     ## Load Synthesis Options ##
     

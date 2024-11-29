@@ -12,19 +12,6 @@ BadSampleSizes <- function() {
   ))
 }
 
-NoBayesian <- function() {
-  showModal(modalDialog(
-    title = "Feature not yet available",
-    easyClose = FALSE,
-    p("Calculating the power of new studies with set sample size(s) is not ready yet within the Bayesian framework. Please ", 
-      tags$strong("choose frequentist"), 
-      " (and run a frequentist analysis in step 1 if not done so already)"),
-    br(),
-    modalButton("Close warning"),
-    footer = NULL
-  ))
-}
-
 NoNMA <- function() {
   showModal(modalDialog(
     title = "Feature not yet available",

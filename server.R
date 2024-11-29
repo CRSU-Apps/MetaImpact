@@ -12,7 +12,7 @@ function(input, output, session) {
   ### Walk-through demonstration ###
   #------------------------------#
   
-  walk_through_page_server(id = "walk_through")
+  walk_through_section_server(id = "walk_through")
   
   
   ### Load and present Data ###

@@ -18,7 +18,7 @@ fluidPage(
     # Walk-Through
     tabPanel(
       title = "Walk-Through",
-      walk_through_page_ui(id = "walk_through")
+      walk_through_section_ui(id = "walk_through")
     ),
 
     # Data Tab

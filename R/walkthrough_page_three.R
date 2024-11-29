@@ -2,7 +2,7 @@
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
-page_three_ui <- function(id) {
+walkthrough_page_three_ui <- function(id) {
   ns <- NS(id)
   div(
     fluidRow(
@@ -58,7 +58,7 @@ page_three_ui <- function(id) {
 #' 
 #' @param id ID of the module
 #' @param WalkCalcResultsData dataset of power results from the walk-through
-page_three_server <- function(id, WalkCalcResultsData) {
+walkthrough_page_three_server <- function(id, WalkCalcResultsData) {
   moduleServer(id, function(input, output, session) {
     
     # Create example power plots and tables

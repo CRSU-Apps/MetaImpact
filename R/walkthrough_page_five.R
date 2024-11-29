@@ -2,7 +2,7 @@
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
-page_five_ui <- function(id) {
+walkthrough_page_five_ui <- function(id) {
   ns <- NS(id)
   div(
     h2("Random-effects versus Fixed-effects"),
@@ -31,7 +31,7 @@ page_five_ui <- function(id) {
 #' 
 #' @param id ID of the module
 #' @param WalkFreq Frequentist MA results for walk-through
-page_five_server <- function(id, WalkFreq) {
+walkthrough_page_five_server <- function(id, WalkFreq) {
   moduleServer(id, function(input, output, session) {
     
     output$Forest <- renderPlot({

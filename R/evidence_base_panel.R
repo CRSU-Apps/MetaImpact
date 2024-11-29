@@ -19,14 +19,17 @@ evidence_base_panel_ui <- function(id) {
             type = 6,
             plotOutput(outputId = ns("EvBase"))
           ),
-          radioButtons(
-            inputId = ns("EvBase_choice"),
-            label = NULL,
-            choices = c(
-              "Frequentist MA" = "freq",
-              "Bayesian MA" = "bayes"
-            ),
-            inline = TRUE
+          div(title = "As Bayesian functionality is not yet available, only frequentist results are shown.",
+              radioButtons(
+              inputId = ns("EvBase_choice"),
+              label = NULL,
+              choices = c(
+                "Frequentist MA" = "freq",
+                "Bayesian MA" = "bayes"
+              ),
+              selected = 'freq',
+              inline = TRUE
+            )
           ),
           fluidRow(
             div(
@@ -56,20 +59,19 @@ evidence_base_panel_ui <- function(id) {
 evidence_base_panel_server <- function(id, freqpair) {     
   moduleServer(id, function(input, output, session) {
     
+    # Disable radio buttons whilst waiting to add Bayesian functionality
+    shinyjs::disable(id = "EvBase_choice")
+    
     # Forest plot of current evidence base #
     output$EvBase <- renderPlot({
-      if (input$EvBase_choice == 'bayes') {
-        NoBayesian()
-      } else if (input$EvBase_choice == 'freq') {
-        if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
-          forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
-          addpoly(freqpair()$MA$MA.Random)
-        } else {
-          forest.rma(freqpair()$MA$MA.Fixed, ylim = -2.5)
-          addpoly(freqpair()$MA$MA.Random)
-        }
-        title("Forest plot of studies and overall pooled estimates")
+      if (freqpair()$MA$MA.Fixed$measure %in% c('OR', 'RR')) {
+        forest.rma(freqpair()$MA$MA.Fixed, atransf = exp, ylim = -2.5)
+        addpoly(freqpair()$MA$MA.Random)
+      } else {
+        forest.rma(freqpair()$MA$MA.Fixed, ylim = -2.5)
+        addpoly(freqpair()$MA$MA.Random)
       }
+      title("Forest plot of studies and overall pooled estimates")
     })
   
     # Download #

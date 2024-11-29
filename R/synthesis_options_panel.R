@@ -98,6 +98,13 @@ synthesis_options_panel_ui <- function(id) {
 synthesis_options_panel_server <- function(id, data) {     
   moduleServer(id, function(input, output, session) {
     
+    # Disable Bayesian buttons whilst functionality is not complete #
+    
+    shinyjs::disable(id = "prior")
+    shinyjs::disable(id = "chains")
+    shinyjs::disable(id = "iter")
+    shinyjs::disable(id = "burn")
+    
     # Update available reference treatments when the data changes
     observe({
       updateSelectInput(inputId = "Pair_Ref", choices = data()$levels, selected = data()$levels[1])

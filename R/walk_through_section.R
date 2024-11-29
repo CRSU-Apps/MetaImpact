@@ -2,7 +2,7 @@
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
-walk_through_page_ui <- function(id) {
+walk_through_section_ui <- function(id) {
   ns <- NS(id)
   div(
     fluidPage(
@@ -31,37 +31,37 @@ walk_through_page_ui <- function(id) {
         div(
           class = 'page',
           id = ns('page2'),
-          page_two_ui(id = ns("page2"))
+          walkthrough_page_two_ui(id = ns("page2"))
         ),
         
         div(
           class = 'page',
           id = ns('page3'),
-          page_three_ui(id = ns("page3"))
+          walkthrough_page_three_ui(id = ns("page3"))
         ),
         
         div(
           class = 'page',
           id = ns('page4'),
-          page_four_ui(id = ns("page4"))
+          walkthrough_page_four_ui(id = ns("page4"))
         ),
         
         div(
           class = 'page',
           id = ns('page5'),
-          page_five_ui(id = ns("page5"))
+          walkthrough_page_five_ui(id = ns("page5"))
         ),
         
         div(
           class = 'page',
           id = ns('page6'),
-          page_six_ui(id = ns("page6"))
+          walkthrough_page_six_ui(id = ns("page6"))
         ),
         
         div(
           class = 'page',
           id = ns('page7'),
-          page_seven_ui(id = ns("page7"))
+          walkthrough_page_seven_ui(id = ns("page7"))
         ),
         
         div(
@@ -94,7 +94,7 @@ walk_through_page_ui <- function(id) {
 #' Module server for the walk-through page.
 #' 
 #' @param id ID of the module
-walk_through_page_server <- function(id) {
+walk_through_section_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
     ## Code for stepping through the multiple pages ##
@@ -124,28 +124,28 @@ walk_through_page_server <- function(id) {
     
     ## Page 2 content - conduct frequentist meta-analysis ##
     
-    WalkFreq <- page_two_server(id = "page2", WalkData = WalkData)
+    WalkFreq <- walkthrough_page_two_server(id = "page2", WalkData = WalkData)
     
     ## Page 3 content - calculate power of a new study ##
     
-    page_three_server(id = "page3", WalkCalcResultsData = WalkCalcResultsData)
+    walkthrough_page_three_server(id = "page3", WalkCalcResultsData = WalkCalcResultsData)
     
     ## Page 4 content - understanding the power calculation##
     
-    page_four_server(id = "page4", WalkFreq = WalkFreq)
+    walkthrough_page_four_server(id = "page4", WalkFreq = WalkFreq)
     
     ## Page 5 content - random vs fixed effects ##
     
-    page_five_server(id = "page5", WalkFreq = WalkFreq)
+    walkthrough_page_five_server(id = "page5", WalkFreq = WalkFreq)
     
     ## Page 6 content - illustrating how random effects affect power results ##
     
-    page_six_server(id = "page6", WalkCalcResultsData = WalkCalcResultsData, 
+    walkthrough_page_six_server(id = "page6", WalkCalcResultsData = WalkCalcResultsData, 
                     WalkFreq = WalkFreq)
     
     ## page 7 content - frequentist vs Bayesian ##
     
-    page_seven_server(id = "page7", WalkFreq = WalkFreq)
+    walkthrough_page_seven_server(id = "page7", WalkFreq = WalkFreq)
     
   })
 }

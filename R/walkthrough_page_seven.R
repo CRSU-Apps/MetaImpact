@@ -2,7 +2,7 @@
 #' 
 #' @param id ID of the module
 #' @return Div for the home page
-page_seven_ui <- function(id) {
+walkthrough_page_seven_ui <- function(id) {
   ns <- NS(id)
   div(
     h2("Bayesian versus Frequentist framework"),
@@ -41,7 +41,7 @@ page_seven_ui <- function(id) {
 #' 
 #' @param id ID of the module
 #' @param WalkFreq Frequentist MA results for walk-through
-page_seven_server <- function(id, WalkFreq) {
+walkthrough_page_seven_server <- function(id, WalkFreq) {
   moduleServer(id, function(input, output, session) {
     
     # Create example frequentist and bayesian forest plots
