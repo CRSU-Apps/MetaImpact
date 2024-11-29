@@ -63,24 +63,27 @@ synthesis_options_panel_ui <- function(id) {
             bsCollapsePanel(
               title = "Bayesian options",
               style = 'info',
-              column(
-                width = 6,
-                radioButtons(
-                  inputId = ns("prior"),
-                  label = "Vague prior for between study standard deviation:",
-                  choices = c(
-                    "Half-Cauchy(0,0.5)" = "half-cauchy",
-                    "Uniform(0,2)" = "uniform",
-                    "Half-Normal(0,1)" = "half-normal"
-                  )
+              div(id = ns("bayesian_options"),
+                title = "Bayesian functionality is currently unavailable. Please ignore these options.",
+                column(
+                  width = 6,
+                  radioButtons(
+                    inputId = ns("prior"),
+                    label = "Vague prior for between study standard deviation:",
+                    choices = c(
+                      "Half-Cauchy(0,0.5)" = "half-cauchy",
+                      "Uniform(0,2)" = "uniform",
+                      "Half-Normal(0,1)" = "half-normal"
+                    )
+                  ),
+                  actionButton(inputId = ns("bayes_help"), label = "Help", class = "btn-xs", style = "position: absolute; left: 0; top: 220px")
                 ),
-                actionButton(inputId = ns("bayes_help"), label = "Help", class = "btn-xs", style = "position: absolute; left: 0; top: 220px")
-              ),
-              column(
-                width = 6,
-                numericInput(inputId = ns("chains"), label = "Number of chains:", value = 2, min = 1),
-                numericInput(inputId = ns("iter"), label = "Number of iterations:", value = 4000, min = 1),
-                numericInput(inputId = ns("burn"), label = "Burn-in:", value = 400, min = 1)
+                column(
+                  width = 6,
+                  numericInput(inputId = ns("chains"), label = "Number of chains:", value = 2, min = 1),
+                  numericInput(inputId = ns("iter"), label = "Number of iterations:", value = 4000, min = 1),
+                  numericInput(inputId = ns("burn"), label = "Burn-in:", value = 400, min = 1)
+                )
               )
             )
           )
@@ -100,10 +103,7 @@ synthesis_options_panel_server <- function(id, data) {
     
     # Disable Bayesian buttons whilst functionality is not complete #
     
-    shinyjs::disable(id = "prior")
-    shinyjs::disable(id = "chains")
-    shinyjs::disable(id = "iter")
-    shinyjs::disable(id = "burn")
+    shinyjs::disable(id = "bayesian_options")
     
     # Update available reference treatments when the data changes
     observe({
