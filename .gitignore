@@ -4,7 +4,7 @@
 
 # Session Data files
 .RData
-.Rproj
+*.Rproj
 
 # User-specific files
 .Ruserdata
@@ -38,3 +38,6 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Simulation text files for calculation 'recalculation' option
+sims*.txt

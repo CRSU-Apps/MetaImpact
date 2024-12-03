@@ -1192,7 +1192,7 @@
     },
     "metafor": {
       "Package": "metafor",
-      "Version": "4.4-0",
+      "Version": "4.6-0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -1209,7 +1209,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "e350b77c80601d5ea55cd126be065b1c"
+      "Hash": "ecd22cddb62a55ab0789509a54bd4af3"
     },
     "mgcv": {
       "Package": "mgcv",

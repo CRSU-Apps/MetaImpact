@@ -78,6 +78,76 @@ FreqPair <- function(data, outcome, CONBI, model) { #inputs: data frame in wide 
 }
 ## DOESN'T WORK UNLESS MODEL == 'BOTH'
 
+### Summary of analysis ###
+
+PairwiseSummary_functionF <- function(outcome, MA.Model) {
+  sum <- summary(MA.Model)
+  line0 <- strong("Results")
+  line1 <- paste0("Number of studies: ", sum$k)
+  if (outcome == "OR") {
+    line2 <- paste0(
+      "Pooled estimate: ", round(exp(sum$b), 2),
+      " (95% CI: ", round(exp(sum$ci.lb), 2), " to ", round(exp(sum$ci.ub), 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation (log-odds scale): "
+  } else if (outcome == "RR") {
+    line2 <- paste0(
+      "Pooled estimate: ", round(exp(sum$b), 2),
+      " (95% CI: ", round(exp(sum$ci.lb), 2), " to ", round(exp(sum$ci.ub), 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation (log-probability scale): "
+  } else {
+    line2 <- paste(
+      "Pooled estimate: ", round(sum$b, 2),
+      " (95% CI: ", round(sum$ci.lb, 2), " to ", round(sum$ci.ub, 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation: "
+  }
+  line3 <- strong("Heterogeneity results")
+  line4 <- paste0(
+    line4, round(sqrt(sum$tau2), 3), ";",
+    " I-squared: ", round(sum$I2, 1), "%;",
+    " P-value for testing heterogeneity: ", round(sum$QEp, 3)
+  )
+  HTML(paste(line0, line1, line2, line3, line4, sep = "<br/>"))
+}
+
+### Model fit summary ###
+
+PairwiseModelFit_functionF <- function(MA.Model) {
+  sum <- summary(MA.Model)
+  HTML(paste0("AIC: ", round(sum$fit.stats[3, 1], 2), "; BIC: ", round(sum$fit.stats[4, 1], 2)))
+}
+
+### Frequentist NMA ###
+
+FreqNMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group
+  treat <- data[, grep(pattern = "^T", colnames(data))]
+  n <- data[, grep(pattern = "^N", colnames(data))]
+  if (CONBI == 'continuous') {
+    mean <- data[, grep(pattern = "^Mean", colnames(data))]
+    sd <- data[, grep(pattern = "^SD", colnames(data))]
+    d1 <- pairwise(treat = treat, n = n, mean = mean, sd = sd, data = data, studlab = Study, sm = outcome) #convert to contrast form
+  } else {
+    event <- data[, grep(pattern = "^R", colnames(data))]
+    d1 <- pairwise(treat = treat, event = event, n = n, data = data, studlab = Study, sm = outcome)
+  }
+  net1 <- netmeta(TE, seTE, treat1, treat2, studlab, data = d1,
+                  sm = outcome, level = 0.95, level.comb = 0.95,
+                  comb.random = (model == 'random' | model == 'both'), comb.fixed = (model == 'fixed' | model == 'both'), reference.group = ref,
+                  all.treatments = NULL, seq = NULL, tau.preset = NULL,
+                  tol.multiarm = 0.05, tol.multiarm.se = 0.2, warn = TRUE)
+  list(MAObject = net1, MAData = d1)
+}
+
+### Forest Plot ###
+
+FreqNMAForest <- function(NMA, model, ref) { #inputs: NMA object; fixed or random; reference treatment
+  metafor::forest(NMA, reference.group = ref, pooled = model)
+}
 
 
 # Bayesian #
@@ -248,3 +318,112 @@ BayesPairForest <- function(MAdata, model, outcome) {    # inputs: summary MA da
 
 #g <- BayesPairForest(test$MAdata, outcome, model = 'both')
 #g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model")
+
+### Summary of analysis ###
+
+PairwiseSummary_functionB <- function(outcome, MA.Model, model) {   # MA.Model has to have MAData, MA.Fixed and MA.Random
+  line0 <- strong("Results")
+  line1 <- paste0("Number of studies: ", nrow(MA.Model$MA.Fixed$data_wide)) # same for fixed or random
+  if (model == 'random') {
+    line2 <- paste0(
+      "Pooled estimate: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'est'], 2),
+      " (95% CI: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'lci'], 2),
+      " to ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'uci'], 2), ")"
+    ) # already exponentiated where needed within BayesPair function
+    if (outcome == 'OR') {
+      line3 <- "Between study standard-deviation (log-odds scale): "
+    } else if (outcome == 'RR') {
+      line3 <- "Between study standard-deviation (log-probability scale): "
+    } else {
+      line3 <- "Between study standard-deviation: "
+    }
+    line3 <- paste0(
+      line3, round(MA.Model$MA.Random$fit_sum['tau[1]', 1], 3),
+      " (95% CI: ", round(MA.Model$MA.Random$fit_sum['tau[1]', 4], 3),
+      " to ", round(MA.Model$MA.Random$fit_sum['tau[1]', 8], 3), ")"
+    )
+  } else {
+    line2 <- paste0(
+      "Pooled estimate: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'est'], 2),
+      " (95% CI: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'lci'], 2),
+      " to ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'uci'], 2), ")"
+    ) # already exponentiated where needed within BayesPair function
+    line3 <- "For fixed models, between study standard-deviation is set to 0."
+  }
+  HTML(paste(line0, line1, line2, line3, sep = "<br/>"))
+}
+
+### Model fit summary ###
+
+PairwiseModelFit_functionB <- function(MA.Model) {
+  HTML(paste("Rhat: ", round(MA.Model$Rhat.max, 2)))
+}
+
+### Bayesian NMA ###
+
+BayesMA <- function(data, CONBI, outcome, model, ref, prior) { #inputs: data; continuous or binary; outcome type; fixed or random; reference treatment; prior
+if (CONBI == 'continuous') {                                         # set up data frame
+  armData <- data.frame(study = data$Study,
+                       treatment = data$T,
+                       mean = data$Mean,
+                       std.dev = data$SD,
+                       sampleSize = data$N)
+} else {
+  armData <- data.frame(study = data$Study,
+                        treatment = data$T,
+                        responders = data$R,
+                        sampleSize = data$N)
+}
+mtcNetwork <- mtc.network(data.ab = armData, description = "Network")   # Gemtc network object
+if (outcome == "MD") {                                             # set up likelihood and links
+  like <- "normal"
+  link <- "identity"
+} else  {
+  like <- "binom"
+  link <- ifelse (outcome == "OR", "logit", "log")
+}
+if (prior == 'uniform') {
+  Prior <- mtc.hy.prior("std.dev", "dunif", 0, 2)
+} else if (prior == 'gamma') {
+  Prior <- mtc.hy.prior("prec", "dgamma", 0.1, 0.1)
+} else {
+  Prior <- mtc.hy.prior("std.dev", "dhnorm", 0, 1)
+}
+mtcModel <- mtc.model(network = mtcNetwork,                          # Formulate model
+                      type = "consistency",
+                      linearModel = model,
+                      likelihood = like,
+                      link = link,
+                      dic = TRUE,
+                      hy.prior = eval(Prior))
+mtcResults <- mtc.run(mtcModel)                                    # Run model
+mtcRelEffects <- relative.effect(mtcResults, t1 = ref)                # Obtain relative effects
+sumresults <- summary(mtcRelEffects)                               # Summary of relative effects
+sumoverall <- summary(mtcResults)                                  # Overall summary of analysis
+DIC <- as.data.frame(sumoverall$DIC)                               # DIC
+list(Network = mtcNetwork, RelEffects = mtcRelEffects, ResultsSum = sumresults, DIC = DIC)
+}
+
+TauDesc <- function(ResultsSum, outcome, model) {                    # Between-study standard deviation
+  if (model == "random") {
+    ntx <- nrow(ResultsSum$summaries$statistics)
+    sd_mean <- round(ResultsSum$summaries$statistics[ntx, 1], digits = 2)
+    sd_lowCI <- round(ResultsSum$summaries$quantiles[ntx, 1], digits = 2)
+    sd_highCI <- round(ResultsSum$summaries$quantiles[ntx, 5], digits = 2)
+  }
+  if (model == "random") {
+    if (outcome == "OR") {
+      paste("Between-study standard deviation (log-odds scale):", sd_mean, ". 95% credible interval:", sd_lowCI, ", ", sd_highCI, ".")}
+    else if (outcome == "RR") {
+      paste ("Between-study standard deviation (log probability scale):", sd_mean, ". 95% credible interval:", sd_lowCI, ", ", sd_highCI, ".")}
+    else {
+      paste ("Between-study standard deviation:", sd_mean, ". 95% credible interval:", sd_lowCI, ", ", sd_highCI, ".")}}
+  else {
+    if (outcome == "OR") {
+      paste("Between-study standard deviation (log-odds scale) set at 0")}
+    else if (outcome == "RR") {
+      paste("Between-study standard deviation (log probability scale) set at 0")}
+    else {
+      paste("Between-study standard deviation set at 0")}
+  }
+}
