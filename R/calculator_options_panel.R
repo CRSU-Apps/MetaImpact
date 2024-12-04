@@ -14,7 +14,7 @@ calculator_options_panel_ui <- function(id) {
         fluidRow(
           div(
             style = "display: inline-block;vertical-align:top;",
-            textInput(inputId = ns("samplesizes"), label = "Total sample size(s)", value = "100")
+            textInput(inputId = ns("samplesizes"), label = "Total sample size(s)", value = "100", width = '290px')
           ),
           div(
             style = "display: inline-block;vertical-align:top;",
@@ -31,7 +31,7 @@ calculator_options_panel_ui <- function(id) {
           ),
           div(
             style = "display: inline-block;vertical-align:top;",
-            numericInput(inputId = ns("its"), label = "Number of iterations", value = 100, min = 1)
+            numericInput(inputId = ns("its"), label = "Number of iterations", value = 100, min = 1, width = '290px')
           )
         ),
         fluidRow(
@@ -49,7 +49,7 @@ calculator_options_panel_ui <- function(id) {
                 )
               ),
               checkboxInput(inputId = ns("plot_sims"), label = "Plot simulated trials onto extended funnel plot?", value = FALSE),
-              actionButton(inputId = ns("calc_help"), label = "Help", class = "btn-xs", style = "position: absolute; left: 40px;")
+              actionButton(inputId = ns("calc_help"), label = "Help", class = "btn-xs", style = "position: absolute; left: 40px; top: 260px;")
             )
           ),
           div(
