@@ -221,7 +221,7 @@ extfunnel <- function(
         predint1 <- predict(meta)$pi.lb
         predint2 <- predict(meta)$pi.ub
         # update x-axis limits if predictive interval is wider
-        xlim <- c(min(predint1-0.5, xlim[1]), max(predint2+0.5, xlim[2]))
+        xlim <- c(min(predint1 - 0.2*SSdiff, xlim[1]), max(predint2 + 0.2*SSdiff, xlim[2]))
       } else {
         print("For fixed-effects models, tau-squared is equal to 0 and therefore the PI becomes equivalent to the CI")
       }
