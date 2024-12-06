@@ -125,8 +125,8 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
   CI_lower <- data.frame(Fixed = NA, Random = NA)
   CI_upper <- data.frame(Fixed = NA, Random = NA)
   sim.inference <- data.frame(Fixed = rep(x = NA, times = nit), Random = rep(x = NA, times = nit))
-  sim_study <- data.frame(estimate.fixed = rep(NA, nit), st_err.fixed = rep(NA, nit), estimate.rand = rep(NA, nit), st_err.rand = rep(NA, nit))
   if (recalc == 'FALSE') {
+    sim_study <- data.frame(estimate.fixed = rep(NA, nit), st_err.fixed = rep(NA, nit), estimate.rand = rep(NA, nit), st_err.rand = rep(NA, nit)) # initialise
     sims <- data.frame(Fixed.p = rep(x = NA, times = nit), Fixed.lci = rep(x = NA, times = nit), Fixed.uci = rep(x = NA, times = nit),
                        Random.p = rep(x = NA, times = nit), Random.lci = rep(x = NA, times = nit), Random.uci = rep(x = NA, times = nit))
     # fixed-effects
@@ -173,16 +173,22 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
         setTxtProgressBar(progress_bar, value = i)
       }
     close(progress_bar)
+    # save data to be used if the impact options change and simulations are not needed to be redone
     if (is.na(plot_ext)) {
-      write.table(sims, file = 'sims.txt', sep = "\t", row.names = FALSE)  # save this data if model option is changed
+      write.table(sims, file = 'sims.txt', sep = "\t", row.names = FALSE) 
+      write.table(sim_study, file = 'sim_study.txt', sep = "\t", row.names = FALSE)
     } else {
       write.table(sims, file = paste('sims', plot_ext, '.txt', sep = ""), sep = "\t", row.names = FALSE)  # extra option needed for metapowplot
+      write.table(sim_study, file = paste('sim_study', plot_ext, '.txt', sep = ""), sep = "\t", row.names = FALSE)
     }
   }
+  # read in simulated data (needed for when recalc is TRUE and the previous data is needed)
   if (is.na(plot_ext)) {
-    sims <- read.table('sims.txt', sep = "\t", header = TRUE) # read in simulated data
+    sims <- read.table('sims.txt', sep = "\t", header = TRUE)
+    sim_study <- read.table('sim_study.txt', sep = "\t", header = TRUE)
   } else {
     sims <- read.table(paste('sims', plot_ext, '.txt', sep = ""), sep = "\t", header = TRUE)
+    sim_study <- read.table(paste('sim_study', plot_ext, '.txt', sep = ""), sep = "\t", header = TRUE)
   }
   # Calculate power with 95% CI = proportion of 'TRUE' - true statements depend on inference
   for (i in 1:nit) {
