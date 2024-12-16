@@ -8,14 +8,16 @@
 #' @param es pooled estimate from an existing meta-analysis
 #' @param tausq estimated tau-squared (between study heterogeneity) from an existing meta-analysis
 #' @param var estimated variance from an existing meta-analysis
-#' @param model whether working with a fixed or random effects meta-analysis
+#' @param model type of meta-analysis model, one of ['fixed', 'random']
 #' @param n total sample size of new trial
 #' @param data original dataset for the existing meta-analysis
-#' @param measure type of outcome that is being used for the meta-analysis (or/rr/rd/md)
+#' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
 #' @return A list containing the key data for the newly simulated trial
+#'  The following when measure is 'OR', 'RR', or 'RD'
 #'  - 'new.events.t': For binary outcome, number of events in the treatment arm of the new trial
 #'  - 'new.events.c': For binary outcome, number of events in the control arm of the new trial
 #'  - 'new.effect': For binary outcome, new effect result for new trial (e.g. OR)
+#'  The following when measure is 'MD' or 'SMD'
 #'  - 'new.mean.t': For continuous outcome, new mean in treatment arm of new trial
 #'  - 'new.stdev.t': For continuous outcome, new standard deviation in treatment arm of new trial
 #'  - 'new.mean.c': For continuous outcome, new mean in control arm of new trial
@@ -89,9 +91,9 @@ metasim <- function(es, tausq, var, model, n, data, measure) {
 #' Function for conducting bulk of power function where the meta-analysis is updated
 #' @param new the newly simulated trial data created by the command metasim
 #' @param data original meta-analysis dataset
-#' @param model Whether we're working with a fixed or random effects meta-analysis
+#' @param model type of meta-analysis model, one of ['fixed', 'random']
 #' @param n total sample size of new study
-#' @param measure type of outcome measure being utilised (or/rr/rd/md)
+#' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
 #' @return meta-analysis object in 'rma' format
 rerunMA <- function(new, data, model, n, measure) { 
   
@@ -123,9 +125,9 @@ rerunMA <- function(new, data, model, n, measure) {
 #' @param data dataset of evidence from original existing meta-analysis
 #' @param n total sample size of new study
 #' @param nit number of iterations/simulation to calculate the power from
-#' @param inference the type of inference/impact to calculate (pvalue/ciwidth/lci/uci)
+#' @param inference the type of inference/impact to calculate, one of ['pvalue', 'ciwidth', 'lci', 'uci']
 #' @param pow the cut-off level of the desired impact (e.g. 0.05 if a p-value of <=0.05 is desired from the updated meta-analysis)
-#' @param measure type of outcome measure being utilised (or/rr/rd/md)
+#' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
 #' @param recalc whether or not new trials need to be simulated again. If FALSE, then trials need to be simulated again, if TRUE, then the power can be recalculated based on the same trials, but using different cutoffs 
 #' @param plot_ext whether the results are going to be used within the metapowplot function
 #' @return list containing the following
@@ -176,7 +178,7 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
       for (i in 1:nit) {
         # obtain new data, add to existing data, and re-run MA
         new <- metasim(es = NMA$MA.Random$beta, tausq = NMA$MA.Random$tau2, var = (NMA$MA.Random$se)^2, model = 'random', n = n, data = data, measure = measure)
-        newMA <- rerunMA(new = new, data = data, model = 'random', n = n, measure = measure, chains = chains, iter = iter, warmup = warmup, prior = prior)
+        newMA <- rerunMA(new = new, data = data, model = 'random', n = n, measure = measure)
         # Collect data about simulated data (for OR, RR, on log scale)
         sim_study$estimate.rand[i] <- newMA$data$yi[nrow(data)+1]
         sim_study$st_err.rand[i] <- sqrt(newMA$data$vi[nrow(data)+1])
@@ -247,9 +249,9 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
 #' @param NMA a meta-analysis object
 #' @param data dataset of evidence from original existing meta-analysis
 #' @param nit number of iterations/simulation to calculate the power from
-#' @param inference the type of inference/impact to calculate (pvalue/ciwidth/lci/uci)
+#' @param inference the type of inference/impact to calculate, one of ['pvalue', 'ciwidth', 'lci', 'uci']
 #' @param pow the cut-off level of the desired impact (e.g. 0.05 if a p-value of <=0.05 is desired from the updated meta-analysis)
-#' @param measure type of outcome measure being utilised (or/rr/rd/md)
+#' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
 #' @param recalc whether or not new trials need to be simulated again. If FALSE, then trials need to be simulated again, if TRUE, then the power can be recalculated based on the same trials, but using different cutoffs 
 #' @param updateProgress needed for updating the user on the progress of the simulations
 #' @return dataset of power results (power estimate plus confidence interval) for each sample size
@@ -260,7 +262,7 @@ metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measur
   
   # Calculate power for each sample size
   for (i in 1:length(SampleSizes)) {
-    results <- metapow(NMA = NMA, data = data, n = SampleSizes[i], nit = nit, inference = inference, pow = pow, measure = measure, recalc = recalc, plot_ext = i, chains = chains, iter = iter, warmup = warmup, prior = prior)
+    results <- metapow(NMA = NMA, data = data, n = SampleSizes[i], nit = nit, inference = inference, pow = pow, measure = measure, recalc = recalc, plot_ext = i)
     PowerData$Estimate[i] <- results$power$Fixed*100
     PowerData$Estimate[i+length(SampleSizes)] <- results$power$Random*100
     PowerData$CI_lower[i] <- results$CI_lower$Fixed*100

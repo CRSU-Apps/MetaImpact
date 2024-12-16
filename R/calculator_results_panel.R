@@ -25,12 +25,8 @@ calculator_results_panel_ui <- function(id) {
 #' @param cutoff User selection for input$cutoff (cut off value for desired impact)
 #' @param outcome The outcome type of the data (reactive)
 #' @param Recalc Reactive logical indicating whether the simulations need to be rerun
-#' @param chains User selection for input$chains (number of chains for Bayesian)
-#' @param iter User selection for input$iter (number of iterations for Bayesian)
-#' @param burn User selection for input$burn (Number of iterations to burn for Bayesian)
-#' @param prior User selection for input$prior (Choice of prior distribution for Bayesian)
 #' @return Reactive object containing calculator results
-calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwise_MA, WideData, its, impact_type, cutoff, outcome, Recalc, chains, iter, burn, prior) {     
+calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwise_MA, WideData, its, impact_type, cutoff, outcome, Recalc) {     
   moduleServer(id, function(input, output, session) {
     
     ns <- session$ns
@@ -53,9 +49,9 @@ calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwi
             }
             progress$set(value = value, detail = detail)
           }
-          list1$data <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), updateProgress = updateProgress, chains = chains(), iter = iter(), warmup = burn(), prior = prior())
+          list1$data <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), updateProgress = updateProgress)
         } else if (length(list1$sample_sizes) == 1) {
-          list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), chains = chains(), iter = iter(), warmup = burn(), prior = prior())
+          list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc())
         }
         calc_res <- list1
         return(calc_res)

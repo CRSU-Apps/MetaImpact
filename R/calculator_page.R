@@ -169,8 +169,7 @@ calculator_page_server <- function(id, data) {
     CalcResults <- calculator_results_panel_server(id = "results", calc_button = reactive({ input$CalcRun }), samplesizes = samplesizes, 
                                                    pairwise_MA = pairwise_MA, WideData = WideData, its = its, 
                                                    impact_type = impact_type, cutoff = cutoff, outcome = outcome, 
-                                                   Recalc = Recalc, chains = chains, iter = iter, 
-                                                   burn = burn, prior = prior)
+                                                   Recalc = Recalc)
     
   })
 }
