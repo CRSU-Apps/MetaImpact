@@ -324,8 +324,8 @@ metapowplot <- function(PowerData, ModelOpt = 'both', SampleSizes) {
 
 
 #' Function to obtain information needed to for the section of UI where users select their cut-off values for power calculation
-#' @param type Type of impact (pvalue/ciwidth/uci/lci)
-#' @param outcome Type of outcome that is being used for the meta-analysis (or/rr/rd/md)
+#' @param type the type of inference/impact to calculate, one of ['pvalue', 'ciwidth', 'lci', 'uci']
+#' @param outcome type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
 #' @param MAFix Fixed-effects meta-analysis object
 #' @param MARan Random-effects meta-analysis object
 #' @return list containing the following:
