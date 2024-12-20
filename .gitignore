@@ -41,3 +41,4 @@ vignettes/*.pdf
 
 # Simulation text files for calculation 'recalculation' option
 sims*.txt
+sim_study*.txt
