@@ -297,24 +297,25 @@ extfunnel <- function(
   plot <- ggplot(data = data.frame(x = SS, y = seSS), aes(x = x, y = y)) +
     labs(x = xlab, y = ylab) +
     theme_classic() + theme(aspect.ratio = 1, panel.background = element_rect(colour = "black")) +
-    scale_x_continuous(limits = xlim, expand = c(0, 0)) +
-    scale_y_reverse(limits = ylim, expand = c(0, 0))
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_reverse(expand = c(0, 0)) +
+    coord_cartesian(xlim = xlim, ylim = ylim)
   
-  # Specify axis ticks if specified or exponential (and extend if predictive interval)
+  # Specify axis ticks if specified or exponential
   # x axis ticks for exponential effects
   if (!is.null(expxticks)) {
     plot <- plot +
-      scale_x_continuous(breaks = log(expxticks), labels = expxticks, limits = xlim, expand = c(0, 0))
+      scale_x_continuous(breaks = log(expxticks), labels = expxticks, expand = c(0, 0))
   }
   # x axis ticks (non exp)
   if (!is.null(xticks)) {
     plot <- plot +
-      scale_x_continuous(breaks = xticks, labels = xticks, limits = xlim, expand = c(0, 0))
+      scale_x_continuous(breaks = xticks, labels = xticks, expand = c(0, 0))
   }
   # y axis ticks
   if (!is.null(yticks)) {
     plot <- plot +
-      scale_y_reverse(breaks = yticks, labels = yticks, limits = ylim, expand = c(0, 0))
+      scale_y_reverse(breaks = yticks, labels = yticks, expand = c(0, 0))
   }
   
   # contours
