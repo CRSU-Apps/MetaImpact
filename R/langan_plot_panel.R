@@ -19,30 +19,6 @@ langan_plot_panel_ui <- function(id) {
             type = 6,
             plotOutput(outputId = ns("Langan"))
           ),
-          conditionalPanel(
-            ns = ns,
-            condition = "input.LanganOptions.includes('contour')",
-            div(
-              style = "position: absolute; right: 40px;",
-              dropMenu(
-                dropdownButton(
-                  label = "Significance contours look strange?",
-                  circle = FALSE,
-                  size = 'xs'
-                ),
-                align = 'left',
-                arrow = FALSE,
-                h6("Limitations with the significance contours"),
-                p("There exist two known 'artefacts' from the methods used to currently draw the significance contours. We apologise for this and will be working on solving these issues."),
-                p(strong("Contours 'drop' at edges")),
-                img(src = "images/PlotLim_edging.png", width = 200, align = "center"),
-                p("The contours may appear to suddenly 'drop' to the bottom of the plot at the far edges. The contours should naturally follow the rest of the curve trajectory. "),
-                p(strong("White triangle")),
-                img(src = "images/PlotLim_triangle.png", width = 200, align = "center"),
-                p("Most contour plots create a 'set of curtains' appearance. However, for some analyses, both contours may curve to the same side of the plot. In such cases, a white triangle may then be present within a shaded area. This triangle should match the colouring above/around it.")
-              )
-            )
-          ),
           br(),
           checkboxGroupInput(
             inputId = ns("LanganOptions"),
