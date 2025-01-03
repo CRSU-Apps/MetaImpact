@@ -12,7 +12,7 @@
 
 # Test datasets #
 # Binary #
-#data <- data.frame(StudyID = c(1, 2, 3, 4, 5, 6), Study = c("Herne_1980", "Hoaglund_1950", "Kaiser_1996", "Lexomboon_1971", "McKerrow_1961", "Taylor_1977"),
+# data <- data.frame(StudyID = c(1, 2, 3, 4, 5, 6), Study = c("Herne_1980", "Hoaglund_1950", "Kaiser_1996", "Lexomboon_1971", "McKerrow_1961", "Taylor_1977"),
 #                   R.1 = c(7, 39, 97, 8, 5, 12), N.1 = c(7+39, 39+115, 97+49, 8+166, 5+10, 12+117), T.1 = rep("Treatment", 6),
 #                   R.2 = c(10, 51, 94, 4, 8, 3), N.2 = c(10+12, 51+104, 94+48, 4+83, 8+10, 3+56), T.2 = rep("Control", 6))
 # Continuous test data
@@ -23,10 +23,10 @@
 
 
 # Conduct base MA (will be within app, so will be an input to stop uneccesary recalculations)
-#MAdata <- escalc(measure = "OR", ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = data)
+# MAdata <- escalc(measure = "OR", ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = data)
 #MAdata <- escalc(measure = "SMD", m1i = Mean.1, m2i = Mean.2, sd1i = SD.1, sd2i = SD.2, n1i = N.1, n2i = N.2, data = data)
 #MA.Fixed <- rma(yi, vi, slab = Study, data = MAdata, method = "FE", measure = "OR") #fixed effects#
-#MA.Random <- rma(yi, vi, slab = Study, data = MAdata, method = "DL", measure = "OR") #random effects #
+# MA.Random <- rma(yi, vi, slab = Study, data = MAdata, method = "DL", measure = "OR") #random effects #
 #forest(MA.Random)
 #forest(MA.Random, atransf = exp)   #forest.rma for options
 #summary(MA.Random, transf = exp)
@@ -48,18 +48,26 @@ metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean esti
     mean.c = mean(data$Mean.2) #average mean outcome
     stdev.c = mean(data$SD.2) #standard deviation
   }
-  # establish standard error for predictive distribution
-  if (model == 'random') {
-    std_err <- sqrt(tausq + var)
-  } else {
-    std_err <- sqrt(var)
-  }
+
   # draw new effect measure for new trial from predictive distribution of current MA (in terms of outcome) (note that this is the 'true' effect, and so will naturally vary from the trial effect)
-  if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
-    new.effect <- exp(rnorm(n = 1, mean = es, sd = std_err))
-  } else {
-    new.effect <- rnorm(n = 1, mean = es, sd = std_err)
+  # fixed effects
+  if (model == 'fixed') {
+    std_err <- sqrt(var)
+    if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
+      new.effect <- exp(rnorm(n = 1, mean = es, sd = std_err))
+    } else {
+      new.effect <- rnorm(n = 1, mean = es, sd = std_err)
+    }
+  # random effects (with adjustment for having unknown tau2 - see eq 12 of https://doi.org/10.1111/j.1467-985X.2008.00552.x)
+  } else if (model == 'random') {
+    std_err <- sqrt(tausq + var)
+    if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
+      new.effect <- exp(es + rt(1, nrow(data)-2) * std_err)
+    } else {
+      new.effect <- es + rt(1, nrow(data)-2) * std_err
+    }
   }
+    
   # calculate number of events/mean/sd in the control group
   if (measure == 'OR' | measure == 'RR' | measure == 'RD') {
     new.events.c <- rbinom(n = 1, size = n/2, prob = prob.c)

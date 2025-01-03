@@ -35,6 +35,9 @@ calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwi
     
     ns <- session$ns
     
+    # Set seed to get reproducable results
+    set.seed(42)
+    
     # Run calculator and obtain results #
     CalcResults <- eventReactive( calc_button(), {
       list1 <- list()
