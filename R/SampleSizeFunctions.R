@@ -38,20 +38,26 @@ metasim <- function(es, tausq, var, model, n, data, measure) {
     mean.c = mean(data$Mean.2) #average mean outcome
     stdev.c = mean(data$SD.2) #standard deviation
   }
-  
-  # establish standard error for predictive distribution
-  if (model == 'random') {
-    std_err <- sqrt(tausq + var)
-  } else {
+
+  # draw new effect measure for new trial from predictive distribution of current MA (in terms of outcome) (note that this is the 'true' effect, and so will naturally vary from the trial effect)
+  # fixed effects
+  if (model == 'fixed') {
     std_err <- sqrt(var)
+    if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
+      new.effect <- exp(rnorm(n = 1, mean = es, sd = std_err))
+    } else {
+      new.effect <- rnorm(n = 1, mean = es, sd = std_err)
+    }
+  # random effects (with adjustment for having unknown tau2 - see eq 12 of https://doi.org/10.1111/j.1467-985X.2008.00552.x)
+  } else if (model == 'random') {
+    std_err <- sqrt(tausq + var)
+    if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
+      new.effect <- exp(es + rt(1, nrow(data)-2) * std_err)
+    } else {
+      new.effect <- es + rt(1, nrow(data)-2) * std_err
+    }
   }
-  
-  # draw a new effect measure for new trial from predictive distribution of current MA (in terms of outcome) (note that this is the 'true' effect, and so will naturally vary from the trial effect)
-  if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
-    new.effect <- exp(rnorm(n = 1, mean = es, sd = std_err))
-  } else {
-    new.effect <- rnorm(n = 1, mean = es, sd = std_err)
-  }
+    
   
   # calculate number of events/mean/sd in the control group
   if (measure == 'OR' | measure == 'RR' | measure == 'RD') {
