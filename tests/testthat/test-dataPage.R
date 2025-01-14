@@ -1,6 +1,6 @@
 
 test_that("Data extracted from example binary file", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(ChooseExample = "binaryEx")
     
     expect_equal(loaded_data(), rio::import("data/AntiVEGF_Binary_Pairwise_Long.csv"))
@@ -8,7 +8,7 @@ test_that("Data extracted from example binary file", {
 })
 
 test_that("Data extracted from example continuous file", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(ChooseExample = "continuousEx")
     
     expect_equal(loaded_data(), rio::import("data/AntiVEGF_Continuous_Pairwise_Long.csv"))
@@ -16,7 +16,7 @@ test_that("Data extracted from example continuous file", {
 })
 
 test_that("Binary data matches between .csv and .xlsx files", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(data = data.frame(datapath = "data/AntiVEGF_Binary_Pairwise_Long.csv"))
     csv_data = loaded_data()
     
@@ -28,7 +28,7 @@ test_that("Binary data matches between .csv and .xlsx files", {
 })
 
 test_that("Continuous data matches between .csv and .xlsx files", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(data = data.frame(datapath = "data/AntiVEGF_Continuous_Pairwise_Long.csv"))
     csv_data = loaded_data()
     
@@ -40,7 +40,7 @@ test_that("Continuous data matches between .csv and .xlsx files", {
 })
 
 test_that("Server returns wrangled binary data", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(ChooseExample = "binaryEx", sort_criteria = "File order")
     
     expect_equal(session$returned()$data, wrangled_data())
@@ -48,7 +48,7 @@ test_that("Server returns wrangled binary data", {
 })
 
 test_that("Server returns wrangled continuous data", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(ChooseExample = "continuousEx", sort_criteria = "File order")
     
     expect_equal(session$returned()$data, wrangled_data())
@@ -56,7 +56,7 @@ test_that("Server returns wrangled continuous data", {
 })
 
 test_that("Should sort binary data by study name", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(data = data.frame(datapath = "data/AntiVEGF_Binary_Pairwise_unsorted.csv"), sort_criteria = "File order")
     unsorted_studies <- unique(wrangled_data()$Study)
     
@@ -74,7 +74,7 @@ test_that("Should sort binary data by study name", {
 })
 
 test_that("Should sort continuous data by study name", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(data = data.frame(datapath = "data/AntiVEGF_Continuous_Pairwise_unsorted.csv"), sort_criteria = "File order")
     unsorted_studies <- unique(wrangled_data()$Study)
     
@@ -92,7 +92,7 @@ test_that("Should sort continuous data by study name", {
 })
 
 test_that("Should sort binary long data by study size", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(data = data.frame(datapath = "data/AntiVEGF_Binary_Pairwise_Long.csv"), sort_criteria = "File order")
     unsorted_studies <- unique(wrangled_data()$Study)
     
@@ -110,7 +110,7 @@ test_that("Should sort binary long data by study size", {
 })
 
 test_that("Should sort binary wide data by study size", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(data = data.frame(datapath = "data/AntiVEGF_Binary_Pairwise_Wide.csv"), sort_criteria = "File order")
     unsorted_studies <- unique(wrangled_data()$Study)
     
@@ -128,7 +128,7 @@ test_that("Should sort binary wide data by study size", {
 })
 
 test_that("Should sort continuous long data by study size", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(data = data.frame(datapath = "data/AntiVEGF_Continuous_Pairwise_Long.csv"), sort_criteria = "File order")
     unsorted_studies <- unique(wrangled_data()$Study)
     
@@ -146,7 +146,7 @@ test_that("Should sort continuous long data by study size", {
 })
 
 test_that("Should sort continuous wide data by study size", {
-  testServer(DataPageServer, {
+  testServer(data_page_server, {
     session$setInputs(data = data.frame(datapath = "data/AntiVEGF_Continuous_Pairwise_Wide.csv"), sort_criteria = "File order")
     unsorted_studies <- unique(wrangled_data()$Study)
     
