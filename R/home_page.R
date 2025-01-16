@@ -6,8 +6,7 @@ home_page_ui <- function(id) {
   ns <- NS(id)
   div(
     h2(
-      "MetaImpact V1.0.0",
-      tags$sup("Beta 2", style = "color:#6CC0ED"), 
+      "MetaImpact V1.0.0", 
       align = "left"
     ),
     br(),
@@ -18,14 +17,16 @@ home_page_ui <- function(id) {
             style = "vertical-align: middle; width: -webkit-fill-available; max-height: 300px; max-width: 300px; margin: auto;"),
         hr(),
         p(tags$strong("Latest Updates:")),
+        p(tags$strong("Major update (16th January 2025 v1.0.0):")),
+        tags$ul(
+          tags$li("Fixed bugs regarding UI elements and plots"),
+          tags$li("Added adjustment to sampling distribution given that tau", tags$sup("2"), " is unknown"),
+          tags$li("Temporarily removed Bayesian options for creating evidence base - will be brought back when Bayesian framework is available for all app features")
+        ),
         p(tags$strong("Minor update (4th April 2024 v1.0.0-beta-2):")),
         tags$ul(
           tags$li("Updated funding statement"),
           tags$li("Minor formatting improvements")
-        ),
-        p(tags$strong("Major update (16th June 2023 v1.0.0-beta):")),
-        tags$ul(
-          tags$li("Initial release")
         )
       ),
       column(
@@ -67,7 +68,7 @@ home_page_ui <- function(id) {
     ),
     br(),
     h4("Authors"),
-    p("Clareece Nevill, Janion Nevill, Terry Quinn, Nicola Cooper, Alex Sutton"),
+    p("Clareece Nevill, Janion Nevill, Will Robinson, Terry Quinn, Nicola Cooper, Alex Sutton"),
     p("This app builds upon the work from the following publications:"),
     p(
       tags$a(
@@ -92,11 +93,11 @@ home_page_ui <- function(id) {
       tags$a(href = "https://github.com/CRSU-Apps/MetaImpact", "CRSU GitHub Page."),
       " This includes a list of known tasks to be completed before releasing a full version of MetaImpact."
     ),
-    p("If you have any questions, queries, or feedback, feel free to email Clareece Nevill at clareece.nevill@le.ac.uk"),
+    p("If you have any questions, queries, or feedback, please email our development team at apps@crsu.org.uk"),
     p("DOI for MetaImpact:"),
     tags$div(
-      tags$a(href = "https://doi.org/10.5281/zenodo.7951025"),
-      tags$img(src = "https://zenodo.org/badge/DOI/10.5281/zenodo.7951025.svg", alt = "DOI")
+      tags$a(href = "https://doi.org/10.5281/zenodo.7951024"),
+      tags$img(src = "https://zenodo.org/badge/DOI/10.5281/zenodo.7951024.svg", alt = "DOI")
     ),
     br(),
     renderFooter(),
