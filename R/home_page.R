@@ -96,8 +96,8 @@ home_page_ui <- function(id) {
     p("If you have any questions, queries, or feedback, please email our development team at apps@crsu.org.uk"),
     p("DOI for MetaImpact:"),
     tags$div(
-      tags$a(href = "https://doi.org/10.5281/zenodo.7951024"),
-      tags$img(src = "https://zenodo.org/badge/DOI/10.5281/zenodo.7951024.svg", alt = "DOI")
+      tags$a(href = "https://doi.org/10.5281/zenodo.14678204"),
+      tags$img(src = "https://zenodo.org/badge/DOI/10.5281/zenodo.14678204.svg", alt = "DOI")
     ),
     br(),
     renderFooter(),
