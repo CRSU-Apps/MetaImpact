@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7951024.svg)](https://doi.org/10.5281/zenodo.7951024)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14678204.svg)](https://doi.org/10.5281/zenodo.14678204)
 
 # MetaImpact v1.0.0
 
