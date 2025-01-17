@@ -108,7 +108,7 @@ extfunnel <- function(
   #length.vector <- c(rep(1, length))
   
   #Calculates the summary effect estimate from which we can get tau-squared and CI (using rma from {metafor})
-  meta <- rma(yi = SS, sei = seSS, method = ifelse(method == 'random', "PM", "FE"), level = (1-sig.level), measure = outcome)
+  meta <- rma(yi = SS, sei = seSS, method = ifelse(method == 'random', "PM", "FE"), level = (1 - sig.level), measure = outcome)
   tau2 <- meta$tau2
   
 #-------------------------------#
@@ -116,9 +116,9 @@ extfunnel <- function(
 #-------------------------------#
   
   if (method == "random") {
-    size <- 1/((seSS^2)+tau2)  # standard inverse-variance weighting
+    size <- 1 / ((seSS^2) + tau2)  # standard inverse-variance weighting
   } else {
-    size <- 1/(seSS^2)
+    size <- 1 / (seSS^2)
   }
   
 #-----------------------------------#
@@ -127,13 +127,13 @@ extfunnel <- function(
   
   sediff <- max(seSS) - min(seSS)
   
-  if (!is.null(ylim) && ylim[1]<ylim[2]) {
+  if (!is.null(ylim) && ylim[1] < ylim[2]) {
     ylim <- rev(ylim)  # for when the user has already defined y limits
   }
   
   if (is.null(ylim)) {
-    ylim <- c(max(seSS) + 0.20*sediff, min(seSS) - 0.25*sediff)
-    if (ylim[2]<0) {
+    ylim <- c(max(seSS) + 0.20 * sediff, min(seSS) - 0.25 * sediff)
+    if (ylim[2] < 0) {
       ylim[2] <- 0
     }
   }
@@ -147,7 +147,7 @@ extfunnel <- function(
   SSdiff <- max(SS) - min(SS)
   
   if (is.null(xlim)) {
-    xlim <- c(min(SS) - 0.2*SSdiff, max(SS) + 0.2*SSdiff)
+    xlim <- c(min(SS) - 0.2 * SSdiff, max(SS) + 0.2 * SSdiff)
   }
   
 #-------------------------------------------------#
@@ -157,7 +157,7 @@ extfunnel <- function(
   if (contour) {
     cSS <- seq(xlim[1], xlim[2], length.out = contour.points)  # granulated vector for effect size (x-axis)
     csize <- seq(ylim[1], ylim[2], length.out = contour.points)  # granulated vector for standard error (y-axis)
-    csize[csize<= 0] <- 0.0000001*min(seSS)
+    csize[csize <= 0] <- 0.0000001 * min(seSS)
     for (k in 2:length(csize)) {
       if (csize[k] == 0 & csize[k-1] == 0) {
         csize[k] <- NA
@@ -174,9 +174,9 @@ extfunnel <- function(
 
     # fixed-effect model #
     if (method == "fixed")  {
-      vwt <- 1/(csize^2)     # weight for each point on plot (inverse of variance) (i.e. weight of new study)
-      c1SS <- (1/vwt)*(zero*(sum(size) + vwt) - sum(size*SS) +  ci * (sum(size)+vwt)^0.5)   # formulae based on CI boundaries of new MA meeting no effect (see Langan et al for details)
-      c2SS <- (1/vwt)*(zero*(sum(size) + vwt) - sum(size*SS) -  ci * (sum(size)+vwt)^0.5)
+      vwt <- 1 / (csize^2)     # weight for each point on plot (inverse of variance) (i.e. weight of new study)
+      c1SS <- (1 / vwt) * (zero * (sum(size) + vwt) - sum(size * SS) +  ci * (sum(size) + vwt)^0.5)   # formulae based on CI boundaries of new MA meeting no effect (see Langan et al for details)
+      c2SS <- (1 / vwt) * (zero * (sum(size) + vwt) - sum(size * SS) -  ci * (sum(size) + vwt)^0.5)
     }
 
     # random-effects model #
@@ -213,7 +213,8 @@ extfunnel <- function(
   if (summ) {
     summary_diamond <- data.frame(
       xsumm = c(meta$ci.lb, meta$b, meta$ci.ub, meta$b),
-      ysumm = c(ylim[2]-0.10*axisdiff+summ.pos, ylim[2]-0.07*axisdiff+summ.pos, ylim[2]-0.10*axisdiff+summ.pos, ylim[2]-0.13*axisdiff+summ.pos)
+      ysumm = c(ylim[2] - 0.10 * axisdiff + summ.pos, ylim[2] - 0.07 * axisdiff + summ.pos, 
+                ylim[2] - 0.10 * axisdiff + summ.pos, ylim[2] - 0.13 * axisdiff + summ.pos)
     )
     
     if (pred.interval) {	
@@ -221,7 +222,7 @@ extfunnel <- function(
         predint1 <- predict(meta)$pi.lb
         predint2 <- predict(meta)$pi.ub
         # update x-axis limits if predictive interval is wider
-        xlim <- c(min(predint1-0.5, xlim[1]), max(predint2+0.5, xlim[2]))
+        xlim <- c(min(predint1 - 0.2 * SSdiff, xlim[1]), max(predint2 + 0.2 * SSdiff, xlim[2]))
       } else {
         print("For fixed-effects models, tau-squared is equal to 0 and therefore the PI becomes equivalent to the CI")
       }
@@ -296,24 +297,25 @@ extfunnel <- function(
   plot <- ggplot(data = data.frame(x = SS, y = seSS), aes(x = x, y = y)) +
     labs(x = xlab, y = ylab) +
     theme_classic() + theme(aspect.ratio = 1, panel.background = element_rect(colour = "black")) +
-    scale_x_continuous(limits = xlim, expand = c(0, 0)) +
-    scale_y_reverse(limits = ylim, expand = c(0, 0))
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_reverse(expand = c(0, 0)) +
+    coord_cartesian(xlim = xlim, ylim = ylim)
   
-  # Specify axis ticks if specified or exponential (and extend if predictive interval)
+  # Specify axis ticks if specified or exponential
   # x axis ticks for exponential effects
   if (!is.null(expxticks)) {
     plot <- plot +
-      scale_x_continuous(breaks = log(expxticks), labels = expxticks, limits = xlim, expand = c(0, 0))
+      scale_x_continuous(breaks = log(expxticks), labels = expxticks, expand = c(0, 0))
   }
   # x axis ticks (non exp)
   if (!is.null(xticks)) {
     plot <- plot +
-      scale_x_continuous(breaks = xticks, labels = xticks, limits = xlim, expand = c(0, 0))
+      scale_x_continuous(breaks = xticks, labels = xticks, expand = c(0, 0))
   }
   # y axis ticks
   if (!is.null(yticks)) {
     plot <- plot +
-      scale_y_reverse(breaks = yticks, labels = yticks, limits = ylim, expand = c(0, 0))
+      scale_y_reverse(breaks = yticks, labels = yticks, expand = c(0, 0))
   }
   
   # contours

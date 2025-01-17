@@ -78,6 +78,50 @@ FreqPair <- function(data, outcome, CONBI, model) { #inputs: data frame in wide 
 }
 ## DOESN'T WORK UNLESS MODEL == 'BOTH'
 
+### Summary of analysis ###
+
+PairwiseSummary_functionF <- function(outcome, MA.Model) {
+  sum <- summary(MA.Model)
+  line0 <- strong("Results")
+  line1 <- paste0("Number of studies: ", sum$k)
+  if (outcome == "OR") {
+    line2 <- paste0(
+      "Pooled estimate: ", round(exp(sum$b), 2),
+      " (95% CI: ", round(exp(sum$ci.lb), 2), " to ", round(exp(sum$ci.ub), 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation (log-odds scale): "
+  } else if (outcome == "RR") {
+    line2 <- paste0(
+      "Pooled estimate: ", round(exp(sum$b), 2),
+      " (95% CI: ", round(exp(sum$ci.lb), 2), " to ", round(exp(sum$ci.ub), 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation (log-probability scale): "
+  } else {
+    line2 <- paste(
+      "Pooled estimate: ", round(sum$b, 2),
+      " (95% CI: ", round(sum$ci.lb, 2), " to ", round(sum$ci.ub, 2), ");",
+      " p-value: ", round(sum$pval, 3)
+    )
+    line4 <- "Between study standard-deviation: "
+  }
+  line3 <- strong("Heterogeneity results")
+  line4 <- paste0(
+    line4, round(sqrt(sum$tau2), 3), ";",
+    " I-squared: ", round(sum$I2, 1), "%;",
+    " P-value for testing heterogeneity: ", round(sum$QEp, 3)
+  )
+  HTML(paste(line0, line1, line2, line3, line4, sep = "<br/>"))
+}
+
+### Model fit summary ###
+
+PairwiseModelFit_functionF <- function(MA.Model) {
+  sum <- summary(MA.Model)
+  HTML(paste0("AIC: ", round(sum$fit.stats[3, 1], 2), "; BIC: ", round(sum$fit.stats[4, 1], 2)))
+}
+
 ### Frequentist NMA ###
 
 FreqNMA <- function(data, outcome, CONBI, model, ref) { #inputs: data frame; outcome type; continuous or binary; fixed or random (or both); reference group
@@ -275,6 +319,45 @@ BayesPairForest <- function(MAdata, model, outcome) {    # inputs: summary MA da
 #g <- BayesPairForest(test$MAdata, outcome, model = 'both')
 #g + ggtitle("Forest plot of studies with overall estimate from fixed-effects model")
 
+### Summary of analysis ###
+
+PairwiseSummary_functionB <- function(outcome, MA.Model, model) {   # MA.Model has to have MAData, MA.Fixed and MA.Random
+  line0 <- strong("Results")
+  line1 <- paste0("Number of studies: ", nrow(MA.Model$MA.Fixed$data_wide)) # same for fixed or random
+  if (model == 'random') {
+    line2 <- paste0(
+      "Pooled estimate: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'est'], 2),
+      " (95% CI: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'lci'], 2),
+      " to ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'RE Model', 'uci'], 2), ")"
+    ) # already exponentiated where needed within BayesPair function
+    if (outcome == 'OR') {
+      line3 <- "Between study standard-deviation (log-odds scale): "
+    } else if (outcome == 'RR') {
+      line3 <- "Between study standard-deviation (log-probability scale): "
+    } else {
+      line3 <- "Between study standard-deviation: "
+    }
+    line3 <- paste0(
+      line3, round(MA.Model$MA.Random$fit_sum['tau[1]', 1], 3),
+      " (95% CI: ", round(MA.Model$MA.Random$fit_sum['tau[1]', 4], 3),
+      " to ", round(MA.Model$MA.Random$fit_sum['tau[1]', 8], 3), ")"
+    )
+  } else {
+    line2 <- paste0(
+      "Pooled estimate: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'est'], 2),
+      " (95% CI: ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'lci'], 2),
+      " to ", round(MA.Model$MAdata[MA.Model$MAdata$Study == 'FE Model', 'uci'], 2), ")"
+    ) # already exponentiated where needed within BayesPair function
+    line3 <- "For fixed models, between study standard-deviation is set to 0."
+  }
+  HTML(paste(line0, line1, line2, line3, sep = "<br/>"))
+}
+
+### Model fit summary ###
+
+PairwiseModelFit_functionB <- function(MA.Model) {
+  HTML(paste("Rhat: ", round(MA.Model$Rhat.max, 2)))
+}
 
 ### Bayesian NMA ###
 

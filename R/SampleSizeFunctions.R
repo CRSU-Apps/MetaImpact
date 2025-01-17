@@ -1,44 +1,34 @@
 # Sample size calculator functions #
 #----------------------------------#
 
-# Functions have not yet been tested for optimal run times
+# Functions metasim, metapow, and metapowplot have been transformed from the Stata commands developed by Crowther et al https://doi.org/10.1177/1536867X1301300302
 
-# Frequentist  & Bayesian #
-#-------------------------#
-# Follow same set-up as Stata where its made up of three functions
-#library(metafor)
-#library(ggplot2)
-#library(tidyr)
-
-# Test datasets #
-# Binary #
-#data <- data.frame(StudyID = c(1, 2, 3, 4, 5, 6), Study = c("Herne_1980", "Hoaglund_1950", "Kaiser_1996", "Lexomboon_1971", "McKerrow_1961", "Taylor_1977"),
-#                   R.1 = c(7, 39, 97, 8, 5, 12), N.1 = c(7+39, 39+115, 97+49, 8+166, 5+10, 12+117), T.1 = rep("Treatment", 6),
-#                   R.2 = c(10, 51, 94, 4, 8, 3), N.2 = c(10+12, 51+104, 94+48, 4+83, 8+10, 3+56), T.2 = rep("Control", 6))
-# Continuous test data
-#data <- data.frame(Study = c("DRCRnet", "Ekinci", "Nepomuceno", "Wiley"),
-#                   Year = c(2015, 2014, 2013, 2016),
-#                   Mean.1 = c(-0.194, -0.237, -0.23, -0.106), SD.1 = c(0.202, 0.16, 0.113, 0.169), N.1 = c(206, 50, 32, 62), T.1 = rep("Treatment", 4),
-#                   Mean.2 = c(-0.194, -0.211, -0.29, -0.132), SD.2 = c(0.202, 0.16, 0.212, 0.173), N.2 = c(206, 50, 28, 62), T.2 = rep("Control", 4))
-
-
-# Conduct base MA (will be within app, so will be an input to stop uneccesary recalculations)
-#MAdata <- escalc(measure = "OR", ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = data)
-#MAdata <- escalc(measure = "SMD", m1i = Mean.1, m2i = Mean.2, sd1i = SD.1, sd2i = SD.2, n1i = N.1, n2i = N.2, data = data)
-#MA.Fixed <- rma(yi, vi, slab = Study, data = MAdata, method = "FE", measure = "OR") #fixed effects#
-#MA.Random <- rma(yi, vi, slab = Study, data = MAdata, method = "DL", measure = "OR") #random effects #
-#forest(MA.Random)
-#forest(MA.Random, atransf = exp)   #forest.rma for options
-#summary(MA.Random, transf = exp)
-#test <- summary(MA.Random)
-#MA <- list(MA.Fixed = MA.Fixed, MA.Random = MA.Random)
-
-# Function for creating new trial
-metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean estimate from MA; tausq - estimated tau-squared from MA; var = estimated variance of estimate from MA; model - fixed or random; n - total sample size; data - original MA data; measure - type of outcome (or/rr/rd/md);
-  # calculate control group stats
+#' Function for creating new trial simulated from the current meta-analysis
+#' 
+#' @param es pooled estimate from an existing meta-analysis
+#' @param tausq estimated tau-squared (between study heterogeneity) from an existing meta-analysis
+#' @param var estimated variance from an existing meta-analysis
+#' @param model type of meta-analysis model, one of ['fixed', 'random']
+#' @param n total sample size of new trial
+#' @param data original dataset for the existing meta-analysis
+#' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
+#' @return A list containing the key data for the newly simulated trial
+#'  The following when measure is 'OR', 'RR', or 'RD'
+#'  - 'new.events.t': For binary outcome, number of events in the treatment arm of the new trial
+#'  - 'new.events.c': For binary outcome, number of events in the control arm of the new trial
+#'  - 'new.effect': For binary outcome, new effect result for new trial (e.g. OR)
+#'  The following when measure is 'MD' or 'SMD'
+#'  - 'new.mean.t': For continuous outcome, new mean in treatment arm of new trial
+#'  - 'new.stdev.t': For continuous outcome, new standard deviation in treatment arm of new trial
+#'  - 'new.mean.c': For continuous outcome, new mean in control arm of new trial
+#'  - 'new.stdev.c': For continuous outcome, new standard deviation in control arm of new trial
+metasim <- function(es, tausq, var, model, n, data, measure) {
+  
+  # calculate average control group data from current meta-analysis dataset
   if (measure == 'OR' | measure == 'RR' | measure == 'RD') {
+    # add zero adjustment if needed
     for (i in 1:nrow(data)) {
-      if ((measure == 'OR' | measure == 'RR') & data$R.2[i] == 0) {  # zero adjustment if needed
+      if ((measure == 'OR' | measure == 'RR') & data$R.2[i] == 0) {  
         data$R.2[i] <- data$R.2[i]+0.5
         data$N.2[i] <- data$N.2[i]+1
       }
@@ -48,18 +38,27 @@ metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean esti
     mean.c = mean(data$Mean.2) #average mean outcome
     stdev.c = mean(data$SD.2) #standard deviation
   }
-  # establish standard error for predictive distribution
-  if (model == 'random') {
-    std_err <- sqrt(tausq + var)
-  } else {
-    std_err <- sqrt(var)
-  }
+
   # draw new effect measure for new trial from predictive distribution of current MA (in terms of outcome) (note that this is the 'true' effect, and so will naturally vary from the trial effect)
-  if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
-    new.effect <- exp(rnorm(n = 1, mean = es, sd = std_err))
-  } else {
-    new.effect <- rnorm(n = 1, mean = es, sd = std_err)
+  # fixed effects
+  if (model == 'fixed') {
+    std_err <- sqrt(var)
+    if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
+      new.effect <- exp(rnorm(n = 1, mean = es, sd = std_err))
+    } else {
+      new.effect <- rnorm(n = 1, mean = es, sd = std_err)
+    }
+  # random effects (with adjustment for having unknown tau2 - see eq 12 of https://doi.org/10.1111/j.1467-985X.2008.00552.x)
+  } else if (model == 'random') {
+    std_err <- sqrt(tausq + var)
+    if (measure == 'OR' | measure == 'RR') {  # for OR/RR, the MA is conducted in log terms
+      new.effect <- exp(es + rt(1, nrow(data)-2) * std_err)
+    } else {
+      new.effect <- es + rt(1, nrow(data)-2) * std_err
+    }
   }
+    
+  
   # calculate number of events/mean/sd in the control group
   if (measure == 'OR' | measure == 'RR' | measure == 'RD') {
     new.events.c <- rbinom(n = 1, size = n/2, prob = prob.c)
@@ -68,6 +67,7 @@ metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean esti
     new.mean.c <- mean(sample)   # take mean and SD of new study results
     new.stdev.c <- sd(sample)
   }
+  
   # calculate number of events/mean/sd in the treatment group
   if (measure == 'OR' | measure == 'RR' | measure == 'RD') {
     if (measure == 'OR') {
@@ -94,9 +94,16 @@ metasim <- function(es, tausq, var, model, n, data, measure) {  # es - mean esti
 }
 
 
-# function to conduct bulk of power function below
-rerunMA <- function(new, data, model, n, measure, chains, iter, warmup, prior) {   # new - newly simulated trial using metasim; data - original dataset; model - fixed or random; n - total sample size; measure - type of outcome (or/rr/rd); chains, iter, warmup, prior = bayesian options
-  # put together dataframe for new trial
+#' Function for conducting bulk of power function where the meta-analysis is updated
+#' @param new the newly simulated trial data created by the command metasim
+#' @param data original meta-analysis dataset
+#' @param model type of meta-analysis model, one of ['fixed', 'random']
+#' @param n total sample size of new study
+#' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
+#' @return meta-analysis object in 'rma' format
+rerunMA <- function(new, data, model, n, measure) { 
+  
+  # combine new trial with original data to create new dataset
   if (measure == 'OR' | measure == 'RR' | measure == 'RD') {
     newtrial <- data.frame(StudyID = max(data$StudyID)+1, Study = paste("New_", format(Sys.Date(), "%Y")), T.1 = data$T.1[1], T.2 = data$T.2[1], R.1 = new$new.events.t, R.2 = new$new.events.c, N.1 = n/2, N.2 = n/2)
     if (measure %in% c('OR', 'RR') & newtrial$R.2 == 0) {   # Add a continuity correction for new trial (rest of data would have been done in metasim command)
@@ -108,34 +115,54 @@ rerunMA <- function(new, data, model, n, measure, chains, iter, warmup, prior) {
                            SD.1 = new$new.stdev.t, SD.2 = new$new.stdev.c, N.1 = n/2, N.2 = n/2)
   }
   newdata <- rbind(data, newtrial)
-  # re-meta-analyse
-  newMA <- FreqPair(data = newdata, outcome = measure, CONBI = ifelse(measure %in% c('OR', 'RR', 'RD'), 'binary', 'continuous'), model = 'both')  # once fixed FreqPar, can change model = 'fixed' to reduce computation
+  
+  # re-meta-analyse the results with the new trial added
+  newMA <- FreqPair(data = newdata, outcome = measure, CONBI = ifelse(measure %in% c('OR', 'RR', 'RD'), 'binary', 'continuous'), model = 'both')  # once fixed FreqPair, can change model = 'fixed' etc. to reduce computation (MIMP-19)
   if (model == 'fixed') {
     return(newMA$MA.Fixed)
   } else {
     return(newMA$MA.Random)
-  }   # had to do it this way (which is wasteful) as FreqPair command is currently only happy with the model = 'both' option
+  }
 }
 
 
-# function for calculating power
-metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, plot_ext = NA, chains, iter, warmup, prior) {  # NMA - an NMA object from inbuilt function FreqMA; data - original data; n - total sample size; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); recalc - re-calculate power based on difference inference; plot - whether it is being used within the metapowplot function; chains, iter, warmup, prior = bayesian options
+#' Function for calculating power of a new study impacting the current evidence base
+#' @param NMA a meta-analysis object
+#' @param data dataset of evidence from original existing meta-analysis
+#' @param n total sample size of new study
+#' @param nit number of iterations/simulation to calculate the power from
+#' @param inference the type of inference/impact to calculate, one of ['pvalue', 'ciwidth', 'lci', 'uci']
+#' @param pow the cut-off level of the desired impact (e.g. 0.05 if a p-value of <=0.05 is desired from the updated meta-analysis)
+#' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
+#' @param recalc whether or not new trials need to be simulated again. If FALSE, then trials need to be simulated again, if TRUE, then the power can be recalculated based on the same trials, but using different cutoffs 
+#' @param plot_ext whether the results are going to be used within the metapowplot function
+#' @return list containing the following
+#'  - 'simdata': Data from updated meta-analyses from each simulation
+#'  - 'power': Estimated power for each sample size
+#'  - 'CI_lower': lower 95% confidence interval for estimated power for each sample size
+#'  - 'CI_upper': upper 95% confidence interval for estimated power for each sample size
+#'  - 'sim_study': Data from each simulated trial
+metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, plot_ext = NA) {  
+  
   # create empty list elements
   power <- data.frame(Fixed = NA, Random = NA)
   CI_lower <- data.frame(Fixed = NA, Random = NA)
   CI_upper <- data.frame(Fixed = NA, Random = NA)
   sim.inference <- data.frame(Fixed = rep(x = NA, times = nit), Random = rep(x = NA, times = nit))
-  sim_study <- data.frame(estimate.fixed = rep(NA, nit), st_err.fixed = rep(NA, nit), estimate.rand = rep(NA, nit), st_err.rand = rep(NA, nit))
+  
+  # simulate new trials and conduct an updated meta-analysis for each trial
   if (recalc == 'FALSE') {
+    # initialise objects
+    sim_study <- data.frame(estimate.fixed = rep(NA, nit), st_err.fixed = rep(NA, nit), estimate.rand = rep(NA, nit), st_err.rand = rep(NA, nit)) 
     sims <- data.frame(Fixed.p = rep(x = NA, times = nit), Fixed.lci = rep(x = NA, times = nit), Fixed.uci = rep(x = NA, times = nit),
                        Random.p = rep(x = NA, times = nit), Random.lci = rep(x = NA, times = nit), Random.uci = rep(x = NA, times = nit))
-    # fixed-effects
+    # run for fixed-effects
     print("Running fixed-effects iterations:")
     progress_bar = txtProgressBar(min = 0, max = nit, style = 1, char = " = ")
     for (i in 1:nit) {
       # obtain new data, add to existing data, and re-run MA
       new <- metasim(es = NMA$MA.Fixed$beta, tausq = 0, var = (NMA$MA.Fixed$se)^2, model = 'fixed', n = n, data = data, measure = measure)
-      newMA <- rerunMA(new = new, data = data, model = 'fixed', n = n, measure = measure, chains = chains, iter = iter, warmup = warmup, prior = prior)
+      newMA <- rerunMA(new = new, data = data, model = 'fixed', n = n, measure = measure)
       # Collect data about simulated data (for OR, RR, on log scale)
       sim_study$estimate.fixed[i] <- newMA$data$yi[nrow(data)+1]
       sim_study$st_err.fixed[i] <- sqrt(newMA$data$vi[nrow(data)+1])
@@ -151,13 +178,13 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
       setTxtProgressBar(progress_bar, value = i)
     }
     close(progress_bar)
-    # random-effects
+    # run for random-effects
     print("Running random-effects iterations:")
     progress_bar = txtProgressBar(min = 0, max = nit, style = 1, char = " = ")
       for (i in 1:nit) {
         # obtain new data, add to existing data, and re-run MA
         new <- metasim(es = NMA$MA.Random$beta, tausq = NMA$MA.Random$tau2, var = (NMA$MA.Random$se)^2, model = 'random', n = n, data = data, measure = measure)
-        newMA <- rerunMA(new = new, data = data, model = 'random', n = n, measure = measure, chains = chains, iter = iter, warmup = warmup, prior = prior)
+        newMA <- rerunMA(new = new, data = data, model = 'random', n = n, measure = measure)
         # Collect data about simulated data (for OR, RR, on log scale)
         sim_study$estimate.rand[i] <- newMA$data$yi[nrow(data)+1]
         sim_study$st_err.rand[i] <- sqrt(newMA$data$vi[nrow(data)+1])
@@ -173,18 +200,27 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
         setTxtProgressBar(progress_bar, value = i)
       }
     close(progress_bar)
+    
+    # save data to be used if the impact options change and simulations are not needed to be redone
     if (is.na(plot_ext)) {
-      write.table(sims, file = 'sims.txt', sep = "\t", row.names = FALSE)  # save this data if model option is changed
+      write.table(sims, file = 'sims.txt', sep = "\t", row.names = FALSE) 
+      write.table(sim_study, file = 'sim_study.txt', sep = "\t", row.names = FALSE)
     } else {
       write.table(sims, file = paste('sims', plot_ext, '.txt', sep = ""), sep = "\t", row.names = FALSE)  # extra option needed for metapowplot
+      write.table(sim_study, file = paste('sim_study', plot_ext, '.txt', sep = ""), sep = "\t", row.names = FALSE)
     }
   }
+  
+  # read in simulated data (needed for when recalc is TRUE and the previous data is needed)
   if (is.na(plot_ext)) {
-    sims <- read.table('sims.txt', sep = "\t", header = TRUE) # read in simulated data
+    sims <- read.table('sims.txt', sep = "\t", header = TRUE)
+    sim_study <- read.table('sim_study.txt', sep = "\t", header = TRUE)
   } else {
     sims <- read.table(paste('sims', plot_ext, '.txt', sep = ""), sep = "\t", header = TRUE)
+    sim_study <- read.table(paste('sim_study', plot_ext, '.txt', sep = ""), sep = "\t", header = TRUE)
   }
-  # Calculate power with 95% CI = proportion of 'TRUE' - true statements depend on inference
+  
+  # For each simulation, ascertain whether the updated meta-analysis met the desired impact
   for (i in 1:nit) {
     if (inference == 'pvalue') {
       sim.inference$Fixed[i] <- sims$Fixed.p[i] < pow
@@ -200,31 +236,39 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
       sim.inference$Random[i] <- sims$Random.uci[i] < pow
     }
   }
-  power_results <- prop.test(sum(sim.inference$Fixed), nit) #sum(sims) counts number TRUE
+  
+  # Calculate the power based on the proportion of simulations that met the desired impact (i.e. proportion that say 'TRUE')
+  power_results <- prop.test(sum(sim.inference$Fixed), nit) 
   power$Fixed <- power_results$estimate
   CI_lower$Fixed <- power_results$conf.int[1]
   CI_upper$Fixed <- power_results$conf.int[2]
-  power_results <- prop.test(sum(sim.inference$Random), nit) #sum(sims) counts number TRUE
+  power_results <- prop.test(sum(sim.inference$Random), nit)
   power$Random <- power_results$estimate
   CI_lower$Random <- power_results$conf.int[1]
   CI_upper$Random <- power_results$conf.int[2]
   return(list(simdata = sims, power = power, CI_lower = CI_lower, CI_upper = CI_upper, sim_study = sim_study))
 }
 
-#bayespair <- BayesPair(CONBI, data, trt, ctrl, outcome, chains = 2, iter = 1000, warmup = 200, model = 'both', prior = 'uniform')
-#test_bayes <- metapow(NMA = bayespair, data = data, n = 7500, nit = 50, inference = 'uci', pow = 1.15, measure = 'OR', FreqBayes = 'bayes', chains = 2, iter = 1000, warmup = 200, prior = 'uniform')
-#test_bayes_2 <- metapow(nit = 50, inference = 'lci', pow = 0.55, recalc = 'TRUE')
-#freqpair <- FreqPair(data = data_wide, outcome = outcome, CONBI = CONBI, model = 'both')
-#test_freq <- metapow(NMA = freqpair, data = data, n = 7500, nit = 50, inference = 'uci', pow = 1.15, measure = 'OR', FreqBayes = 'freq')
-#test_freq_2 <- metapow(nit = 50, inference = 'lci', pow = 0.55, recalc = 'TRUE')  # must be done after frequentist...need to implement Bayes/Freq into recalc function
 
-
-
-# function for plotting the power curve (had to split into two functions so that the options for the plot itself could be run without the 'run' button needing to be pressed)
-metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measure, recalc = FALSE, updateProgress = NULL, chains, iter, warmup, prior) { # SampleSizes - a vector of (total) sample sizes; NMA - an NMA object from inbuilt function FreqMA; data - original dataset; nit - number of iterations; inference - type of stat to calculate power; pow - power cut-off; measure - type of outcome (or/rr/rd); ModelOpt - either show fixed or random results, or both; recalc - re-calculate power based on difference inference; regraph - change plot settings without re-running analysis
+#' Function for calculating power results for multiple sample sizes
+#' @param SampleSizes a vector of the (total) sample sizes for which power was calculated
+#' @param NMA a meta-analysis object
+#' @param data dataset of evidence from original existing meta-analysis
+#' @param nit number of iterations/simulation to calculate the power from
+#' @param inference the type of inference/impact to calculate, one of ['pvalue', 'ciwidth', 'lci', 'uci']
+#' @param pow the cut-off level of the desired impact (e.g. 0.05 if a p-value of <=0.05 is desired from the updated meta-analysis)
+#' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
+#' @param recalc whether or not new trials need to be simulated again. If FALSE, then trials need to be simulated again, if TRUE, then the power can be recalculated based on the same trials, but using different cutoffs 
+#' @param updateProgress needed for updating the user on the progress of the simulations
+#' @return dataset of power results (power estimate plus confidence interval) for each sample size
+metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measure, recalc = FALSE, updateProgress = NULL) { 
+  
+  # Initialise
   PowerData <- data.frame(SampleSize = rep(SampleSizes, 2), Model = c(rep("Fixed-effects", length(SampleSizes)), rep("Random-effects", length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
+  
+  # Calculate power for each sample size
   for (i in 1:length(SampleSizes)) {
-    results <- metapow(NMA = NMA, data = data, n = SampleSizes[i], nit = nit, inference = inference, pow = pow, measure = measure, recalc = recalc, plot_ext = i, chains = chains, iter = iter, warmup = warmup, prior = prior)
+    results <- metapow(NMA = NMA, data = data, n = SampleSizes[i], nit = nit, inference = inference, pow = pow, measure = measure, recalc = recalc, plot_ext = i)
     PowerData$Estimate[i] <- results$power$Fixed*100
     PowerData$Estimate[i+length(SampleSizes)] <- results$power$Random*100
     PowerData$CI_lower[i] <- results$CI_lower$Fixed*100
@@ -237,30 +281,42 @@ metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measur
       updateProgress(detail = text)
     }
   }
+  
+  # Order dataset
   PowerData <- PowerData[order(PowerData$SampleSize), ]
   return(PowerData)
 }
 
 
+#' Function to plot the power results when multiple sample sizes were given
+#' @param PowerData dataset of power results (estimate plus 95% CI)
+#' @param ModelOpt whether to display the fixed effect, random effects results, or both
+#' @param SampleSizes a vector of the sample sizes for which power was calculated
+#' @return a ggplot object
 metapowplot <- function(PowerData, ModelOpt = 'both', SampleSizes) {
   PowerData <- PowerData
-  if (ModelOpt == 'fixed') { # only fixed
+  # Fixed effects only
+  if (ModelOpt == 'fixed') { 
     g <- ggplot(PowerData[PowerData$Model == 'Fixed-effects', ], aes(x = SampleSize, y = Estimate)) +
       geom_ribbon(aes(ymin = CI_lower, ymax = CI_upper), alpha = 0.3, colour = 'gray70', linetype = 'blank') +
       labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves (fixed-effects model)", subtitle = "with 95% confidence intervals")
   }
-  if (ModelOpt == 'random') { # only random
+  # Random effects only
+  if (ModelOpt == 'random') { 
     g <- ggplot(PowerData[PowerData$Model == 'Random-effects', ], aes(x = SampleSize, y = Estimate)) +
       geom_ribbon(aes(ymin = CI_lower, ymax = CI_upper), alpha = 0.3, colour = 'gray70', linetype = 'blank') +
       labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves (random-effects model)", subtitle = "with 95% confidence intervals")
   }
-  if (ModelOpt == 'both') { #present both models
+  # Present both models
+  if (ModelOpt == 'both') { 
     g <- ggplot(PowerData, aes(x = SampleSize, y = Estimate, group = Model, colour = Model, fill = Model)) +
       geom_ribbon(aes(ymin = CI_lower, ymax = CI_upper), alpha = 0.3, linetype = 'blank') +
       scale_color_manual(values = c('black', 'navy')) +
       scale_fill_manual(values = c('gray', 'skyblue')) +
       labs(x = "Total Sample Size", y = "Power (%)", title = "Power curves", subtitle = "with 95% confidence intervals")
   }
+  
+  # Formatting
   g <- g +
     geom_line(linewidth = 1) + geom_point(shape = 21) +
     theme_classic() +
@@ -272,11 +328,51 @@ metapowplot <- function(PowerData, ModelOpt = 'both', SampleSizes) {
   return(g)
 }
 
-#powdat <- metapow_multiple(SampleSizes = c(100, 200, 300, 400, 500), NMA = MA, data = data, nit = 100, inference = 'pvalue', pow = 0.1, measure = 'OR')
-#powdat <- metapow_multiple(SampleSizes = c(100, 200, 300, 400, 500), NMA = MA, data = data, nit = 100, inference = 'uci', pow = 1.0, measure = 'OR')
-#testplot <- metapowplot(PowerData = powdat, ModelOpt = 'both', SampleSizes = c(100, 200, 300, 400, 500))
-#testplot
-#test <- metapowplot(SampleSizes = c(1000, 2000, 3000, 4000, 5000, 6000), nit = 50, inference = 'ciwidth', pow = 0.2, ModelOpt = 'both', recalc = TRUE) #testing re-calculation option
-#test$plot
-#test <- metapowplot(SampleSizes = c(1000, 2000, 3000, 4000, 5000, 6000), regraph = TRUE, ModelOpt = 'random') #testing regraph option
-#test$plot
+
+#' Function to obtain information needed to for the section of UI where users select their cut-off values for power calculation
+#' @param type the type of inference/impact to calculate, one of ['pvalue', 'ciwidth', 'lci', 'uci']
+#' @param outcome type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
+#' @param MAFix Fixed-effects meta-analysis object
+#' @param MARan Random-effects meta-analysis object
+#' @return list containing the following:
+#'  - 'label': The label for the UI dropdown input
+#'  - 'initial': Default value for the UI numeric input
+#'  - 'current': Sentence to display stating the current value of the impact type (to help users guage what's possible)
+CutOffSettings <- function(type, outcome, MAFix, MARan) {
+  
+  # Obtain summary information from meta-analysis
+  sumFix <- summary(MAFix)
+  sumRan <- summary(MARan)
+  
+  # For each type of impact create the required elements for UI  
+  if (type == 'pvalue') {
+    label <- paste("P-value less than ...")
+    initial <- 0.05
+    current <- paste("<i>Current p-values are ", strong(round(sumFix$pval, 3)), " (FE) and ", strong(round(sumRan$pval, 3)), " (RE)</i><br>")
+  } else if (type == 'ciwidth') {
+    label <- paste("Width less than ...")
+    initial <- 0.5
+    if (outcome %in% c("OR", "RR")) {
+      current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(exp(sumFix$ci.ub) - exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub) - exp(sumRan$ci.lb), 2)), " (RE)</i><br>")
+    } else {
+      current <- paste("<i>Current width of 95% confidence intervals are ", strong(round(sumFix$ci.ub - sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.ub - sumRan$ci.lb, 2)), " (RE)</i><br>")
+    }
+  } else if (type == 'lci') {
+    label <- paste("Lower bound greater than ...")
+    initial <- 1.1
+    if (outcome %in% c("OR", "RR")) {
+      current <- paste("<i>Current lower bounds are ", strong(round(exp(sumFix$ci.lb), 2)), " (FE) and ", strong(round(exp(sumRan$ci.lb), 2)), " (RE)</i><br>")
+    } else {
+      current <- paste("<i>Current lower bounds are ", strong(round(sumFix$ci.lb, 2)), " (FE) and ", strong(round(sumRan$ci.lb, 2)), " (RE)</i><br>")
+    }
+  } else {
+    label <- paste("Upper bound less than ...")
+    initial <- 0.9
+    if (outcome %in% c("OR", "RR")) {
+      current <- paste("<i> Current upper bounds are ", strong(round(exp(sumFix$ci.ub), 2)), " (FE) and ", strong(round(exp(sumRan$ci.ub), 2)), " (RE)</i><br>")
+    } else {
+      current <- paste("<i> Current upper bounds are ", strong(round(sumFix$ci.ub, 2)), " (FE) and ", strong(round(sumRan$ci.ub, 2)), " (RE)</i><br>")
+    }
+  }
+  list(label = label, initial = initial, current = current)
+}

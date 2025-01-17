@@ -1,0 +1,38 @@
+cff-version: 1.0.0
+title: MetaImpact
+type: software
+authors:
+  - family-names: Nevill
+    given-names: Clareece R
+    affiliation: University of Leicester
+    orcid: 'https://orcid.org/0000-0001-8305-2516'
+  - family-names: Nevill
+    given-names: Janion
+    affiliation: University of Leicester
+    orcid: 'https://orcid.org/0009-0006-7747-1128'
+  - family-names: Robinson
+    given-names: Will
+    affiliation: University of Leicester
+  - family-names: Quinn
+    given-names: Terry
+    affiliation: University of Glasgow
+    orcid: 'https://orcid.org/0000-0003-1401-0181'
+  - family-names: Cooper
+    given-names: Nicola J
+    affiliation: University of Leicester
+    orcid: 'https://orcid.org/0000-0002-4486-2791'
+  - family-names: Sutton
+    given-names: Alex J
+    affiliation: University of Leicester
+    orcid: 'https://orcid.org/0000-0002-8934-9940'
+repository-code: 'https://github.com/CRSU-Apps/MetaImpact'
+abstract: >-
+  An online web-application to design a future study that will have an impact on the current evidence base. Furthermore, MetaImpact helps educate users about meta-analysis, its assumptions, and features of future study design using information boxes and novel plots.
+keywords:
+  - Meta Analysis
+  - Future Studies
+  - MetaImpact
+  - RShiny
+license: GPL-3.0-or-later
+version: 1.0.0
+date-released: '2025-01-16'

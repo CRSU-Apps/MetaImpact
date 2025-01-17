@@ -4,7 +4,7 @@
 #' @param id ID of the module.
 #'
 #' @return Div containing panel.
-BinaryInstructionsPanelUi <- function(id) {
+binary_instructions_panel_ui <- function(id) {
   ns <- NS(id)
   
   div(
@@ -50,7 +50,7 @@ BinaryInstructionsPanelUi <- function(id) {
 #' Server for the binary instructions panel.
 #'
 #' @param id ID of the module.
-BinaryInstructionsPanelServer <- function(id) {
+binary_instructions_panel_server <- function(id) {
   moduleServer(
     id,
     function(input, output, session) {
