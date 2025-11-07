@@ -69,6 +69,15 @@ home_page_ui <- function(id) {
     br(),
     h4("Authors"),
     p("Clareece Nevill, Janion Nevill, Will Robinson, Terry Quinn, Nicola Cooper, Alex Sutton"),
+    br(),
+    p("If you use the app please cite it as:"),
+    p(
+      tags$a(
+        href = "https://doi.org/10.1136/bmjebm-2025-113694",
+        "Nevill C, Quinn TJ, Cooper N, et al. (2025), MetaImpact: a novel tool to enable evidence-based sample sizes for future trials. BMJ Evidence-Based Medicine. Published Online First: 20 June 2025.",
+        align="left")
+    ),
+    br(),
     p("This app builds upon the work from the following publications:"),
     p(
       tags$a(
