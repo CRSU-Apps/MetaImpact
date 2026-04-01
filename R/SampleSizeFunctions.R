@@ -135,14 +135,14 @@ rerunMA <- function(new, data, model, n, measure) {
 #' @param pow the cut-off level of the desired impact (e.g. 0.05 if a p-value of <=0.05 is desired from the updated meta-analysis)
 #' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
 #' @param recalc whether or not new trials need to be simulated again. If FALSE, then trials need to be simulated again, if TRUE, then the power can be recalculated based on the same trials, but using different cutoffs 
-#' @param plot_ext whether the results are going to be used within the metapowplot function
+#' @param previous Data from previously run sims. List containing 'simdata' and 'sim_study', as in the return value.
 #' @return list containing the following
 #'  - 'simdata': Data from updated meta-analyses from each simulation
 #'  - 'power': Estimated power for each sample size
 #'  - 'CI_lower': lower 95% confidence interval for estimated power for each sample size
 #'  - 'CI_upper': upper 95% confidence interval for estimated power for each sample size
 #'  - 'sim_study': Data from each simulated trial
-metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, plot_ext = NA) {  
+metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, previous = NA) {  
   
   # create empty list elements
   power <- data.frame(Fixed = NA, Random = NA)
@@ -151,7 +151,7 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
   sim.inference <- data.frame(Fixed = rep(x = NA, times = nit), Random = rep(x = NA, times = nit))
   
   # simulate new trials and conduct an updated meta-analysis for each trial
-  if (recalc == 'FALSE') {
+  if (!recalc) {
     # initialise objects
     sim_study <- data.frame(estimate.fixed = rep(NA, nit), st_err.fixed = rep(NA, nit), estimate.rand = rep(NA, nit), st_err.rand = rep(NA, nit)) 
     sims <- data.frame(Fixed.p = rep(x = NA, times = nit), Fixed.lci = rep(x = NA, times = nit), Fixed.uci = rep(x = NA, times = nit),
@@ -200,24 +200,10 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
         setTxtProgressBar(progress_bar, value = i)
       }
     close(progress_bar)
-    
-    # save data to be used if the impact options change and simulations are not needed to be redone
-    if (is.na(plot_ext)) {
-      write.table(sims, file = 'sims.txt', sep = "\t", row.names = FALSE) 
-      write.table(sim_study, file = 'sim_study.txt', sep = "\t", row.names = FALSE)
-    } else {
-      write.table(sims, file = paste('sims', plot_ext, '.txt', sep = ""), sep = "\t", row.names = FALSE)  # extra option needed for metapowplot
-      write.table(sim_study, file = paste('sim_study', plot_ext, '.txt', sep = ""), sep = "\t", row.names = FALSE)
-    }
-  }
-  
-  # read in simulated data (needed for when recalc is TRUE and the previous data is needed)
-  if (is.na(plot_ext)) {
-    sims <- read.table('sims.txt', sep = "\t", header = TRUE)
-    sim_study <- read.table('sim_study.txt', sep = "\t", header = TRUE)
   } else {
-    sims <- read.table(paste('sims', plot_ext, '.txt', sep = ""), sep = "\t", header = TRUE)
-    sim_study <- read.table(paste('sim_study', plot_ext, '.txt', sep = ""), sep = "\t", header = TRUE)
+    # Simulations not needed to be rerun, only a recalculation, so use the previous simulation results
+    sims <- previous$simdata
+    sim_study <- previous$sim_study
   }
   
   # For each simulation, ascertain whether the updated meta-analysis met the desired impact
@@ -260,21 +246,28 @@ metapow <- function(NMA, data, n, nit, inference, pow, measure, recalc = FALSE, 
 #' @param measure type of meta-analytic outcome, one of ['OR', 'RR', 'RD', 'MD', 'SMD']
 #' @param recalc whether or not new trials need to be simulated again. If FALSE, then trials need to be simulated again, if TRUE, then the power can be recalculated based on the same trials, but using different cutoffs 
 #' @param updateProgress needed for updating the user on the progress of the simulations
+#' @param previous Data from previously run sims. List containing 'simdata' and 'sim_study', as in the return value from `metapow()`.
 #' @return dataset of power results (power estimate plus confidence interval) for each sample size
-metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measure, recalc = FALSE, updateProgress = NULL) { 
+metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measure, recalc = FALSE, updateProgress = NULL, previous = NA) { 
   
   # Initialise
   PowerData <- data.frame(SampleSize = rep(SampleSizes, 2), Model = c(rep("Fixed-effects", length(SampleSizes)), rep("Random-effects", length(SampleSizes))), Estimate = NA, CI_lower = NA, CI_upper = NA)
+  sims <- list()
   
   # Calculate power for each sample size
   for (i in 1:length(SampleSizes)) {
-    results <- metapow(NMA = NMA, data = data, n = SampleSizes[i], nit = nit, inference = inference, pow = pow, measure = measure, recalc = recalc, plot_ext = i)
+    results <- metapow(NMA = NMA, data = data, n = SampleSizes[i], nit = nit, inference = inference, pow = pow, measure = measure, recalc = recalc, previous[[i]])
     PowerData$Estimate[i] <- results$power$Fixed*100
     PowerData$Estimate[i+length(SampleSizes)] <- results$power$Random*100
     PowerData$CI_lower[i] <- results$CI_lower$Fixed*100
     PowerData$CI_lower[i+length(SampleSizes)] <- results$CI_lower$Random*100
     PowerData$CI_upper[i] <- results$CI_upper$Fixed*100
     PowerData$CI_upper[i+length(SampleSizes)] <- results$CI_upper$Random*100
+    
+    sims <- append(
+      sims, 
+      list(list(simdata = results$simdata, sim_study = results$sim_study))
+    )
     print(paste("Simulation", i, "of", length(SampleSizes), "complete"))
     if (is.function(updateProgress)) {
       text <- paste0("Simulation ", i, " of ", length(SampleSizes), " complete")
@@ -284,7 +277,12 @@ metapow_multiple <- function(SampleSizes, NMA, data, nit, inference, pow, measur
   
   # Order dataset
   PowerData <- PowerData[order(PowerData$SampleSize), ]
-  return(PowerData)
+  return(
+    list(
+      power_data = PowerData,
+      sims = sims
+    )
+  )
 }
 
 

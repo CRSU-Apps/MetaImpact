@@ -34,6 +34,11 @@ calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwi
     # Set seed to get reproducable results
     set.seed(42)
     
+    previous_sims <- reactiveValues(
+      single = NA,
+      multiple = NA
+    )
+    
     # Run calculator and obtain results #
     CalcResults <- eventReactive( calc_button(), {
       list1 <- list()
@@ -52,9 +57,17 @@ calculator_results_panel_server <- function(id, calc_button, samplesizes, pairwi
             }
             progress$set(value = value, detail = detail)
           }
-          list1$data <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), updateProgress = updateProgress)
+          multi_result <- metapow_multiple(SampleSizes = list1$sample_sizes, NMA = pairwise_MA(), data = WideData(), nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), updateProgress = updateProgress, previous = previous_sims$multiple)
+          list1$data <- multi_result$power_data
+
+          previous_sims$multiple <- multi_result$sims
         } else if (length(list1$sample_sizes) == 1) {
-          list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc())
+          list1$singleresult <- metapow(NMA = pairwise_MA(), data = WideData(), n = list1$sample_sizes, nit = its(), inference = impact_type(), pow = cutoff(), measure = outcome(), recalc = Recalc(), previous = previous_sims$single)
+          
+          previous_sims$single <- list(
+            simdata = list1$singleresult$simdata,
+            sim_study = list1$singleresult$sim_study
+          )
         }
         calc_res <- list1
         return(calc_res)
